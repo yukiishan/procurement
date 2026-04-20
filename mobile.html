@@ -920,15 +920,15 @@ async function load(){
 }
 async function save(){try{await apiPost('saveData',{records:data,nextId:nid});lc('data',{records:data,nextId:nid});}catch(e){console.error(e);toast('❌ 儲存失敗');}}
 async function saveO(){try{await Promise.all([apiPost('saveOptions',opts),apiPost('saveCodes',{opts,payCode:codeDesc.payCode,payCodeShort:{},fwdCode:codeDesc.fwdCode,fwdCodeShort:{}})]);lc('opts',{opts,modelNames});}catch(e){console.error(e);}}
-async function saveVendors(){try{await apiPost('saveVendors',vendors);lc('vendors',vendors);}catch(e){console.error(e);toast('❌ 儲存失敗');}}
-async function saveModels(){try{await apiPost('saveModels',models);lc('models',models);}catch(e){console.error(e);toast('❌ 儲存失敗');}}
+async function saveVendors(){await apiPost('saveVendors',vendors);lc('vendors',vendors);}
+async function saveModels(){await apiPost('saveModels',models);lc('models',models);}
 async function saveR(){try{await apiPost('saveRates',rates);lc('rates',rates);}catch(e){console.error(e);}}
 async function saveH(){try{await apiPost('saveHols',hols);lc('hols',hols);}catch(e){console.error(e);}}
 
 // Utils
 const fN=n=>(n||n===0)?Number(n).toLocaleString():'—';
-const fD=d=>d?d.replace(/-/g,'/'):'';
-const safe=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const fD=d=>{if(!d)return'';if(d instanceof Date)return d.toLocaleDateString('zh-TW');return String(d).replace(/-/g,'/')};
+const safe=s=>{const str=s===null||s===undefined?'':String(s);return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')};
 function getRate(c){return rates[c]||1;}
 function calcNTDv(a,c){return Math.round((a||0)*getRate(c));}
 
@@ -2033,19 +2033,29 @@ async function saveModelEdit(){
   const textFields=['model','name','remark'];
   const selFields=['country','city','rigging','noCert'];
   const rec={};
-  textFields.forEach(f=>{const el=document.getElementById('me-'+f);if(el)rec[f]=el.value;});
-  selFields.forEach(f=>{const el=document.getElementById('me-'+f);if(el)rec[f]=el.value;});
+  textFields.forEach(f=>{const el=document.getElementById('me-'+f);if(el)rec[f]=el.value||'';});
+  selFields.forEach(f=>{const el=document.getElementById('me-'+f);if(el)rec[f]=el.value||'';});
   if(!rec.model){toast('請填入設備型號');return;}
-  // Check dup
-  const isDupM=models.some((m,i)=>m.model&&m.model.toLowerCase()===rec.model.toLowerCase()&&i!==modelEditIdx);
+  const mv=String(rec.model).toLowerCase();
+  const isDupM=models.some((m,i)=>m.model!=null&&String(m.model).toLowerCase()===mv&&i!==modelEditIdx);
   if(isDupM){toast('⚠ 設備型號已存在，請使用不同型號');return;}
   if(modelEditIdx>=0){models[modelEditIdx]={...models[modelEditIdx],...rec};}
   else{models.push(rec);}
-  showLoading(true);await saveModels();showLoading(false);
-  refreshModelSelect();
-  closeModelEdit();
-  renderModelList();
-  toast('✓ 型號資料已儲存');
+  showLoading(true);
+  try{
+    await saveModels();
+    lc('models',models);
+    refreshModelSelect();
+    closeModelEdit();
+    renderModelList();
+    const dw=document.getElementById('meModelDupWarn');if(dw)dw.textContent='';
+    toast('✓ 型號資料已儲存');
+  }catch(e){
+    console.error('saveModels error:',e);
+    toast('❌ 儲存失敗: '+e.message);
+  }finally{
+    showLoading(false);
+  }
 }
 
 async function deleteModelEdit(){
@@ -2084,23 +2094,21 @@ function migrateModelsFromOpts(){
 
 // ── 重複代號檢查 ────────────────────────────────────
 function checkVendorCodeDup(code){
-  const warn = document.getElementById('veCodeDupWarn');
-  if(!warn) return;
-  if(!code || code.length < 2){ warn.textContent=''; return; }
-  const isDup = vendors.some((v, i) => 
-    v.vendorCode && v.vendorCode.toUpperCase() === code.toUpperCase() && i !== vendorEditIdx
-  );
-  warn.textContent = isDup ? '⚠ 此廠商代號已存在' : '';
+  const warn=document.getElementById('veCodeDupWarn');
+  if(!warn)return;
+  if(!code||code.length<2){warn.textContent='';return;}
+  const cv=String(code).toUpperCase();
+  const isDup=vendors.some((v,i)=>v.vendorCode!=null&&String(v.vendorCode).toUpperCase()===cv&&i!==vendorEditIdx);
+  warn.textContent=isDup?'⚠ 此廠商代號已存在':'';
 }
 
 function checkModelDup(model){
-  const warn = document.getElementById('meModelDupWarn');
-  if(!warn) return;
-  if(!model){ warn.textContent=''; return; }
-  const isDup = models.some((m, i) => 
-    m.model && m.model.toLowerCase() === model.toLowerCase() && i !== modelEditIdx
-  );
-  warn.textContent = isDup ? '⚠ 此型號已存在' : '';
+  const warn=document.getElementById('meModelDupWarn');
+  if(!warn)return;
+  if(!model){warn.textContent='';return;}
+  const mv=String(model).toLowerCase();
+  const isDup=models.some((m,i)=>m.model!=null&&String(m.model).toLowerCase()===mv&&i!==modelEditIdx);
+  warn.textContent=isDup?'⚠ 此型號已存在':'';
 }
 
 // ══════════════════════════════════════════════════
