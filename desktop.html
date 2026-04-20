@@ -1220,8 +1220,8 @@ async function saveH(){
 
 const fN=n=>(n||n===0)?Number(n).toLocaleString():'—';
 const fNTD=n=>n?'NT$'+Number(n).toLocaleString():'—';
-const fD=d=>d?d.replace(/-/g,'/'):'';
-const safe=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const fD=d=>{if(!d)return'';if(d instanceof Date)return d.toLocaleDateString('zh-TW');return String(d).replace(/-/g,'/')};
+const safe=s=>{const str=s===null||s===undefined?'':String(s);return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')};
 function bdg(t,c){return`<span class="badge ${c}">${safe(t)}</span>`}
 function dBdg(d){const m={'SMT':'b-smt','LGA FC':'b-lga','QFN FC':'b-qfn'};return bdg(d,m[d]||'b-smt')}
 function cBdg(c){return bdg(c,'b-'+(c||'').toLowerCase())}
@@ -1820,15 +1820,27 @@ function renderDPCard(ci){
       <button class="btn xs danger" onclick="removeDP(${ci})">移除批次</button>
     </div>
     <div class="dpdeliv">
-      <div class="pf"><label>ETD確認交期</label><input type="date" value="${d.etd}" oninput="detDeliveries[${ci}].etd=this.value"></div>
-      <div class="pf"><label>ETA預計到廠</label><input type="date" value="${d.eta}" oninput="
-        const ci3=${ci};const etaVal=this.value;detDeliveries[ci3].eta=etaVal;
-        const pays3=detDeliveries[ci3].payments;
-        pays3.forEach((p3,pi3)=>{
-          p3.arrivalDate=etaVal;
-          const row3=document.querySelector('[data-ci="'+ci3+'"][data-pi="'+pi3+'"]');
-          if(row3){const ad3=row3.querySelector('.ad-inp');if(ad3)ad3.value=etaVal;}
-        });"></div>
+      <div class="pf"><label>ETD確認交期
+          <span class="dp-ts" id="etd-ts-${ci}" style="font-size:9px;color:var(--tx3);font-weight:400;display:block;margin-top:1px">${d.etdUpdated?'更新 '+d.etdUpdated:''}</span>
+        </label><input type="date" value="${d.etd}" oninput="
+          detDeliveries[${ci}].etd=this.value;
+          const ts=new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+          detDeliveries[${ci}].etdUpdated=ts;
+          const el=document.getElementById('etd-ts-${ci}');if(el)el.textContent='更新 '+ts;
+        "></div>
+      <div class="pf"><label>ETA預計到廠
+          <span class="dp-ts" id="eta-ts-${ci}" style="font-size:9px;color:var(--tx3);font-weight:400;display:block;margin-top:1px">${d.etaUpdated?'更新 '+d.etaUpdated:''}</span>
+        </label><input type="date" value="${d.eta}" oninput="
+          const ci3=${ci};const etaVal=this.value;detDeliveries[ci3].eta=etaVal;
+          const ts3=new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+          detDeliveries[ci3].etaUpdated=ts3;
+          const el3=document.getElementById('eta-ts-${ci}');if(el3)el3.textContent='更新 '+ts3;
+          const pays3=detDeliveries[ci3].payments;
+          pays3.forEach((p3,pi3)=>{
+            p3.arrivalDate=etaVal;
+            const row3=document.querySelector('[data-ci=&quot;'+ci3+'&quot;][data-pi=&quot;'+pi3+'&quot;]');
+            if(row3){const ad3=row3.querySelector('.ad-inp');if(ad3)ad3.value=etaVal;}
+          });"></div>
       <div class="pf"><label>本批數量</label><input type="number" value="${d.qty}" placeholder="台" min="0" oninput="
         const ci2=${ci};const newQ=this.value;detDeliveries[ci2].qty=newQ;
         const pays2=detDeliveries[ci2].payments;
@@ -1954,7 +1966,8 @@ async function saveRec(){
   rec.pctA=Number(document.getElementById('f-pctA').value)||0;
   // Save from state array, not DOM
   rec.deliveries=detDeliveries.map(d=>({
-    etd:d.etd,eta:d.eta,qty:d.qty,note:d.note,
+    etd:d.etd,eta:d.eta,qty:d.qty,sn:d.sn||'',
+    etdUpdated:d.etdUpdated||'',etaUpdated:d.etaUpdated||'',
     payments:d.payments.map(p=>({
       invoiceDate:p.invoiceDate,invoice:p.invoice,arrivalDate:p.arrivalDate,
       arrivalQty:p.arrivalQty,stageLabel:p.stageLabel,pct:p.pct,
