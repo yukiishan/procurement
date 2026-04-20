@@ -1731,6 +1731,44 @@ function recalcAll(){
   updateQtyInfo();
 }
 
+
+function onETDChange(ci, val){
+  detDeliveries[ci].etd = val;
+  const ts = new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  detDeliveries[ci].etdUpdated = ts;
+  const el = document.getElementById('etd-ts-'+ci);
+  if(el) el.textContent = '更新 '+ts;
+}
+
+function onETAChange(ci, val){
+  detDeliveries[ci].eta = val;
+  const ts = new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  detDeliveries[ci].etaUpdated = ts;
+  const el = document.getElementById('eta-ts-'+ci);
+  if(el) el.textContent = '更新 '+ts;
+  // Sync all payment arrivalDates
+  detDeliveries[ci].payments.forEach((p, pi) => {
+    p.arrivalDate = val;
+    const row = document.querySelector('[data-ci="'+ci+'"][data-pi="'+pi+'"]');
+    if(row){ const ad = row.querySelector('.ad-inp'); if(ad) ad.value = val; }
+  });
+}
+
+function onBatchQtyChange(ci, newQ){
+  detDeliveries[ci].qty = newQ;
+  const pays = detDeliveries[ci].payments;
+  pays.forEach((p, pi) => {
+    p.arrivalQty = newQ;
+    const row = document.querySelector('[data-ci="'+ci+'"][data-pi="'+pi+'"]');
+    if(row){
+      const aqI = row.querySelector('.aq-inp');
+      if(aqI) aqI.value = newQ;
+    }
+    recalcPayRow(ci, pi);
+  });
+  updateQtyInfo();
+}
+
 function getUsedQty(){
   const inputs=document.querySelectorAll('.batch-qty-inp');
   if(inputs.length>0){
@@ -1846,35 +1884,11 @@ function renderDPCard(ci){
     <div class="dpdeliv">
       <div class="pf"><label>ETD確認交期
           <span class="dp-ts" id="etd-ts-${ci}" style="font-size:9px;color:var(--tx3);font-weight:400;display:block;margin-top:1px;min-height:13px">${d.etdUpdated?'更新 '+d.etdUpdated:''}</span>
-        </label><input type="date" value="${d.etd}" oninput="
-          detDeliveries[${ci}].etd=this.value;
-          const ts=new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-          detDeliveries[${ci}].etdUpdated=ts;
-          const el=document.getElementById('etd-ts-${ci}');if(el)el.textContent='更新 '+ts;
-        "></div>
+        </label><input type="date" value="${d.etd}" oninput="onETDChange(${ci},this.value)"></div>
       <div class="pf"><label>ETA預計到廠
           <span class="dp-ts" id="eta-ts-${ci}" style="font-size:9px;color:var(--tx3);font-weight:400;display:block;margin-top:1px;min-height:13px">${d.etaUpdated?'更新 '+d.etaUpdated:''}</span>
-        </label><input type="date" value="${d.eta}" oninput="
-          const ci3=${ci};const etaVal=this.value;detDeliveries[ci3].eta=etaVal;
-          const ts3=new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-          detDeliveries[ci3].etaUpdated=ts3;
-          const el3=document.getElementById('eta-ts-${ci}');if(el3)el3.textContent='更新 '+ts3;
-          const pays3=detDeliveries[ci3].payments;
-          pays3.forEach((p3,pi3)=>{
-            p3.arrivalDate=etaVal;
-            const row3=document.querySelector('[data-ci=&quot;'+ci3+'&quot;][data-pi=&quot;'+pi3+'&quot;]');
-            if(row3){const ad3=row3.querySelector('.ad-inp');if(ad3)ad3.value=etaVal;}
-          });"></div>
-      <div class="pf"><label>本批數量<span style="display:block;min-height:13px;font-size:9px"></span></label><input type="number" class="batch-qty-inp" value="${d.qty}" placeholder="台" min="0" oninput="
-        const ci2=${ci};const newQ=this.value;detDeliveries[ci2].qty=newQ;
-        const pays2=detDeliveries[ci2].payments;
-        pays2.forEach((p2,pi2)=>{
-          p2.arrivalQty=newQ;
-          const rowN=document.querySelector('[data-ci="'+ci2+'"][data-pi="'+pi2+'"]');
-          if(rowN){const aqN=rowN.querySelector('.aq-inp');if(aqN)aqN.value=newQ;}
-          recalcPayRow(ci2,pi2);
-        });
-        updateQtyInfo()"></div>
+        </label><input type="date" value="${d.eta}" oninput="onETAChange(${ci},this.value)"></div>
+      <div class="pf"><label>本批數量<span style="display:block;min-height:13px;font-size:9px"></span></label><input type="number" class="batch-qty-inp" value="${d.qty}" placeholder="台" min="0" oninput="onBatchQtyChange(${ci},this.value)"></div>
       <div class="pf"><label>S/N<span style="display:block;min-height:13px;font-size:9px"></span></label><input value="${safe(d.sn||'')}" oninput="detDeliveries[${ci}].sn=this.value"></div>
     </div>
     <div class="dppayh">付款明細 <button class="addbtn" style="display:inline-block;width:auto;padding:2px 8px;margin-left:8px" onclick="addPayRow(${ci})">＋ 新增付款筆</button></div>
