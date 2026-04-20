@@ -61,7 +61,7 @@ body{font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;background:var(-
 .btn.sm{padding:3px 8px;font-size:11px}
 .btn.xs{padding:2px 6px;font-size:10px}
 .toolbar{background:var(--sf);border-bottom:1px solid var(--bd);padding:7px 14px;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
-.toolbar input,.toolbar select{font-size:11px;padding:4px 7px;border-radius:var(--r);border:1px solid var(--bd);background:var(--sf2);color:var(--tx);height:29px;font-family:inherit}
+.toolbar input,.toolbar select{font-size:11px;padding:3px 6px;border-radius:var(--r);border:1px solid var(--bd);background:var(--sf2);color:var(--tx);height:26px;font-family:inherit}
 .toolbar input{min-width:160px}
 .toolbar input:focus,.toolbar select:focus{outline:none;border-color:var(--rose)}
 .spacer{flex:1}
@@ -88,34 +88,34 @@ tbody td{padding:8px 7px;vertical-align:middle}
 /* Detail */
 .detov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80;overflow-y:auto}
 .detov.open{display:block}
-.detpanel{background:var(--sf);min-height:100vh;max-width:1020px;margin:0 auto}
-.dethd{display:flex;align-items:center;gap:9px;padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.detpanel{background:var(--sf);min-height:100vh;max-width:920px;margin:0 auto}
+.dethd{display:flex;align-items:center;gap:8px;padding:9px 14px;background:var(--bg);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .dethd h2{font-size:14px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .detback{cursor:pointer;font-size:21px;color:var(--tx2);background:none;border:none;line-height:1;padding:0 3px}
-.detbody{padding:15px 18px;padding-bottom:60px}
-.sec{margin-bottom:16px}
+.detbody{padding:11px 14px;padding-bottom:50px}
+.sec{margin-bottom:10px}
 .sechd{font-size:10px;font-weight:700;color:var(--tx2);margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--bd);text-transform:uppercase;letter-spacing:.07em}
 .fg{display:flex;flex-direction:column;gap:3px}
-.fg label{font-size:10px;color:var(--tx2);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
-.fg input,.fg select,.fg textarea{font-size:16px;padding:7px 9px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;transition:border-color .15s}
+.fg label{font-size:9px;color:var(--tx2);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.fg input,.fg select,.fg textarea{font-size:12px;padding:4px 6px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;transition:border-color .15s}
 .fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--blue);background:var(--sf)}
 .fg input[readonly]{background:var(--sf3);color:var(--tx3);cursor:not-allowed}
 .fg textarea{resize:vertical;min-height:95px;font-size:12px;line-height:1.6}
-.fgg{display:grid;gap:8px}
+.fgg{display:grid;gap:6px}
 .c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:1fr 1fr 1fr}.c4{grid-template-columns:1fr 1fr 1fr 1fr}
 .c5{grid-template-columns:repeat(5,1fr)}.c6{grid-template-columns:repeat(6,1fr)}
 .full{grid-column:1/-1}.s2{grid-column:span 2}
 /* DP card */
-.dpcard{background:var(--sf2);border:1px solid var(--bd);border-radius:var(--r);padding:10px 12px;margin-bottom:8px}
+.dpcard{background:var(--sf2);border:1px solid var(--bd);border-radius:var(--r);padding:8px 10px;margin-bottom:8px}
 .dphd{display:flex;align-items:center;margin-bottom:8px}
 .dphd strong{font-size:12px;font-weight:700;flex:1}
 .qty-warn{font-size:10px;color:var(--rtx);font-weight:600;margin-left:8px}
-.dpdeliv{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:8px}
+.dpdeliv{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:6px}
 .dppayh{font-size:10px;font-weight:700;color:var(--tx2);padding:5px 0 4px;border-top:1px dashed var(--bd2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
-.payrow{display:grid;gap:5px;margin-bottom:5px;background:var(--sf);border-radius:6px;padding:6px 7px;border:1px solid var(--bd);grid-template-columns:repeat(9,1fr) auto}
+.payrow{display:grid;gap:4px;margin-bottom:5px;background:var(--sf);border-radius:6px;padding:5px 6px;border:1px solid var(--bd);overflow-x:auto}
 .pf{display:flex;flex-direction:column;gap:2px}
 .pf label{font-size:9px;color:var(--tx3);font-weight:600;text-transform:uppercase}
-.pf input,.pf select{font-size:16px;padding:5px 6px;border:1px solid var(--bd);border-radius:5px;background:var(--sf);color:var(--tx);font-family:inherit;width:100%}
+.pf input,.pf select{font-size:11px;padding:3px 5px;border:1px solid var(--bd);border-radius:4px;background:var(--sf);color:var(--tx);font-family:inherit;width:100%}
 .pf input:focus,.pf select:focus{outline:none;border-color:var(--blue)}
 .pf input[readonly]{background:var(--sf3);color:var(--tx3);cursor:not-allowed}
 .addbtn{font-size:11px;color:var(--blue);cursor:pointer;background:none;border:1px dashed var(--bd2);padding:4px;border-radius:5px;margin-top:4px;font-family:inherit;display:block;width:100%;text-align:center}
@@ -665,7 +665,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
     <button class="btn success" onclick="exportExcel()" title="匯出 Excel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Excel</button>
     <button class="btn" onclick="exportJSON()" title="備份資料"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> 備份</button>
     <label class="btn" style="cursor:pointer" title="還原備份"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 還原<input type="file" accept=".json" style="display:none" onchange="importJSON(event)"></label>
-    <button class="btn primary" onclick="openDet('new')" title="新增採購"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 新增</button>
+    
   </div>
 </div>
 
@@ -678,7 +678,12 @@ tbody td{padding:8px 7px;vertical-align:middle}
     <div class="spacer"></div><span style="font-size:11px;color:var(--tx3)" id="rc"></span>
   </div>
   <div class="content">
-    <div class="sg" id="sg"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="sg" id="sg" style="flex:1"></div>
+      <button class="btn primary" onclick="openDet('new')" style="margin-left:12px;white-space:nowrap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-right:4px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>新增採購
+      </button>
+    </div>
     <div class="twrap"><table>
       <thead><tr>
         <th>廠區</th><th>部門</th><th>PO號</th><th>廠商</th><th>代理商</th><th>設備型號</th><th>設備名稱</th>
@@ -797,11 +802,14 @@ tbody td{padding:8px 7px;vertical-align:middle}
         </div>
         <div class="fg"><label>廠商名稱</label><input id="vd-vendor" placeholder="廠商全名"></div>
         <div class="fg"><label>代理商</label><input id="vd-agent" placeholder="代理商名稱"></div>
-        <!-- Row2: 國家 運送方式 付款方式 貨代代號 -->
+        <!-- Row2: 國家 運送方式 (空) -->
         <div class="fg"><label>國家</label><select id="vd-country"></select></div>
         <div class="fg"><label>運送方式</label><select id="vd-shipMode"></select></div>
+        <div class="fg"></div>
+        <!-- Row3: 付款方式 貨代代號 (空) -->
         <div class="fg"><label>付款方式</label><input id="vd-payment" placeholder="如 T/T 30天"></div>
-        <div class="fg full"><label>貨代代號</label><input id="vd-forwarder" placeholder="如 I32"></div>
+        <div class="fg"><label>貨代代號</label><input id="vd-forwarder" placeholder="如 I32"></div>
+        <div class="fg"></div>
       </div>
     </div>
     <div class="sec"><div class="sechd">聯絡資訊</div>
@@ -1744,7 +1752,7 @@ function syncBatchQty(ci,newQty){
 
 function openDet(idOrNew){
   eid=idOrNew==='new'?null:idOrNew;
-  const r=eid?data.find(x=>x.id===eid):{};
+  const r=eid!=null?data.find(x=>Number(x.id)===Number(eid))||{}:{};
   document.getElementById('detTitle').textContent=eid?`${r.vendor||''} · ${r.model||''}`:'新增採購';
   document.getElementById('detPO').textContent=r.pr||'';
   document.getElementById('delBtn').style.display=eid?'inline-flex':'none';
@@ -1814,12 +1822,12 @@ function renderDPCard(ci){
     <div class="dpdeliv">
       <div class="pf"><label>ETD確認交期</label><input type="date" value="${d.etd}" oninput="detDeliveries[${ci}].etd=this.value"></div>
       <div class="pf"><label>ETA預計到廠</label><input type="date" value="${d.eta}" oninput="
-        const ci3=${ci};detDeliveries[ci3].eta=this.value;
+        const ci3=${ci};const etaVal=this.value;detDeliveries[ci3].eta=etaVal;
         const pays3=detDeliveries[ci3].payments;
         pays3.forEach((p3,pi3)=>{
-          p3.arrivalDate=this.value;
+          p3.arrivalDate=etaVal;
           const row3=document.querySelector('[data-ci="'+ci3+'"][data-pi="'+pi3+'"]');
-          if(row3){const ad3=row3.querySelector('.ad-inp');if(ad3)ad3.value=this.value;}
+          if(row3){const ad3=row3.querySelector('.ad-inp');if(ad3)ad3.value=etaVal;}
         });"></div>
       <div class="pf"><label>本批數量</label><input type="number" value="${d.qty}" placeholder="台" min="0" oninput="
         const ci2=${ci};const newQ=this.value;detDeliveries[ci2].qty=newQ;
@@ -1857,7 +1865,7 @@ function renderPayRow(ci,pi){
   const row=document.createElement('div');
   row.className='payrow';
   row.setAttribute('data-ci',ci);row.setAttribute('data-pi',pi);
-  row.style.gridTemplateColumns='repeat(12,1fr) auto';
+  row.style.gridTemplateColumns='repeat(13,minmax(70px,1fr)) auto';
   row.innerHTML=`
     <div class="pf"><label>發票日期</label><input type="date" value="${p.invoiceDate}" oninput="detDeliveries[${ci}].payments[${pi}].invoiceDate=this.value"></div>
     <div class="pf"><label>發票號碼</label><input value="${safe(p.invoice||'')}" oninput="detDeliveries[${ci}].payments[${pi}].invoice=this.value"></div>
@@ -1886,7 +1894,8 @@ function addDP(){
   if(total>0&&used>=total){
     if(!confirm(`各批次數量已達總數量(${total}台)，仍要新增批次？`))return;
   }
-  detDeliveries.push({etd:'',eta:'',qty:'',sn:'',payments:[{invoiceDate:'',invoice:'',arrivalDate:'',arrivalQty:'',stageLabel:'訂金款',pct:'',payAmt:'',claimType:'',claimDate:'',payDate:'',pctManual:false,payAmtManual:false}]});
+  const todayDP=new Date().toISOString().slice(0,10);
+  detDeliveries.push({etd:'',eta:'',qty:'',sn:'',payments:[{invoiceDate:todayDP,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel:'訂金款',pct:'',payAmt:'',claimType:'',claimDate:'',payDate:'',voucherDate:'',payRemark:'',pctManual:false,payAmtManual:false}]});
   const ci=detDeliveries.length-1;
   renderDPCard(ci);
   updateQtyInfo();
@@ -2001,7 +2010,7 @@ function renderModelNames(){
 }
 function rmOpt(i){opts[curOptCat].splice(i,1);renderOptList();}
 function addOptI(){if(!opts[curOptCat])opts[curOptCat]=[];opts[curOptCat].push('');renderOptList();const ins=document.querySelectorAll('#optlist input');if(ins.length)ins[ins.length-1].focus();}
-async function saveOpts(){
+async async function saveOpts(){
   const ins=document.querySelectorAll('#optlist input');
   opts[curOptCat]=Array.from(ins).map(i=>i.value.trim()).filter(Boolean);
   if(curOptCat==='model'){
@@ -2010,7 +2019,10 @@ async function saveOpts(){
       if(el)modelNames[m]=el.value.trim();
     });
   }
-  await saveO();refreshSels();closeOpt();ntf('✓ 選單已儲存');
+  showLoading(true);
+  await saveO();
+  showLoading(false);
+  refreshSels();closeOpt();ntf('✓ 選單已儲存');
 }
 function closeOpt(){document.getElementById('optMod').classList.remove('open');}
 
@@ -2087,13 +2099,14 @@ function renderCodeTab(key){
     </div></td>
   </tr>`).join('');
 }
-function addCodeRow(key){
+async function addCodeRow(key){
   const code=prompt('輸入代號（如 J94）:');
   if(!code)return;
   if(!opts[key])opts[key]=[];
   if(opts[key].includes(code.trim())){alert('此代號已存在');return;}
   opts[key].push(code.trim());
-  saveO();refreshSels();renderCodeTab(key);
+  showLoading(true);await saveO();showLoading(false);
+  refreshSels();renderCodeTab(key);ntf('✓ 已新增');
 }
 function delCode(key,i){
   if(!confirm('確定刪除此代號？'))return;
@@ -2117,7 +2130,7 @@ function openCodeDet(key,i){
   document.getElementById('codeDetOv').classList.add('open');
 }
 function closeCodeDet(){document.getElementById('codeDetOv').classList.remove('open');}
-async function saveCodeDet(){
+async async function saveCodeDet(){
   const newCode=document.getElementById('codeDetCode').value.trim();
   const shortVal=document.getElementById('codeDetShort').value.trim();
   const descVal=document.getElementById('codeDetDesc').value.trim();
@@ -2129,7 +2142,8 @@ async function saveCodeDet(){
   if(oldCode&&oldCode!==newCode){delete codeDesc[codeDetKey][oldCode];delete codeDesc[sk][oldCode];}
   codeDesc[codeDetKey][newCode]=descVal;
   codeDesc[sk][newCode]=shortVal;
-  await saveO();refreshSels();closeCodeDet();renderCodeTab(codeDetKey);ntf('✓ 已儲存');
+  showLoading(true);await saveO();showLoading(false);
+  refreshSels();closeCodeDet();renderCodeTab(codeDetKey);ntf('✓ 已儲存');
 }
 
 
@@ -2541,7 +2555,7 @@ function renderVendorTab(){
   const tb=document.getElementById('vendorTb');if(!tb)return;
   const f=vendors.filter(v=>!q||JSON.stringify(v).toLowerCase().includes(q));
   if(!f.length){tb.innerHTML=`<tr><td colspan="10"><div class="empty">尚無廠商資料</div></td></tr>`;return;}
-  tb.innerHTML=f.map(v=>`<tr onclick="openVendorEdit(vendors.indexOf(v))" style="cursor:pointer">
+  tb.innerHTML=f.map((v,fi)=>{const ri=vendors.indexOf(v);return`<tr onclick="openVendorEdit(${ri})" style="cursor:pointer">
     <td style="font-weight:700;font-family:monospace">${safe(v.vendorCode||'')}</td>
     <td style="font-weight:600">${safe(v.vendor||'')}</td>
     <td style="color:var(--tx2)">${safe(v.agent||'')}</td>
@@ -2552,10 +2566,10 @@ function renderVendorTab(){
     <td style="font-size:11px">${safe(v.contact||'')}</td>
     <td style="font-size:11px">${safe(v.tel||'')}</td>
     <td onclick="event.stopPropagation()"><div class="ac">
-      <button class="btn xs" onclick="openVendorEdit(vendors.indexOf(v))">編輯</button>
-      <button class="btn xs danger" onclick="deleteVendorByIdx(vendors.indexOf(v))">刪</button>
+      <button class="btn xs" onclick="openVendorEdit(${ri})">編輯</button>
+      <button class="btn xs danger" onclick="deleteVendorByIdx(${ri})">刪</button>
     </div></td>
-  </tr>`).join('');
+  </tr>`}).join('');
 }
 
 function openVendorEdit(idxOrNew){
@@ -2614,7 +2628,7 @@ function renderModelTab(){
   const tb=document.getElementById('modelTb');if(!tb)return;
   const f=models.filter(m=>!q||JSON.stringify(m).toLowerCase().includes(q));
   if(!f.length){tb.innerHTML=`<tr><td colspan="8"><div class="empty">尚無型號資料</div></td></tr>`;return;}
-  tb.innerHTML=f.map(m=>`<tr onclick="openModelEdit(models.indexOf(m))" style="cursor:pointer">
+  tb.innerHTML=f.map((m,fi)=>{const ri=models.indexOf(m);return`<tr onclick="openModelEdit(${ri})" style="cursor:pointer">
     <td style="font-weight:700">${safe(m.model||'')}</td>
     <td style="max-width:180px;font-size:11px">${safe(m.name||'')}</td>
     <td style="font-size:11px">${safe(m.country||'')}</td>
@@ -2623,10 +2637,10 @@ function renderModelTab(){
     <td style="font-size:11px">${safe(m.noCert||'')}</td>
     <td style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${safe(m.remark||'')}</td>
     <td onclick="event.stopPropagation()"><div class="ac">
-      <button class="btn xs" onclick="openModelEdit(models.indexOf(m))">編輯</button>
-      <button class="btn xs danger" onclick="deleteModelByIdx(models.indexOf(m))">刪</button>
+      <button class="btn xs" onclick="openModelEdit(${ri})">編輯</button>
+      <button class="btn xs danger" onclick="deleteModelByIdx(${ri})">刪</button>
     </div></td>
-  </tr>`).join('');
+  </tr>`}).join('');
 }
 
 function openModelEdit(idxOrNew){
