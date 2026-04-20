@@ -788,20 +788,20 @@ tbody td{padding:8px 7px;vertical-align:middle}
   </div>
   <div class="detbody">
     <div class="sec"><div class="sechd">廠商基本資料</div>
-      <div class="fgg c4">
-        <!-- Row1: 廠商代號(+dup warn) 廠商名稱 代理商 -->
+      <div class="fgg c3">
+        <!-- Row1: 廠商代號 廠商名稱 代理商 -->
         <div class="fg">
           <label>廠商代號</label>
-          <input id="vd-vendorCode" placeholder="英數4碼，如 YAMA" maxlength="4" style="text-transform:uppercase;font-family:monospace;letter-spacing:3px;font-size:15px" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');checkVendorCodeDupDesk(this.value)">
+          <input id="vd-vendorCode" placeholder="英數4碼" maxlength="4" style="text-transform:uppercase;font-family:monospace;letter-spacing:3px;font-size:15px" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');checkVendorCodeDupDesk(this.value)">
           <div id="vdCodeDupWarn" style="color:var(--rtx);font-size:10px;margin-top:2px;min-height:12px;font-weight:600"></div>
         </div>
-        <div class="fg s2"><label>廠商名稱</label><input id="vd-vendor" placeholder="廠商全名"></div>
+        <div class="fg"><label>廠商名稱</label><input id="vd-vendor" placeholder="廠商全名"></div>
         <div class="fg"><label>代理商</label><input id="vd-agent" placeholder="代理商名稱"></div>
         <!-- Row2: 國家 運送方式 付款方式 貨代代號 -->
         <div class="fg"><label>國家</label><select id="vd-country"></select></div>
         <div class="fg"><label>運送方式</label><select id="vd-shipMode"></select></div>
         <div class="fg"><label>付款方式</label><input id="vd-payment" placeholder="如 T/T 30天"></div>
-        <div class="fg"><label>貨代代號</label><input id="vd-forwarder" placeholder="如 I32"></div>
+        <div class="fg full"><label>貨代代號</label><input id="vd-forwarder" placeholder="如 I32"></div>
       </div>
     </div>
     <div class="sec"><div class="sechd">聯絡資訊</div>
@@ -1039,8 +1039,8 @@ const DO={
   country:['日本','美國','台灣','韓國','德國','荷蘭','以色列','中國','其他'],
   city:['東京','大阪','名古屋','矽谷','奧勒岡','台北','台中','首爾','其他'],
   shipMode:['海運','空運','陸運'],
-  payCode:['J94','J15','K16','BE10'],
-  fwdCode:['I32','I44']
+  payCode:[],
+  fwdCode:[]
 };
 const DN_DEF={
   'YSP10':'Solder Printer 高速高精密印刷機',
@@ -1052,22 +1052,68 @@ const DN_DEF={
 };
 const DR={JPY:0.22,USD:32.8,EUR:36.0,NTD:1};
 const DH=[
-  {date:'2026-01-01',name:'元旦'},{date:'2026-02-14',name:'春節'},{date:'2026-02-16',name:'春節'},
-  {date:'2026-02-17',name:'春節'},{date:'2026-02-18',name:'春節'},{date:'2026-02-19',name:'春節'},
-  {date:'2026-02-20',name:'春節'},{date:'2026-02-27',name:'和平紀念日'},
-  {date:'2026-04-03',name:'兒童節補假'},{date:'2026-04-06',name:'清明節'},
-  {date:'2026-05-01',name:'勞動節'},{date:'2026-06-19',name:'端午節'},
-  {date:'2026-09-28',name:'中秋節補假'},{date:'2026-10-09',name:'國慶日補假'},
-  {date:'2026-10-26',name:'特別假日'},{date:'2026-12-25',name:'聖誕節'}
+  {date:'2026-01-01',name:'元旦'},
+  {date:'2026-01-02',name:'元旦補假'},
+  {date:'2026-02-14',name:'除夕'},
+  {date:'2026-02-15',name:'春節'},
+  {date:'2026-02-16',name:'春節'},
+  {date:'2026-02-17',name:'春節'},
+  {date:'2026-02-18',name:'春節'},
+  {date:'2026-02-19',name:'春節'},
+  {date:'2026-02-20',name:'春節補假'},
+  {date:'2026-02-28',name:'和平紀念日'},
+  {date:'2026-04-03',name:'兒童節補假'},
+  {date:'2026-04-04',name:'兒童節'},
+  {date:'2026-04-05',name:'清明節'},
+  {date:'2026-05-01',name:'勞動節'},
+  {date:'2026-06-19',name:'端午節'},
+  {date:'2026-09-25',name:'中秋節'},
+  {date:'2026-10-09',name:'國慶日補假'},
+  {date:'2026-10-10',name:'國慶日'},
+  {date:'2027-01-01',name:'元旦'},
+  {date:'2027-01-27',name:'除夕'},
+  {date:'2027-01-28',name:'春節'},
+  {date:'2027-01-29',name:'春節'},
+  {date:'2027-01-30',name:'春節'},
+  {date:'2027-01-31',name:'春節'},
+  {date:'2027-02-01',name:'春節'},
+  {date:'2027-02-28',name:'和平紀念日'},
+  {date:'2027-04-04',name:'兒童節'},
+  {date:'2027-04-05',name:'清明節'},
+  {date:'2027-05-01',name:'勞動節'},
+  {date:'2027-05-08',name:'端午節'},
+  {date:'2027-09-14',name:'中秋節'},
+  {date:'2027-10-10',name:'國慶日'},
+  {date:'2028-01-01',name:'元旦'},
+  {date:'2028-01-31',name:'除夕'},
+  {date:'2028-02-01',name:'春節'},
+  {date:'2028-02-02',name:'春節'},
+  {date:'2028-02-03',name:'春節'},
+  {date:'2028-02-04',name:'春節'},
+  {date:'2028-02-05',name:'春節'},
+  {date:'2028-02-28',name:'和平紀念日'},
+  {date:'2028-04-04',name:'兒童節'},
+  {date:'2028-04-05',name:'清明節'},
+  {date:'2028-05-01',name:'勞動節'},
+  {date:'2028-05-27',name:'端午節'},
+  {date:'2028-10-02',name:'中秋節'},
+  {date:'2028-10-10',name:'國慶日'},
+  {date:'2029-01-01',name:'元旦'},
+  {date:'2029-01-17',name:'除夕'},
+  {date:'2029-01-18',name:'春節'},
+  {date:'2029-01-19',name:'春節'},
+  {date:'2029-01-20',name:'春節'},
+  {date:'2029-01-21',name:'春節'},
+  {date:'2029-01-22',name:'春節'},
+  {date:'2029-02-28',name:'和平紀念日'},
+  {date:'2029-04-04',name:'兒童節'},
+  {date:'2029-04-05',name:'清明節'},
+  {date:'2029-05-01',name:'勞動節'},
+  {date:'2029-06-15',name:'端午節'},
+  {date:'2029-09-21',name:'中秋節'},
+  {date:'2029-10-10',name:'國慶日'}
 ];
-const DEF=[{id:1,plant:'3B',dept:'SMT',pr:'FF55-113011',vendor:'YAMAHA',agent:'C.P.M(普科)',model:'YSP10',
-  name:'Solder Printer 高速高精密印刷機',qty:1,currency:'JPY',quote:15272667,amount:15200000,amountNTD:3344000,
-  partno:'CE24-001',lt:'90D',line:'',status:'已交貨',cea:'',sn:'',podate:'2024-12-03',
-  noCert:'否',payment:'J94',forwarder:'I32',pctD:30,pctM:60,pctA:10,
-  remark:'11/29 代理商普科議價Meeting\n12/03 PO發出',
-  deliveries:[{etd:'2024-12-12',eta:'2025-01-10',qty:1,note:'已到廠',
-    payments:[{invoiceDate:'2024-12-03',invoice:'INV-001',arrivalDate:'2025-01-10',arrivalQty:1,
-      stageLabel:'訂金款',pct:'30',payAmt:'4560000',claimType:'請款單',claimDate:'',payDate:'2024-12-10'}]}]}];
+const DEF=[];
 
 let opts={},rates={},hols=[],modelNames={};
 
