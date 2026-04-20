@@ -2098,12 +2098,18 @@ function checkAuth(){
 }
 
 function doLogin(){
+  console.log('[doLogin] called, input value length:', document.getElementById('pwInput')?.value?.length);
   const input = document.getElementById('pwInput');
   const err = document.getElementById('lerr');
+  console.log('[doLogin] PWD match:', input.value === PWD);
   if(input.value === PWD){
     sessionStorage.setItem(SESSION_KEY,'1');
     document.getElementById('ls').style.display='none';
-    startApp();
+    startApp().catch(e=>{
+      console.error('login startApp error:',e);
+      document.getElementById('ls').style.display='flex';
+      err.textContent = '系統啟動失敗，請重新整理頁面';
+    });
   } else {
     err.textContent = '密碼錯誤，請重試';
     input.value = '';
@@ -2445,14 +2451,23 @@ function renderMobDash(){
 const _origStartApp = startApp;
 // Override startApp to also init mobile after load
 async function startApp(){
-  initCalY();
-  await load();
-  migrateModelsFromOpts();  // 若 models 空則從舊 opts.model 遷移
-  refreshSels();
-  if(IS_MOB()){
-    initMob();
-  } else {
-    renderList();
+  console.log('[startApp] called');
+  try{
+    initCalY();
+    console.log('[startApp] initCalY done');
+    await load();
+    migrateModelsFromOpts();
+    refreshSels();
+    if(IS_MOB()){
+      initMob();
+    } else {
+      renderList();
+    }
+  }catch(err){
+    console.error('startApp error:', err);
+    ntf('❌ 啟動失敗: ' + err.message);
+    // Ensure loading overlay is hidden even on error
+    showLoading(false);
   }
 }
 
