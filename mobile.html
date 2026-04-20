@@ -1,0 +1,2057 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="採購管理">
+<meta name="theme-color" content="#9A7A78">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>設備採購管理系統</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  /* ── Morandi Rose系 主色 #E8D8D7 ── */
+  --bg:#F5EFEE;          /* 玫瑰米底 */
+  --sf:#FBF7F6;          /* 卡片暖白 */
+  --sf2:#EDE4E3;         /* 次要底 */
+  --bd:#DDD0CF;          /* 邊框 */
+  --bd2:#C9BABA;         /* 深邊框 */
+  --tx:#2E2321;          /* 主文字 深棕 */
+  --tx2:#6B5E5D;         /* 次要文字 */
+  --tx3:#A89190;         /* 輔助文字 */
+  /* ── 主色：玫瑰灰 #E8D8D7 ── */
+  --rose:#C4A09E;        /* 莫蘭迪玫瑰 (深) */
+  --rose-bg:#E8D8D7;     /* 主色背景 */
+  --rose-tx:#6B3E3C;     /* 玫瑰深字 */
+  /* ── 藍灰 accent ── */
+  --blue:#7A9BB5;        /* 莫蘭迪霧藍 */
+  --blue-bg:#E2EBF2;     /* 淡藍底 */
+  --blue-tx:#3D5F78;     /* 深藍字 */
+  /* ── 鼠尾草綠 ── */
+  --green:#7A9E84;       /* 鼠尾草綠 */
+  --green-bg:#E5EDEA;    /* 淡綠底 */
+  --green-tx:#3D6647;
+  /* ── 赭土橙 ── */
+  --amber:#B8906A;       /* 莫蘭迪赭土 */
+  --amber-bg:#F0E6D8;
+  --amber-tx:#6B4A28;
+  /* ── 玫瑰紅 (error/alert) ── */
+  --red:#B87070;         /* 莫蘭迪玫瑰紅 */
+  --red-bg:#EEE0DF;
+  --red-tx:#6B3030;
+  --rose-bg:#F0E4E3;   /* 淡玫瑰底 */
+  /* ── 主操作色 (用於按鈕/選中) ── */
+  --accent:#9A7A78;      /* 玫瑰灰深 */
+  --accent-bg:#E8D8D7;   /* = 主色 */
+  --r:12px;--rl:16px;
+  --tab-h:62px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+
+/* ── BASE ── */
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;font-size:15px;-webkit-text-size-adjust:100%;overflow:hidden}
+
+/* ── APP SHELL ── */
+#app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto;background:var(--sf);position:relative;box-shadow:0 0 40px rgba(0,0,0,.15)}
+
+/* ── STATUS BAR SPACER ── */
+#statusBar{height:var(--safe-top);background:#3A5480;flex-shrink:0}
+
+/* ── HEADER ── */
+.app-header{background:#9A7A78;color:#fff;padding:14px 16px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.app-header h1{font-size:17px;font-weight:700;flex:1}
+.app-header .hdr-btn{background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 10px;border-radius:10px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit;min-height:36px}
+.app-header .hdr-btn:active{background:rgba(255,255,255,.35)}
+
+/* ── PAGE CONTAINER ── */
+#pageContainer{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);display:none;padding-bottom:calc(var(--tab-h) + var(--safe-bot) + 8px)}
+.page.active{display:block}
+
+/* ── BOTTOM TAB BAR ── */
+#tabBar{display:flex;background:var(--sf);border-top:1px solid var(--bd);height:calc(var(--tab-h) + var(--safe-bot));padding-bottom:var(--safe-bot);flex-shrink:0;box-shadow:0 -2px 12px rgba(0,0,0,.07)}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;color:var(--tx3);font-size:10px;font-weight:500;cursor:pointer;padding:6px 0;transition:color .2s;font-family:inherit}
+.tab-btn .tab-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.tab-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
+.tab-btn.active{color:#93939B}
+.tab-btn.active .tab-icon{background:#EEECEC}
+.tab-btn.active svg{stroke:#93939B}
+
+/* ── LOGIN SCREEN ── */
+#loginScreen{position:fixed;inset:0;background:#9A7A78;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px}
+.login-logo{width:80px;height:80px;background:rgba(255,255,255,.15);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:24px}
+.login-logo svg{width:44px;height:44px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#loginScreen h1{color:#fff;font-size:22px;font-weight:700;margin-bottom:6px;text-align:center}
+#loginScreen p{color:rgba(255,255,255,.7);font-size:13px;margin-bottom:32px;text-align:center}
+.login-input{width:100%;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:14px;padding:14px 16px;color:#fff;font-size:22px;text-align:center;letter-spacing:8px;font-family:monospace;margin-bottom:14px;-webkit-appearance:none;outline:none;transition:border-color .2s}
+.login-input::placeholder{color:rgba(255,255,255,.4);letter-spacing:3px;font-size:16px}
+.login-input:focus{border-color:rgba(255,255,255,.8)}
+.login-btn{width:100%;background:#fff;color:var(--blue);border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s}
+.login-btn:active{opacity:.85}
+.login-err{color:rgba(255,200,200,1);font-size:13px;text-align:center;margin-top:8px;min-height:18px}
+
+/* ── SEARCH BAR ── */
+.search-bar{padding:10px 14px 6px;background:var(--sf);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--bd)}
+.search-inner{display:flex;align-items:center;gap:8px;background:var(--sf2);border-radius:12px;padding:9px 12px}
+.search-inner svg{width:18px;height:18px;stroke:var(--tx3);flex-shrink:0}
+.search-inner input{flex:1;border:none;background:none;font-size:15px;color:var(--tx);font-family:inherit;outline:none}
+.search-inner input::placeholder{color:var(--tx3)}
+
+/* ── FILTER PILLS ── */
+.filter-pills{display:flex;gap:7px;padding:8px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:var(--sf)}
+.filter-pills::-webkit-scrollbar{display:none}
+.pill{padding:5px 13px;border-radius:20px;font-size:12px;font-weight:500;border:1.5px solid var(--bd);color:var(--tx2);background:var(--sf);white-space:nowrap;cursor:pointer;transition:all .15s;flex-shrink:0}
+.pill.active{background:#93939B;border-color:#93939B;color:#fff}
+
+/* ── LIST CARDS ── */
+.card-list{padding:10px 14px;display:flex;flex-direction:column;gap:10px}
+.rec-card{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);padding:14px 15px;cursor:pointer;transition:all .15s;-webkit-user-select:none}
+.rec-card:active{background:var(--sf2);transform:scale(.99)}
+.rec-card-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.rec-card-icon{width:42px;height:42px;border-radius:11px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rec-card-icon svg{width:22px;height:22px;stroke:#3A5480;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rec-card-info{flex:1;min-width:0}
+.rec-card-title{font-size:15px;font-weight:700;color:var(--tx);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec-card-sub{font-size:12px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec-card-badge{flex-shrink:0}
+.rec-card-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.rec-card-amount{font-size:16px;font-weight:700;color:#3A5480}
+.rec-card-tags{display:flex;gap:5px;flex-wrap:wrap}
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.tag-status-0{background:#F0E8D8;color:#9A7040}
+.tag-status-2{background:#E8EDF5;color:#3A5480}
+.tag-status-3{background:#E8EDE9;color:#5A7A62}
+.tag-cur{background:var(--sf2);color:var(--tx2)}
+.tag-dept-smt{background:#e8f0fb;color:#0c3d70}
+.tag-dept-lga{background:var(--green-bg);color:var(--green)}
+.tag-dept-qfn{background:var(--amber-bg);color:var(--amber)}
+
+/* ── EMPTY STATE ── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 32px;gap:12px}
+.empty-state svg{width:56px;height:56px;stroke:var(--tx3);fill:none;stroke-width:1.5}
+.empty-state p{font-size:14px;color:var(--tx3);text-align:center}
+
+/* ── FAB (Floating Action Button) ── */
+.fab{position:fixed;bottom:calc(var(--tab-h) + var(--safe-bot) + 16px);right:20px;width:54px;height:54px;background:#3A5480;border-radius:27px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(58,84,128,.35);z-index:40;transition:transform .15s}
+.fab:active{transform:scale(.93)}
+.fab svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── DETAIL PAGE ── */
+.det-page{position:fixed;inset:0;background:var(--bg);z-index:80;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94)}
+.det-page.open{transform:translateX(0)}
+.det-nav{background:var(--sf);border-bottom:1px solid var(--bd);padding:12px 14px;display:flex;align-items:center;gap:10px;padding-top:calc(var(--safe-top) + 12px);flex-shrink:0}
+.det-nav-back{background:none;border:none;color:#3A5480;font-size:16px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;padding:4px 0;font-family:inherit}
+.det-nav-back svg{width:20px;height:20px;stroke:#3A5480;fill:none;stroke-width:2;stroke-linecap:round}
+.det-nav h2{flex:1;font-size:16px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.det-nav-save{background:#93939B;color:#fff;border:none;padding:8px 16px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.det-nav-save:active{opacity:.85}
+.det-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(var(--safe-bot)+20px)}
+
+/* ── FORM SECTIONS ── */
+.form-section{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);margin-bottom:12px;overflow:hidden}
+.form-section-title{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;padding:12px 15px 0}
+.form-row{display:flex;flex-direction:column;padding:10px 15px;border-bottom:1px solid var(--bd)}
+.form-row:last-child{border-bottom:none}
+.form-row.row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.form-label{font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.form-input{font-size:16px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;padding:2px 0;-webkit-appearance:none}
+.form-input::placeholder{color:var(--tx3)}
+.form-select{font-size:15px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;-webkit-appearance:none;padding:2px 0}
+.form-input-box{background:var(--sf2);border-radius:10px;padding:10px 12px;margin-top:2px}
+.form-input-box .form-input,.form-input-box .form-select{background:none}
+.form-textarea{font-size:15px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;resize:none;min-height:90px;line-height:1.6;padding:2px 0}
+.form-readonly{font-size:16px;color:var(--tx3);padding:2px 0}
+
+/* ── DELIVERY BATCHES ── */
+.batch-card{background:var(--sf2);border-radius:var(--r);padding:12px 13px;margin-bottom:9px;border:1px solid var(--bd)}
+.batch-header{display:flex;align-items:center;margin-bottom:10px}
+.batch-num{font-size:13px;font-weight:700;flex:1;color:#3A5480}
+.batch-del-btn{background:var(--red-bg);color:var(--red);border:none;border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit}
+.batch-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.batch-field{display:flex;flex-direction:column;gap:4px}
+.batch-field label{font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase}
+.batch-field input{font-size:14px;padding:7px 9px;border:1px solid var(--bd);border-radius:8px;background:var(--sf);color:var(--tx);font-family:inherit;-webkit-appearance:none;outline:none}
+.batch-field input:focus{border-color:var(--rose)}
+.pay-row-m{background:var(--sf);border-radius:8px;padding:9px 10px;margin-bottom:7px;border:1px solid var(--bd)}
+.pay-row-m-hd{display:flex;align-items:center;margin-bottom:8px}
+.pay-row-m-num{font-size:12px;color:var(--tx2);flex:1}
+.pay-del-btn{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:0 4px}
+.pay-grid-m{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.pay-field-m{display:flex;flex-direction:column;gap:3px}
+.pay-field-m label{font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase}
+.pay-field-m input,.pay-field-m select{font-size:14px;padding:7px 9px;border:1px solid var(--bd);border-radius:8px;background:var(--sf2);color:var(--tx);font-family:inherit;-webkit-appearance:none;outline:none;width:100%}
+.pay-field-m input:focus,.pay-field-m select:focus{border-color:var(--rose)}
+.add-batch-btn{width:100%;background:none;border:2px dashed var(--bd2);border-radius:var(--r);padding:12px;font-size:14px;color:#3A5480;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px}
+.add-pay-btn{width:100%;background:none;border:1px dashed var(--bd2);border-radius:8px;padding:8px;font-size:13px;color:#3A5480;cursor:pointer;font-family:inherit;margin-top:4px}
+
+/* ── STATS PAGE ── */
+.stat-section{padding:14px}
+.stat-card{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);padding:16px;margin-bottom:10px}
+.stat-card h3{font-size:12px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-item{background:var(--sf2);border-radius:12px;padding:12px 13px}
+.stat-item .si-val{font-size:22px;font-weight:700;color:var(--blue);line-height:1.2}
+.stat-item .si-lbl{font-size:11px;color:var(--tx3);margin-top:3px}
+.stat-item.full{grid-column:1/-1;background:linear-gradient(135deg,#3A5480 0%,#2A3F65 100%)}
+.stat-item.full .si-val{color:#fff;font-size:26px}
+.stat-item.full .si-lbl{color:rgba(255,255,255,.75)}
+.bar-item{margin-bottom:9px}
+.bar-item-hd{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;color:var(--tx2)}
+.bar-track{height:7px;background:var(--sf2);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .6s}
+
+/* ── MORE PAGE ── */
+.more-section{padding:14px}
+.more-card{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);margin-bottom:10px;overflow:hidden}
+.more-item{display:flex;align-items:center;padding:14px 15px;border-bottom:1px solid var(--bd);cursor:pointer;gap:12px}
+.more-item:last-child{border-bottom:none}
+.more-item:active{background:var(--sf2)}
+.more-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.more-icon svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.more-item-txt{flex:1}
+.more-item-title{font-size:15px;font-weight:600;color:var(--tx)}
+.more-item-sub{font-size:12px;color:var(--tx3);margin-top:1px}
+.more-chevron{color:var(--tx3);font-size:16px}
+
+/* ── LOADING ── */
+#loadingOverlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:300;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+#loadingOverlay.show{display:flex}
+.spinner{width:32px;height:32px;border:3px solid var(--bd);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:calc(var(--tab-h) + var(--safe-bot) + 12px);left:50%;transform:translateX(-50%) translateY(10px);background:rgba(13,27,42,.9);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:500;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── PAY PAGE CARDS ── */
+.pay-card-m{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);padding:14px 15px;margin-bottom:9px;cursor:pointer}
+.pay-card-m:active{background:var(--sf2)}
+.pay-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.pay-card-po{font-size:12px;font-family:monospace;color:var(--tx3)}
+.pay-card-name{font-size:15px;font-weight:700;color:var(--tx);margin-bottom:4px}
+.pay-card-meta{font-size:12px;color:var(--tx2);display:flex;gap:8px;flex-wrap:wrap}
+.pay-status{display:inline-block;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:600}
+.ps-paid{background:#E8EDE9;color:#5A7A62}
+.ps-partial{background:#E8EDF5;color:#3A5480}
+.ps-unpaid{background:#EEE2E0;color:#96544A}
+.ps-planned{background:#EEE9E3;color:#6B6560}
+
+/* ── DASHBOARD ── */
+.stat-card{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);padding:14px 15px}
+.stat-card-title{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em}
+.dash-card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:12px 13px}
+.dash-card.full-w{grid-column:1/-1}
+.dc-lbl{font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.dc-val{font-size:20px;font-weight:700;color:var(--tx);line-height:1.1}
+.dc-sub{font-size:11px;color:var(--tx3);margin-top:3px}
+
+/* ── SETTINGS ── */
+.set-section{padding:14px 14px calc(var(--tab-h)+var(--safe-bot)+20px)}
+.set-group-title{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;padding:0 4px;margin-bottom:7px;margin-top:16px}
+.set-group-title:first-child{margin-top:0}
+.set-card{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);overflow:hidden;margin-bottom:4px}
+.set-item{display:flex;align-items:center;padding:13px 14px;gap:12px;border-bottom:1px solid var(--bd);cursor:pointer;transition:background .15s}
+.set-item:last-child{border-bottom:none}
+.set-item:active{background:var(--sf2)}
+.set-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.set-icon svg{width:20px;height:20px;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.set-item-txt{flex:1}
+.set-item-title{font-size:15px;font-weight:600;color:var(--tx)}
+.set-item-sub{font-size:12px;color:var(--tx3);margin-top:2px}
+.set-chevron{width:18px;height:18px;fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0}
+
+/* ── SETTINGS MODAL SPECIFIC ── */
+.set-modal-section{margin-bottom:16px}
+.set-modal-label{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding:0 2px}
+.rate-row{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--sf);border-radius:12px;border:1px solid var(--bd);margin-bottom:7px}
+.rate-row .cur-badge{font-size:13px;font-weight:700;color:var(--tx);min-width:40px}
+.rate-row input{flex:1;font-size:17px;border:none;background:none;color:var(--tx);font-family:inherit;outline:none;text-align:right}
+.rate-row .rate-unit{font-size:12px;color:var(--tx3)}
+.rate-row-add{display:flex;gap:8px;margin-top:8px}
+.rate-row-add input{flex:1;font-size:15px;padding:9px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--sf2);color:var(--tx);font-family:inherit;outline:none}
+.hol-row{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--sf);border-radius:12px;border:1px solid var(--bd);margin-bottom:7px}
+.hol-row .hol-date{font-size:13px;font-weight:600;color:var(--tx);min-width:90px}
+.hol-row .hol-name{flex:1;font-size:13px;color:var(--tx2)}
+.hol-del{background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 4px;line-height:1}
+.opt-cat-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.opt-cat-pill{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1.5px solid var(--bd);color:var(--tx2);background:var(--sf);cursor:pointer;white-space:nowrap;transition:all .15s}
+.opt-cat-pill.active{background:#93939B;border-color:#93939B;color:#fff}
+.opt-item-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--sf);border-radius:10px;border:1px solid var(--bd);margin-bottom:6px}
+.opt-item-row input{flex:1;font-size:15px;border:none;background:none;color:var(--tx);font-family:inherit;outline:none}
+.opt-item-del{background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 4px}
+.code-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--sf);border-radius:12px;border:1px solid var(--bd);margin-bottom:7px;cursor:pointer}
+.code-row:active{background:var(--sf2)}
+.code-badge{font-size:13px;font-weight:700;color:var(--tx);min-width:50px;font-family:monospace}
+.code-short{flex:1;font-size:12px;color:var(--tx2)}
+.add-item-row{display:flex;gap:8px;margin-top:8px}
+.add-item-row input{flex:1;font-size:15px;padding:9px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--sf2);color:var(--tx);font-family:inherit;outline:none}
+.add-item-btn{padding:9px 14px;border-radius:10px;background:#93939B;color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div id="loginScreen">
+  <div class="login-logo">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
+  </div>
+  <h1>設備採購管理</h1>
+  <p>Buyer &amp; Sourcer 專用系統</p>
+  <input type="password" class="login-input" id="pwInput" placeholder="輸入密碼" maxlength="20" onkeydown="if(event.key==='Enter')doLogin()">
+  <button class="login-btn" onclick="doLogin()">登　入</button>
+  <div class="login-err" id="loginErr"></div>
+</div>
+
+<!-- Main App -->
+<div id="app" style="display:none">
+  <div id="statusBar"></div>
+
+  <!-- Header -->
+  <div class="app-header" id="appHeader">
+    <h1 id="headerTitle">採購清單</h1>
+    <button class="hdr-btn" onclick="showSearch()" id="searchBtn">
+      <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <button class="hdr-btn" onclick="openDet('new')" id="addBtn">
+      <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+
+  <!-- Pages -->
+  <div id="pageContainer">
+
+    <!-- LIST PAGE -->
+    <div class="page active" id="page-list">
+      <div class="search-bar" id="searchBar" style="display:none">
+        <div class="search-inner">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="srchInput" placeholder="搜尋 PO / 廠商 / 設備..." oninput="renderCards()">
+        </div>
+      </div>
+      <div class="filter-pills" id="filterPills">
+        <div class="pill active" onclick="setFilter('all',this)">全部</div>
+        <div class="pill" onclick="setFilter('status:處理中',this)">處理中</div>
+        <div class="pill" onclick="setFilter('status:待交貨',this)">待交貨</div>
+        <div class="pill" onclick="setFilter('status:已交貨',this)">已交貨</div>
+        <div class="pill" onclick="setFilter('cur:JPY',this)">JPY</div>
+        <div class="pill" onclick="setFilter('cur:USD',this)">USD</div>
+        <div class="pill" onclick="setFilter('cur:NTD',this)">NTD</div>
+      </div>
+      <div class="card-list" id="cardList"></div>
+    </div>
+
+    <!-- PAYMENT PAGE -->
+    <div class="page" id="page-pay">
+      <div class="filter-pills">
+        <div class="pill active" onclick="setPayFilter('all',this)">全部</div>
+        <div class="pill" onclick="setPayFilter('排定中',this)">排定中</div>
+        <div class="pill" onclick="setPayFilter('付款中',this)">付款中</div>
+        <div class="pill" onclick="setPayFilter('已付清',this)">已付清</div>
+      </div>
+      <div class="card-list" id="payCardList"></div>
+    </div>
+
+    <!-- CALENDAR PAGE -->
+    <div class="page" id="page-cal">
+      <div style="padding:12px 14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <button class="hdr-btn" style="background:var(--sf2);color:var(--blue);border:1px solid var(--bd)" onclick="calPrev()">◀</button>
+          <select id="calY" onchange="renderCal()" style="flex:1;font-size:15px;padding:7px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);font-family:inherit;outline:none"></select>
+          <select id="calM" onchange="renderCal()" style="flex:1;font-size:15px;padding:7px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);font-family:inherit;outline:none">
+            <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+          </select>
+          <button class="hdr-btn" style="background:var(--sf2);color:var(--blue);border:1px solid var(--bd)" onclick="calNext()">▶</button>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:11px;margin-bottom:10px">
+          <span><span style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:50%;margin-right:3px"></span>ETD</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:#004085;border-radius:50%;margin-right:3px"></span>ETA(L開頭)</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:#5c1018;border-radius:50%;margin-right:3px"></span>ETA(F開頭)</span>
+        </div>
+        <div id="calGrid"></div>
+      </div>
+    </div>
+
+    <!-- MORE PAGE -->
+    <div class="page" id="page-more">
+      <div class="more-section">
+        <div id="statsPreview" style="margin-bottom:10px"></div>
+        <div class="more-card">
+          <div class="more-item" onclick="exportJSON()">
+            <div class="more-icon" style="background:#3A5480"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+            <div class="more-item-txt"><div class="more-item-title">備份資料</div><div class="more-item-sub">下載 JSON 備份檔案</div></div>
+            <div class="more-chevron">›</div>
+          </div>
+          <label class="more-item">
+            <div class="more-icon" style="background:#16a34a"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+            <div class="more-item-txt"><div class="more-item-title">還原備份</div><div class="more-item-sub">從 JSON 檔案還原資料</div></div>
+            <div class="more-chevron">›</div>
+            <input type="file" accept=".json" style="display:none" onchange="importJSON(event)">
+          </label>
+          <div class="more-item" onclick="exportExcel()">
+            <div class="more-icon" style="background:#16a34a"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+            <div class="more-item-txt"><div class="more-item-title">匯出 Excel</div><div class="more-item-sub">下載設備歷程 & 設備價格</div></div>
+            <div class="more-chevron">›</div>
+          </div>
+        </div>
+        <div class="more-card">
+          <div class="more-item" onclick="openSettings('opts')">
+            <div class="more-icon" style="background:#7c3aed"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg></div>
+            <div class="more-item-txt"><div class="more-item-title">選單維護</div><div class="more-item-sub">廠區、部門、期別、請款方式等</div></div>
+            <div class="more-chevron">›</div>
+          </div>
+          <div class="more-item" onclick="openSettings('rates')">
+            <div class="more-icon" style="background:#d97706"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+            <div class="more-item-txt"><div class="more-item-title">匯率維護</div><div class="more-item-sub">各幣別兌台幣匯率設定</div></div>
+            <div class="more-chevron">›</div>
+          </div>
+          <div class="more-item" onclick="openSettings('hols')">
+            <div class="more-icon" style="background:#0891b2"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+            <div class="more-item-txt"><div class="more-item-title">假日維護</div><div class="more-item-sub">國定假日設定</div></div>
+            <div class="more-chevron">›</div>
+          </div>
+        </div>
+        <div style="text-align:center;padding:16px;font-size:12px;color:var(--tx3)">設備採購管理系統 · Buyer & Sourcer</div>
+      </div>
+    </div>
+
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page" id="page-dash">
+      <div style="padding:14px 14px calc(var(--tab-h)+var(--safe-bot)+20px)">
+        <div id="dashCards" style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px"></div>
+        <div class="stat-card" style="margin-bottom:10px">
+          <div class="stat-card-title">交期追蹤 ETD（未交貨）</div>
+          <div id="etdList" style="display:flex;flex-direction:column;gap:7px;margin-top:8px"></div>
+        </div>
+        <div class="stat-card" style="margin-bottom:10px">
+          <div class="stat-card-title">依廠商台幣金額</div>
+          <div id="vendorBars" style="margin-top:8px"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-title">依部門台幣金額</div>
+          <div id="deptBars" style="margin-top:8px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div class="page" id="page-set">
+      <div class="set-section">
+        <div class="set-group-title">資料管理</div>
+        <div class="set-card">
+          <div class="set-item" onclick="exportJSON()">
+            <div class="set-icon" style="background:#E2EBF2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#3D5F78" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <div class="set-item-txt"><div class="set-item-title">備份資料</div><div class="set-item-sub">下載 JSON 備份檔案</div></div>
+            <svg class="set-chevron" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+          </div>
+          <label class="set-item" style="cursor:pointer">
+            <div class="set-icon" style="background:#E5EDEA">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#3D6647" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <div class="set-item-txt"><div class="set-item-title">還原備份</div><div class="set-item-sub">從 JSON 檔案還原資料</div></div>
+            <svg class="set-chevron" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+            <input type="file" accept=".json" style="display:none" onchange="importJSON(event)">
+          </label>
+          <div class="set-item" onclick="exportExcel()">
+            <div class="set-icon" style="background:#E5EDEA">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#3D6647" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div class="set-item-txt"><div class="set-item-title">匯出 Excel</div><div class="set-item-sub">設備歷程 &amp; 設備價格</div></div>
+            <svg class="set-chevron" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+          </div>
+          </div>
+        <div class="set-group-title">廠商 &amp; 設備維護</div>
+        <div class="set-card">
+          <div class="set-item" onclick="openVendorMaint()">
+            <div class="set-icon" style="background:#E2EBF2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#3D5F78" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+            </div>
+            <div class="set-item-txt"><div class="set-item-title">廠商維護</div><div class="set-item-sub">廠商代號、聯絡資料管理</div></div>
+            <svg class="set-chevron" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+          </div>
+          <div class="set-item" onclick="openModelMaint()">
+            <div class="set-icon" style="background:#E5EDEA">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#3D6647" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+            </div>
+            <div class="set-item-txt"><div class="set-item-title">設備型號維護</div><div class="set-item-sub">型號、設備名稱、規格管理</div></div>
+            <svg class="set-chevron" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+          </div>
+        </div>
+        <div class="set-group-title">系統設定</div>
+        <div class="set-card">
+          <div class="set-item" onclick="openSetModal('opts')">
+            <div class="set-icon" style="background:#F0E6D8">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#6B4A28" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </div>
+            <div class="set-item-txt"><div class="set-item-title">選單維護</div><div class="set-item-sub">廠區、部門、期別、請款方式等</div></div>
+            <svg class="set-chevron" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+          </div>
+          <div class="set-item" onclick="openSetModal('rates')">
+            <div class="set-icon" style="background:#F0E6D8">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#6B4A28" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            </div>
+            <div class="set-item-txt"><div class="set-item-title">匯率維護</div><div class="set-item-sub">各幣別兌台幣匯率設定</div></div>
+            <svg class="set-chevron" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+          </div>
+          <div class="set-item" onclick="openSetModal('hols')">
+            <div class="set-icon" style="background:var(--rose-bg)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--rose)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r="1" fill="var(--rose)"/><circle cx="12" cy="15" r="1" fill="var(--rose)"/></svg>
+            </div>
+            <div class="set-item-txt"><div class="set-item-title">假日維護</div><div class="set-item-sub">國定假日設定</div></div>
+            <svg class="set-chevron" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+          </div>
+          <div class="set-item" onclick="openSetModal('codes')">
+            <div class="set-icon" style="background:#E2EBF2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#3D5F78" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div class="set-item-txt"><div class="set-item-title">付款 / 貨代代號</div><div class="set-item-sub">代號與備註管理</div></div>
+            <svg class="set-chevron" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /pageContainer -->
+
+  <!-- Bottom Tab Bar -->
+  <div id="tabBar">
+    <button class="tab-btn active" id="tab-list" onclick="switchTab('list')">
+      <div class="tab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </div>
+      採購
+    </button>
+    <button class="tab-btn" id="tab-pay" onclick="switchTab('pay')">
+      <div class="tab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="3"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
+      </div>
+      付款
+    </button>
+    <button class="tab-btn" id="tab-cal" onclick="switchTab('cal')">
+      <div class="tab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="15" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="15" r="1.2" fill="currentColor" stroke="none"/></svg>
+      </div>
+      行事曆
+    </button>
+    <button class="tab-btn" id="tab-dash" onclick="switchTab('dash')">
+      <div class="tab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="4" height="8" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/><line x1="3" y1="3" x2="21" y2="3" stroke-dasharray="2 2"/></svg>
+      </div>
+      儀表板
+    </button>
+    <button class="tab-btn" id="tab-set" onclick="switchTab('set')">
+      <div class="tab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+      </div>
+      設定
+    </button>
+  </div>
+
+</div><!-- /app -->
+
+<!-- Vendor Maintenance Page (slide in) -->
+<div class="det-page" id="vendorMaintPage">
+  <div class="det-nav">
+    <button class="det-nav-back" onclick="document.getElementById('vendorMaintPage').classList.remove('open')">
+      <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
+    </button>
+    <h2>廠商維護</h2>
+    <button class="det-nav-save" onclick="addVendorNew()">＋ 新增</button>
+  </div>
+  <div class="det-scroll" style="padding:14px">
+    <div id="vendorList"></div>
+  </div>
+</div>
+
+<!-- Vendor Edit Page -->
+<div class="det-page" id="vendorEditPage">
+  <div class="det-nav">
+    <button class="det-nav-back" onclick="closeVendorEdit()">
+      <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
+    </button>
+    <h2 id="vendorEditTitle">編輯廠商</h2>
+    <button class="det-nav-save" onclick="saveVendorEdit()">儲存</button>
+  </div>
+  <div class="det-scroll" style="padding:14px">
+    <div class="form-section">
+      <div class="form-section-title">廠商基本資料</div>
+      <div class="form-row"><div class="form-label">廠商代號</div><div class="form-input-box"><input id="ve-vendorCode" class="form-input" placeholder="如 YAM（英數4碼）" maxlength="4" style="text-transform:uppercase;font-family:monospace;font-size:18px;letter-spacing:3px" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');checkVendorCodeDup(this.value)">
+        <div id="veCodeDupWarn" style="color:#B87070;font-size:11px;margin-top:4px;min-height:14px"></div></div></div>
+      <div class="form-row row-2">
+        <div><div class="form-label">廠商名稱</div><div class="form-input-box"><input id="ve-vendor" class="form-input" placeholder="廠商全名"></div></div>
+        <div><div class="form-label">代理商</div><div class="form-input-box"><input id="ve-agent" class="form-input" placeholder="代理商"></div></div>
+      </div>
+      <div class="form-row row-2">
+        <div><div class="form-label">國家</div><div class="form-input-box"><select id="ve-country" class="form-select"></select></div></div>
+        <div><div class="form-label">運送方式</div><div class="form-input-box"><select id="ve-shipMode" class="form-select"></select></div></div>
+      </div>
+      <div class="form-row row-2">
+        <div><div class="form-label">付款方式</div><div class="form-input-box"><input id="ve-payment" class="form-input" placeholder="付款方式"></div></div>
+        <div><div class="form-label">貨代代號</div><div class="form-input-box"><input id="ve-forwarder" class="form-input" placeholder="貨代代號"></div></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">聯絡資訊</div>
+      <div class="form-row row-2">
+        <div><div class="form-label">公司電話</div><div class="form-input-box"><input id="ve-tel" class="form-input" type="tel" placeholder="公司電話"></div></div>
+        <div><div class="form-label">行動電話</div><div class="form-input-box"><input id="ve-mobile" class="form-input" type="tel" placeholder="行動電話"></div></div>
+      </div>
+      <div class="form-row"><div class="form-label">聯絡人</div><div class="form-input-box"><input id="ve-contact" class="form-input" placeholder="聯絡人姓名"></div></div>
+      <div class="form-row">
+        <div class="form-label">E-mail <span style="font-size:10px;color:var(--tx3);font-weight:400">多個 mail 用逗號或 Tab 分隔</span></div>
+        <div class="form-input-box"><textarea id="ve-email" class="form-textarea" rows="5" placeholder="mail1@example.com, mail2@example.com"></textarea></div>
+      </div>
+      <div class="form-row"><div class="form-label">備註</div><div class="form-input-box"><textarea id="ve-remark" class="form-textarea" rows="4" placeholder="備註..."></textarea></div></div>
+    </div>
+    <button id="vendorDelBtn" onclick="deleteVendorEdit()" style="width:100%;margin-top:6px;padding:14px;background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:var(--rl);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">刪除此廠商</button>
+  </div>
+</div>
+
+<!-- Model Maintenance Page -->
+<div class="det-page" id="modelMaintPage">
+  <div class="det-nav">
+    <button class="det-nav-back" onclick="document.getElementById('modelMaintPage').classList.remove('open')">
+      <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
+    </button>
+    <h2>設備型號維護</h2>
+    <button class="det-nav-save" onclick="addModelNew()">＋ 新增</button>
+  </div>
+  <div class="det-scroll" style="padding:14px">
+    <div id="modelList"></div>
+  </div>
+</div>
+
+<!-- Model Edit Page -->
+<div class="det-page" id="modelEditPage">
+  <div class="det-nav">
+    <button class="det-nav-back" onclick="closeModelEdit()">
+      <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
+    </button>
+    <h2 id="modelEditTitle">編輯設備型號</h2>
+    <button class="det-nav-save" onclick="saveModelEdit()">儲存</button>
+  </div>
+  <div class="det-scroll" style="padding:14px">
+    <div class="form-section">
+      <div class="form-section-title">型號資料</div>
+      <div class="form-row">
+        <div class="form-label">設備型號</div>
+        <div class="form-input-box"><input id="me-model" class="form-input" placeholder="型號代碼" oninput="checkModelDup(this.value)"></div>
+        <div id="meModelDupWarn" style="color:#B87070;font-size:11px;margin-top:4px;min-height:14px"></div>
+      </div>
+      <div class="form-row"><div class="form-label">設備名稱</div><div class="form-input-box"><input id="me-name" class="form-input" placeholder="設備完整名稱"></div></div>
+      <div class="form-row row-2">
+        <div><div class="form-label">國家</div><div class="form-input-box"><select id="me-country" class="form-select"></select></div></div>
+        <div><div class="form-label">產地城市</div><div class="form-input-box"><select id="me-city" class="form-select"></select></div></div>
+      </div>
+      <div class="form-row row-2">
+        <div><div class="form-label">吊掛</div><div class="form-input-box"><select id="me-rigging" class="form-select"><option value="">—</option><option>是</option><option>否</option><option>-</option></select></div></div>
+        <div><div class="form-label">無產證</div><div class="form-input-box"><select id="me-noCert" class="form-select"><option value="">—</option><option>是</option><option>否</option><option>-</option></select></div></div>
+      </div>
+      <div class="form-row"><div class="form-label">備註</div><div class="form-input-box"><textarea id="me-remark" class="form-textarea" rows="4" placeholder="備註..."></textarea></div></div>
+    </div>
+    <button id="modelDelBtn" onclick="deleteModelEdit()" style="width:100%;margin-top:6px;padding:14px;background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:var(--rl);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">刪除此型號</button>
+  </div>
+</div>
+
+<!-- Settings Modals (slide in from right, same as det-page) -->
+<div class="det-page" id="setModal">
+  <div class="det-nav">
+    <button class="det-nav-back" onclick="closeSetModal()">
+      <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
+    </button>
+    <h2 id="setModalTitle">設定</h2>
+    <button class="det-nav-save" id="setModalSaveBtn" onclick="saveSetModal()">儲存</button>
+  </div>
+  <div class="det-scroll" id="setModalBody" style="padding:14px"></div>
+</div>
+
+<!-- Detail Page (slide in) -->
+<div class="det-page" id="detPage">
+  <div class="det-nav">
+    <button class="det-nav-back" onclick="closeDet()">
+      <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
+    </button>
+    <h2 id="detTitle">新增採購</h2>
+    <button class="det-nav-save" onclick="saveRec()">儲存</button>
+  </div>
+  <div class="det-scroll" id="detScroll">
+
+    <!-- 基本資料 -->
+    <div class="form-section">
+      <div class="form-section-title">基本資料</div>
+      <!-- Row1: 廠區 部門 PO號 狀態 -->
+      <div class="form-row row-2">
+        <div><div class="form-label">廠區</div><div class="form-input-box"><select id="f-plant" class="form-select"></select></div></div>
+        <div><div class="form-label">部門</div><div class="form-input-box"><select id="f-dept" class="form-select"></select></div></div>
+      </div>
+      <div class="form-row row-2">
+        <div><div class="form-label">PO號碼</div><div class="form-input-box"><input id="f-pr" class="form-input" placeholder="PO號碼"></div></div>
+        <div><div class="form-label">狀態</div><div class="form-input-box"><select id="f-status" class="form-select"><option>處理中</option><option>待交貨</option><option>已交貨</option></select></div></div>
+      </div>
+      <!-- Row2: 廠商代號 廠商 代理商 設備型號 -->
+      <div class="form-row">
+        <div class="form-label">廠商代號 <span style="font-size:10px;color:var(--tx3);font-weight:400">輸入後自動帶入廠商資料</span></div>
+        <div class="form-input-box" style="display:flex;gap:8px;align-items:center">
+          <input id="f-vendorCode" class="form-input" placeholder="如 YAM" maxlength="4" style="flex:1;text-transform:uppercase" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');autoFillVendor(this.value)">
+          <button onclick="openVendorPicker()" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;font-family:inherit">選擇</button>
+        </div>
+      </div>
+      <div class="form-row row-2">
+        <div><div class="form-label">廠商</div><div class="form-input-box"><input id="f-vendor" class="form-input" placeholder="廠商名稱"></div></div>
+        <div><div class="form-label">代理商</div><div class="form-input-box"><input id="f-agent" class="form-input" placeholder="代理商"></div></div>
+      </div>
+      <!-- Row3: 數量 + 設備名稱 -->
+      <div class="form-row row-2">
+        <div><div class="form-label">設備型號</div><div class="form-input-box"><select id="f-model" class="form-select" onchange="autoFillModel()"></select></div></div>
+        <div><div class="form-label">數量（總）</div><div class="form-input-box"><input id="f-qty" class="form-input" type="number" value="1" min="1" oninput="recalcAll();checkQty()"></div></div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">設備名稱</div>
+        <div class="form-input-box"><input id="f-name" class="form-input" placeholder="設備完整名稱"></div>
+      </div>
+    </div>
+
+    <!-- 規格金額 -->
+    <div class="form-section">
+      <div class="form-section-title">規格 &amp; 金額</div>
+      <div class="form-row row-2">
+        <div><div class="form-label">PO日期</div><div class="form-input-box"><input id="f-podate" class="form-input" type="date"></div></div>
+        <div><div class="form-label">CEA</div><div class="form-input-box"><input id="f-cea" class="form-input"></div></div>
+      </div>
+      <div class="form-row row-2">
+        <div><div class="form-label">LT</div><div class="form-input-box"><input id="f-lt" class="form-input" placeholder="90D/24W"></div></div>
+        <div><div class="form-label">TT</div><div class="form-input-box"><input id="f-tt" class="form-input" placeholder="Transit Time"></div></div>
+      </div>
+      <div class="form-row row-2">
+        <div><div class="form-label">幣別</div><div class="form-input-box"><select id="f-currency" class="form-select" onchange="calcNTD()"><option>JPY</option><option>USD</option><option>NTD</option><option>EUR</option></select></div></div>
+        <div><div class="form-label">報價（原幣）</div><div class="form-input-box"><input id="f-quote" class="form-input" type="number" placeholder="0"></div></div>
+      </div>
+      <div class="form-row row-2">
+        <div><div class="form-label">成交金額（原幣）</div><div class="form-input-box"><input id="f-amount" class="form-input" type="number" placeholder="0" oninput="calcNTD();recalcAll()"></div></div>
+        <div><div class="form-label">成交金額（台幣）</div><div class="form-input-box"><input id="f-amountNTD" class="form-input" type="number" readonly placeholder="自動計算"></div></div>
+      </div>
+      <div class="form-row row-2">
+        <div><div class="form-label">料號</div><div class="form-input-box"><input id="f-partno" class="form-input"></div></div>
+        <div><div class="form-label">Line</div><div class="form-input-box"><input id="f-line" class="form-input" placeholder="#1..."></div></div>
+      </div>
+      <div class="form-row row-2">
+        <div><div class="form-label">國家</div><div class="form-input-box"><select id="f-country" class="form-select"></select></div></div>
+        <div><div class="form-label">產地（城市）</div><div class="form-input-box"><select id="f-city" class="form-select"></select></div></div>
+      </div>
+    </div>
+
+    <!-- 付款條件 -->
+    <div class="form-section">
+      <div class="form-section-title">付款條件</div>
+      <div class="form-row row-2">
+        <div><div class="form-label">付款</div><div class="form-input-box"><input id="f-payment" class="form-input" placeholder="如 J94"></div></div>
+        <div><div class="form-label">貨代</div><div class="form-input-box"><input id="f-forwarder" class="form-input" placeholder="如 I32"></div></div>
+      </div>
+      <div class="form-row row-2">
+        <div><div class="form-label">運送方式</div><div class="form-input-box"><select id="f-shipMode" class="form-select"></select></div></div>
+        <div><div class="form-label">吊掛</div><div class="form-input-box"><select id="f-rigging" class="form-select"><option value="">—</option><option>是</option><option>否</option><option>-</option></select></div></div>
+      </div>
+      <div class="form-row row-2">
+        <div><div class="form-label">無產證</div><div class="form-input-box"><select id="f-noCert" class="form-select"><option value="">—</option><option>否</option><option>是</option></select></div></div>
+      </div>
+      <div class="form-row row-3">
+        <div><div class="form-label">訂金款%</div><div class="form-input-box"><input id="f-pctD" class="form-input" type="number" placeholder="30" oninput="recalcAll()"></div></div>
+        <div><div class="form-label">交機款%</div><div class="form-input-box"><input id="f-pctM" class="form-input" type="number" placeholder="60" oninput="recalcAll()"></div></div>
+        <div><div class="form-label">驗收款%</div><div class="form-input-box"><input id="f-pctA" class="form-input" type="number" placeholder="10" oninput="recalcAll()"></div></div>
+      </div>
+    </div>
+
+    <!-- 交貨排程 -->
+    <div class="form-section">
+      <div class="form-section-title">交貨排程 &amp; 付款明細</div>
+      <div style="padding:10px 13px">
+        <div id="dpListM"></div>
+        <button class="add-batch-btn" onclick="addDP()">＋ 新增交貨批次</button>
+      </div>
+    </div>
+
+    <!-- 備註 -->
+    <div class="form-section">
+      <div class="form-section-title">備註 / 交涉記錄</div>
+      <div class="form-row">
+        <textarea id="f-remark" class="form-textarea" placeholder="交涉記錄、議價過程..."></textarea>
+      </div>
+    </div>
+
+    <!-- Delete button -->
+    <button id="detDelBtn" onclick="deleteCurRec()" style="display:none;width:100%;margin-top:6px;padding:14px;background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:var(--rl);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">刪除此筆採購</button>
+
+  </div>
+</div>
+
+<!-- Loading & Toast -->
+<div id="loadingOverlay"><div class="spinner"></div><div style="font-size:13px;color:var(--tx2)">同步中...</div></div>
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  SHARED DATA LAYER (same as desktop version)
+// ══════════════════════════════════════════════════
+const API_URL='https://script.google.com/macros/s/AKfycbxEwmi0ZihkIAbutNJ_hA9lR17_x4LSmJF9XcIm3rTQ6nzLslKyqTfLjdGFwfKdglza/exec';
+const PWD='014063';
+const SESSION_KEY='pv6_auth';
+
+const DO={
+  plant:['3B','3A','2B','1F'],
+  dept:['SMT','LGA FC','QFN FC','DIP','其他'],
+  vendor:['YAMAHA','FUJI','TOWA','EO','Heller','BESI','DISCO','技嘉','揚發','常鴻新','其他'],
+  agent:['C.P.M(普科)','from PTI','—'],
+  model:['YSP10','BSM2464G','NXT M3II','YPM1180','1913MK7','1913MK3','2100FC HS-S2','DFM-2800','其他'],
+  payStage:['訂金款','交機款','驗收款','首付款','第二期','第三期'],
+  claimType:['請款單','憑證黏貼','buy-off','驗收單'],
+  country:['日本','美國','台灣','韓國','德國','荷蘭','以色列','中國','其他'],
+  city:['東京','大阪','名古屋','矽谷','奧勒岡','台北','台中','首爾','其他'],
+  shipMode:['海運','空運','陸運'],
+  payCode:[],fwdCode:[]
+};
+const DN_DEF={'YSP10':'Solder Printer 高速高精密印刷機','BSM2464G':'Laser Marking System','NXT M3II':'Mounter器件機','YPM1180':'D MOLDING SYSTEM 全自動壓模','1913MK7':'Reflow Oven','1913MK3':'Reflow','2100FC HS-S2':'Die Bonder','DFM-2800':'全自動多功能晶圓貼膜機'};
+const DR={JPY:0.22,USD:32.8,EUR:36.0,NTD:1};
+const DH=[{date:'2026-01-01',name:'元旦'},{date:'2026-02-14',name:'春節'},{date:'2026-02-16',name:'春節'},{date:'2026-02-17',name:'春節'},{date:'2026-02-18',name:'春節'},{date:'2026-02-19',name:'春節'},{date:'2026-02-20',name:'春節'},{date:'2026-02-27',name:'和平紀念日'},{date:'2026-04-03',name:'兒童節補假'},{date:'2026-04-06',name:'清明節'},{date:'2026-05-01',name:'勞動節'},{date:'2026-06-19',name:'端午節'},{date:'2026-09-28',name:'中秋節補假'},{date:'2026-10-09',name:'國慶日補假'},{date:'2026-10-26',name:'特別假日'},{date:'2026-12-25',name:'聖誕節'}];
+
+let data=[],nid=1,eid=null,opts={},rates={},hols=[],modelNames={},codeDesc={payCode:{},fwdCode:{}};
+let vendors=[],models=[];  // 廠商維護 & 設備型號維護
+let curFilter='all',curPayFilter='all',searchVisible=false;
+let detDeliveries=[];
+
+// API
+async function apiGet(a){const r=await fetch(`${API_URL}?action=${a}`);const j=await r.json();if(!j.ok)throw new Error(j.error);return j.data;}
+async function apiPost(a,p){const r=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:a,payload:p})});const j=await r.json();if(!j.ok)throw new Error(j.error);return j.data;}
+function lc(k,v){try{localStorage.setItem('pv6_'+k,JSON.stringify(v));}catch(e){}}
+function lr(k){try{const s=localStorage.getItem('pv6_'+k);return s?JSON.parse(s):null;}catch(e){return null;}}
+
+async function load(){
+  showLoading(true);
+  try{
+    const [dr,or,rr,hr,cr,vr,mr]=await Promise.all([apiGet('getData'),apiGet('getOptions'),apiGet('getRates'),apiGet('getHols'),apiGet('getCodes'),apiGet('getVendors'),apiGet('getModels')]);
+    data=dr.records||[];nid=dr.nextId||data.length+1;
+    opts={...DO,...(or||{})};Object.keys(DO).forEach(k=>{if(!opts[k]||!opts[k].length)opts[k]=[...DO[k]];});
+    modelNames={...DN_DEF};
+    rates={...DR,...(rr||{})};Object.keys(DR).forEach(k=>{if(rates[k]==null)rates[k]=DR[k];});
+    hols=hr||[...DH];
+    codeDesc.payCode=(cr&&cr.payCode)||{};codeDesc.fwdCode=(cr&&cr.fwdCode)||{};
+    vendors=vr||[];models=mr||[];
+    lc('data',{records:data,nextId:nid});lc('opts',{opts,modelNames});lc('rates',rates);lc('hols',hols);
+    lc('vendors',vendors);lc('models',models);
+  }catch(e){
+    console.warn('API失敗，使用快取',e);
+    const d=lr('data');if(d){data=d.records||[];nid=d.nextId||data.length+1;}
+    const o=lr('opts');if(o){opts={...DO,...(o.opts||{})};modelNames=o.modelNames||{...DN_DEF};}else{opts={...DO};modelNames={...DN_DEF};}
+    const r=lr('rates');rates=r?{...DR,...r}:{...DR};
+    const h=lr('hols');hols=h||[...DH];
+    const vv=lr('vendors');vendors=vv||[];
+    const mm=lr('models');models=mm||[];
+    toast('⚠ 離線模式');
+  }
+  showLoading(false);
+}
+async function save(){try{await apiPost('saveData',{records:data,nextId:nid});lc('data',{records:data,nextId:nid});}catch(e){console.error(e);toast('❌ 儲存失敗');}}
+async function saveO(){try{await Promise.all([apiPost('saveOptions',opts),apiPost('saveCodes',{opts,payCode:codeDesc.payCode,payCodeShort:{},fwdCode:codeDesc.fwdCode,fwdCodeShort:{}})]);lc('opts',{opts,modelNames});}catch(e){console.error(e);}}
+async function saveVendors(){try{await apiPost('saveVendors',vendors);lc('vendors',vendors);}catch(e){console.error(e);toast('❌ 儲存失敗');}}
+async function saveModels(){try{await apiPost('saveModels',models);lc('models',models);}catch(e){console.error(e);toast('❌ 儲存失敗');}}
+async function saveR(){try{await apiPost('saveRates',rates);lc('rates',rates);}catch(e){console.error(e);}}
+async function saveH(){try{await apiPost('saveHols',hols);lc('hols',hols);}catch(e){console.error(e);}}
+
+// Utils
+const fN=n=>(n||n===0)?Number(n).toLocaleString():'—';
+const fD=d=>d?d.replace(/-/g,'/'):'';
+const safe=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+function getRate(c){return rates[c]||1;}
+function calcNTDv(a,c){return Math.round((a||0)*getRate(c));}
+
+function showLoading(on){const el=document.getElementById('loadingOverlay');el.className=on?'show':'';}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2400);}
+
+// ══════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════
+function doLogin(){
+  const input=document.getElementById('pwInput');
+  const err=document.getElementById('loginErr');
+  if(input.value===PWD){
+    sessionStorage.setItem(SESSION_KEY,'1');
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='flex';
+    startApp();
+  } else {
+    err.textContent='密碼錯誤';input.value='';input.focus();
+    setTimeout(()=>err.textContent='',2500);
+  }
+}
+
+async function startApp(){
+  initCalY();
+  await load();
+  migrateModelsFromOpts();  // 若 models 空則從舊 opts.model 遷移
+  refreshSels();        // 必須在 load() 後，models/vendors 才有資料
+  renderCards();renderPayCards();renderCal();renderStatsPreview();
+}
+
+// ══════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════
+let curTab='list';
+function switchTab(t){
+  curTab=t;
+  ['list','pay','cal','dash','set','more'].forEach(x=>{
+    const pg=document.getElementById('page-'+x);if(pg)pg.classList.toggle('active',x===t);
+    const tb=document.getElementById('tab-'+x);if(tb)tb.classList.toggle('active',x===t);
+  });
+  const titles={list:'採購清單',pay:'付款管理',cal:'行事曆',dash:'儀表板',set:'設定',more:'更多'};
+  document.getElementById('headerTitle').textContent=titles[t]||t;
+  document.getElementById('addBtn').style.display=t==='list'?'flex':'none';
+  document.getElementById('searchBtn').style.display=t==='list'?'flex':'none';
+  if(t==='dash')renderDashboard();
+  if(t==='cal')renderCal();
+}
+
+function showSearch(){
+  searchVisible=!searchVisible;
+  document.getElementById('searchBar').style.display=searchVisible?'block':'none';
+  if(searchVisible)document.getElementById('srchInput').focus();
+}
+
+// ══════════════════════════════════════════════════
+//  LIST CARDS
+// ══════════════════════════════════════════════════
+function setFilter(f,el){
+  curFilter=f;
+  document.querySelectorAll('#filterPills .pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  renderCards();
+}
+
+function getFiltered(){
+  const q=(document.getElementById('srchInput')||{value:''}).value.toLowerCase();
+  return data.filter(r=>{
+    if(curFilter==='all'){}
+    else if(curFilter.startsWith('status:')&&r.status!==curFilter.slice(7))return false;
+    else if(curFilter.startsWith('cur:')&&r.currency!==curFilter.slice(4))return false;
+    if(q&&!JSON.stringify(r).toLowerCase().includes(q))return false;
+    return true;
+  });
+}
+
+function statusTag(s){
+  const m={'處理中':'tag-status-0','待交貨':'tag-status-2','已交貨':'tag-status-3'};
+  return`<span class="tag ${m[s]||'tag-status-0'}">${safe(s)}</span>`;
+}
+function deptTag(d){
+  const m={'SMT':'tag-dept-smt','LGA FC':'tag-dept-lga','QFN FC':'tag-dept-qfn'};
+  return`<span class="tag ${m[d]||'tag-dept-smt'}">${safe(d)}</span>`;
+}
+
+function renderCards(){
+  const f=getFiltered();
+  const list=document.getElementById('cardList');
+  if(!f.length){
+    list.innerHTML=`<div class="empty-state"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><p>找不到符合的採購資料</p></div>`;
+    return;
+  }
+  const ntdTotal=f.reduce((s,r)=>s+(r.amountNTD||calcNTDv(r.amount,r.currency)),0);
+  const summary=`<div style="padding:8px 0 4px;font-size:12px;color:var(--tx3)">${f.length} 筆・台幣合計 NT$${(ntdTotal/1e6).toFixed(2)}M</div>`;
+  list.innerHTML=summary+f.map(r=>{
+    const ntd=r.amountNTD||calcNTDv(r.amount,r.currency);
+    const etd=r.deliveries&&r.deliveries[0]?r.deliveries[0].etd:'';
+    const amt=r.currency==='NTD'?`NT$ ${fN(r.amount)}`:`${r.currency} ${fN(r.amount)}`;
+    return`<div class="rec-card" onclick="openDet(${r.id})">
+      <div class="rec-card-top">
+        <div class="rec-card-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+        <div class="rec-card-info">
+          <div class="rec-card-title">${safe(r.vendor)} · ${safe(r.model)}</div>
+          <div class="rec-card-sub">${safe(r.pr)} ${r.name?'· '+safe(r.name.substring(0,20)):''}</div>
+        </div>
+        <div class="rec-card-badge">${statusTag(r.status)}</div>
+      </div>
+      <div class="rec-card-bottom">
+        <div class="rec-card-amount">${amt}</div>
+        <div class="rec-card-tags">
+          ${deptTag(r.dept)}
+          ${etd?`<span class="tag tag-cur">ETD ${fD(etd)}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+//  PAYMENT CARDS
+// ══════════════════════════════════════════════════
+function setPayFilter(f,el){
+  curPayFilter=f;
+  document.querySelectorAll('#page-pay .filter-pills .pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  renderPayCards();
+}
+
+function getPayStatus(r){
+  const today=new Date().toISOString().slice(0,10);
+  const pays=(r.deliveries||[]).flatMap(d=>d.payments||[]);
+  if(!pays.length)return{label:'排定中',cls:'ps-planned'};
+  const allPaid=pays.every(p=>p.payDate&&p.payDate<=today);
+  const anyPaid=pays.some(p=>p.payDate&&p.payDate<=today);
+  if(allPaid)return{label:'已付清',cls:'ps-paid'};
+  if(anyPaid)return{label:'付款中',cls:'ps-partial'};
+  const hasFuture=pays.some(p=>p.payDate&&p.payDate>today);
+  if(hasFuture)return{label:'付款中',cls:'ps-partial'};
+  return{label:'排定中',cls:'ps-planned'};
+}
+
+function renderPayCards(){
+  const list=document.getElementById('payCardList');
+  const today=new Date().toISOString().slice(0,10);
+  let f=data;
+  if(curPayFilter!=='all'){
+    f=data.filter(r=>getPayStatus(r).label===curPayFilter);
+  }
+  if(!f.length){
+    list.innerHTML=`<div class="empty-state"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><p>無付款資料</p></div>`;
+    return;
+  }
+  list.innerHTML=f.map(r=>{
+    const ps=getPayStatus(r);
+    const ntd=r.amountNTD||calcNTDv(r.amount,r.currency);
+    const pays=(r.deliveries||[]).flatMap(d=>d.payments||[]);
+    const nextPay=pays.find(p=>!p.payDate||p.payDate>today);
+    return`<div class="pay-card-m" onclick="openDet(${r.id})">
+      <div class="pay-card-top">
+        <span class="pay-card-po">${safe(r.pr)}</span>
+        <span class="pay-status ${ps.cls}">${ps.label}</span>
+      </div>
+      <div class="pay-card-name">${safe(r.vendor)} · ${safe(r.model)}</div>
+      <div class="pay-card-meta">
+        <span>${r.currency} ${fN(r.amount)}</span>
+        <span>NT$ ${fN(ntd)}</span>
+        ${r.payment?`<span>付款: ${safe(r.payment)}</span>`:''}
+        ${nextPay&&nextPay.voucherDate?`<span>憑證: ${fD(nextPay.voucherDate)}</span>`:''}
+        ${nextPay&&nextPay.payDate?`<span>下次: ${fD(nextPay.payDate)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+//  CALENDAR
+// ══════════════════════════════════════════════════
+function initCalY(){
+  const s=document.getElementById('calY');if(!s)return;
+  const n=new Date();s.innerHTML='';
+  for(let y=n.getFullYear()-2;y<=2040;y++)s.innerHTML+=`<option${y===n.getFullYear()?' selected':''}>${y}</option>`;
+  document.getElementById('calM').value=n.getMonth()+1;
+}
+function calPrev(){let y=+document.getElementById('calY').value,m=+document.getElementById('calM').value;m--;if(m<1){m=12;y--;}document.getElementById('calY').value=y;document.getElementById('calM').value=m;renderCal();}
+function calNext(){let y=+document.getElementById('calY').value,m=+document.getElementById('calM').value;m++;if(m>12){m=1;y++;}document.getElementById('calY').value=y;document.getElementById('calM').value=m;renderCal();}
+
+function renderCal(){
+  const y=+document.getElementById('calY').value,m=+document.getElementById('calM').value;
+  const now=new Date();
+  const holSet=new Set(hols.map(h=>h.date));
+  const evs={};
+  data.forEach(r=>{
+    (r.deliveries||[]).forEach((d,di)=>{
+      const fc=(r.pr||'').charAt(0).toUpperCase();
+      const qty=d.qty||r.qty||1;
+      const lbl=`${r.pr}-${di+1}/${r.vendor}/${r.model}/${qty}`;
+      if(d.etd){if(!evs[d.etd])evs[d.etd]=[];evs[d.etd].push({cls:'evetd',lbl:`(ETD)${lbl}`});}
+      if(d.eta){if(!evs[d.eta])evs[d.eta]=[];const c=fc==='L'?'evetaL':fc==='F'?'evetaF':'evetaO';evs[d.eta].push({cls:c,lbl:`(ETA)${lbl}`});}
+    });
+  });
+  const fd=new Date(y,m-1,1),ld=new Date(y,m,0);
+  const sdow=fd.getDay(),tot=ld.getDate();
+  let h=`<div style="border:1px solid var(--bd);border-radius:12px;overflow:hidden;background:var(--sf)">
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--sf2)">
+      ${['日','一','二','三','四','五','六'].map((d,i)=>`<div style="padding:7px 0;text-align:center;font-size:12px;font-weight:700;color:${i===0?'var(--red)':i===6?'var(--blue)':'var(--tx2)'}">${d}</div>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr)">`;
+  const pl=new Date(y,m-1,0);
+  for(let i=0;i<sdow;i++)h+=`<div style="min-height:56px;border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);padding:3px;background:var(--sf2)"><div style="font-size:11px;color:var(--tx3)">${pl.getDate()-sdow+1+i}</div></div>`;
+  for(let d=1;d<=tot;d++){
+    const dt=new Date(y,m-1,d),dow=dt.getDay();
+    const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=dt.toDateString()===now.toDateString();
+    const isWknd=dow===0||dow===6,isHol=holSet.has(ds);
+    const bg=isHol?'#fff0f0':isWknd?'#f8f9fc':'var(--sf)';
+    const dateStyle=isToday?'display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--blue);color:#fff;border-radius:50%;font-size:11px;font-weight:700':'font-size:11px;font-weight:600;color:'+(isWknd||isHol?'var(--tx3)':'var(--tx)');
+    const eHtml=(evs[ds]||[]).map(e=>{
+      const bg=e.cls==='evetd'?'#dcfce7':e.cls==='evetaL'?'#dbeafe':e.cls==='evetaF'?'#fee2e2':'#e5e7eb';
+      const tc=e.cls==='evetd'?'#166534':e.cls==='evetaL'?'#1e40af':e.cls==='evetaF'?'#991b1b':'#374151';
+      return`<div style="font-size:9px;padding:1px 3px;border-radius:3px;margin-bottom:1px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:${bg};color:${tc}" title="${safe(e.lbl)}">${safe(e.lbl)}</div>`;
+    }).join('');
+    h+=`<div style="min-height:56px;border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);padding:3px;background:${bg};overflow:hidden"><div style="${dateStyle}">${d}</div>${eHtml}</div>`;
+  }
+  const rem=(7-(sdow+tot)%7)%7;
+  for(let i=1;i<=rem;i++){const dow=(sdow+tot+i-1)%7;h+=`<div style="min-height:56px;border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);padding:3px;background:${dow===0||dow===6?'#f8f9fc':'var(--sf2)'}"><div style="font-size:11px;color:var(--tx3)">${i}</div></div>`;}
+  h+='</div></div>';
+  document.getElementById('calGrid').innerHTML=h;
+}
+
+// ══════════════════════════════════════════════════
+//  STATS PREVIEW (More page)
+// ══════════════════════════════════════════════════
+function renderStatsPreview(){
+  const totNTD=data.reduce((s,r)=>s+(r.amountNTD||calcNTDv(r.amount,r.currency)),0);
+  const bs={};data.forEach(r=>{bs[r.status]=(bs[r.status]||0)+1});
+  const el=document.getElementById('statsPreview');
+  if(!el)return;
+  el.innerHTML=`<div class="stat-card">
+    <h3>採購總覽</h3>
+    <div class="stat-grid">
+      <div class="stat-item full"><div class="si-val">NT$${(totNTD/1e6).toFixed(2)}M</div><div class="si-lbl">台幣採購總計</div></div>
+      <div class="stat-item"><div class="si-val">${data.length}</div><div class="si-lbl">採購筆數</div></div>
+      <div class="stat-item"><div class="si-val">${data.reduce((s,r)=>s+(r.qty||1),0)}</div><div class="si-lbl">採購台數</div></div>
+      <div class="stat-item"><div class="si-val" style="color:var(--amber)">${bs['處理中']||0}</div><div class="si-lbl">處理中</div></div>
+      <div class="stat-item"><div class="si-val" style="color:var(--green)">${bs['已交貨']||0}</div><div class="si-lbl">已交貨</div></div>
+    </div>
+  </div>`;
+}
+function renderDashboard(){
+  const totNTD=data.reduce((s,r)=>s+(r.amountNTD||calcNTDv(r.amount,r.currency)),0);
+  const bs={};data.forEach(r=>{bs[r.status]=(bs[r.status]||0)+1});
+  const noCert=data.filter(r=>r.noCert==='是').length;
+  const allCurs=[...new Set(data.map(r=>r.currency||'NTD'))];
+  const curQty={},curAmt={};
+  allCurs.forEach(c=>{curQty[c]=0;curAmt[c]=0;});
+  data.forEach(r=>{const c=r.currency||'NTD';curQty[c]+=(r.qty||1);curAmt[c]+=(r.amount||0)*(r.qty||1);});
+  const today=new Date().toISOString().slice(0,10);
+
+  // Metric cards
+  const dc=document.getElementById('dashCards');
+  if(dc){dc.innerHTML=`
+    <div class="dash-card full-w" style="grid-column:1/-1;background:linear-gradient(135deg,#9A7A78,#7A6060)">
+      <div class="dc-lbl" style="color:rgba(255,255,255,.8)">台幣採購總計</div>
+      <div class="dc-val" style="color:#fff;font-size:22px">NT$${(totNTD/1e6).toFixed(2)}M</div>
+      <div class="dc-sub" style="color:rgba(255,255,255,.7)">${Number(totNTD).toLocaleString()}</div>
+    </div>
+    <div class="dash-card"><div class="dc-lbl">採購筆數</div><div class="dc-val">${data.length}</div><div class="dc-sub">${data.reduce((s,r)=>s+(r.qty||1),0)} 台</div></div>
+    <div class="dash-card"><div class="dc-lbl">無產證</div><div class="dc-val" style="color:var(--red)">${noCert}</div><div class="dc-sub">件</div></div>
+    <div class="dash-card"><div class="dc-lbl">處理中</div><div class="dc-val" style="color:var(--blue)">${bs['處理中']||0}</div><div class="dc-sub">筆</div></div>
+    <div class="dash-card"><div class="dc-lbl">待交貨</div><div class="dc-val" style="color:var(--amber)">${bs['待交貨']||0}</div><div class="dc-sub">筆</div></div>
+    <div class="dash-card"><div class="dc-lbl">已交貨</div><div class="dc-val" style="color:var(--green)">${bs['已交貨']||0}</div><div class="dc-sub">筆</div></div>
+    ${allCurs.filter(c=>curQty[c]>0).map(c=>`<div class="dash-card"><div class="dc-lbl">${c}</div><div class="dc-val">${curQty[c]}</div><div class="dc-sub" style="font-size:10px">${fN(Math.round(curAmt[c]))}</div></div>`).join('')}
+  `;}
+
+  // ETD tracking
+  const etdEl=document.getElementById('etdList');
+  if(etdEl){
+    const up=data.filter(r=>r.status!=='已交貨'&&r.deliveries&&r.deliveries.some(d=>d.etd))
+      .sort((a,b)=>{const ae=a.deliveries.find(d=>d.etd)?.etd||'';const be=b.deliveries.find(d=>d.etd)?.etd||'';return ae>be?1:-1;});
+    etdEl.innerHTML=up.length?up.map(r=>{
+      const fd=r.deliveries.find(d=>d.etd);const etd=fd?fd.etd:'';const past=etd&&etd<today;
+      return`<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--bd)">
+        <div style="width:6px;height:6px;border-radius:50%;background:${past?'var(--red)':'var(--green)'}"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${safe(r.vendor)} · ${safe(r.model)}</div>
+          <div style="font-size:11px;color:var(--tx3)">ETD ${fD(etd)}${past?' ⚠ 已逾期':''}</div>
+        </div>
+        <div style="font-size:11px;color:var(--tx2);flex-shrink:0">${safe(r.pr)}</div>
+      </div>`;
+    }).join(''):'<div style="text-align:center;padding:16px;font-size:13px;color:var(--tx3)">無待交貨資料</div>';}
+
+  // Vendor bars
+  const vm={};data.forEach(r=>{vm[r.vendor]=(vm[r.vendor]||0)+(r.amountNTD||calcNTDv(r.amount,r.currency))});
+  const vs=Object.entries(vm).sort((a,b)=>b[1]-a[1]).slice(0,6),mx=vs[0]?vs[0][1]:1;
+  const vEl=document.getElementById('vendorBars');
+  if(vEl)vEl.innerHTML=vs.map(([v,a])=>`<div style="margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx2);margin-bottom:3px"><span>${safe(v)}</span><span>NT$${(a/1e6).toFixed(2)}M</span></div>
+    <div style="height:6px;background:var(--sf2);border-radius:3px;overflow:hidden"><div style="height:100%;width:${Math.round(a/mx*100)}%;background:var(--blue);border-radius:3px;transition:width .5s"></div></div>
+  </div>`).join('');
+
+  // Dept bars
+  const dm={};data.forEach(r=>{dm[r.dept]=(dm[r.dept]||0)+(r.amountNTD||calcNTDv(r.amount,r.currency))});
+  const ds=Object.entries(dm).sort((a,b)=>b[1]-a[1]),mx2=ds[0]?ds[0][1]:1;
+  const dEl=document.getElementById('deptBars');
+  if(dEl)dEl.innerHTML=ds.map(([d,a])=>`<div style="margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx2);margin-bottom:3px"><span>${safe(d)}</span><span>NT$${(a/1e6).toFixed(2)}M</span></div>
+    <div style="height:6px;background:var(--sf2);border-radius:3px;overflow:hidden"><div style="height:100%;width:${Math.round(a/mx2*100)}%;background:var(--rose);border-radius:3px;transition:width .5s"></div></div>
+  </div>`).join('');
+}
+
+
+// ══════════════════════════════════════════════════
+//  DETAIL (edit/create)
+// ══════════════════════════════════════════════════
+function calcNTD(){
+  const a=Number(document.getElementById('f-amount').value)||0;
+  const c=document.getElementById('f-currency').value;
+  document.getElementById('f-amountNTD').value=a?calcNTDv(a,c):'';
+}
+function recalcAll(){calcNTD();detDeliveries.forEach((d,ci)=>d.payments.forEach((p,pi)=>recalcPayRow(ci,pi)));}
+function checkQty(){}
+
+function autoFillModel(){
+  const m=document.getElementById('f-model').value;
+  // Find model in models array
+  const md=models.find(x=>x.model===m);
+  if(md){
+    const fields={name:'f-name',country:'f-country',city:'f-city',rigging:'f-rigging',noCert:'f-noCert'};
+    Object.entries(fields).forEach(([k,id])=>{
+      const el=document.getElementById(id);
+      if(el&&md[k]!==undefined&&md[k]!=='')el.value=md[k];
+    });
+  } else {
+    // Fallback to modelNames dict
+    const n=modelNames[m];
+    const el=document.getElementById('f-name');
+    if(el&&n!==undefined)el.value=n;
+  }
+}
+
+function autoFillVendor(code){
+  if(!code||code.length<2)return;
+  const v=vendors.find(x=>x.vendorCode&&x.vendorCode.toLowerCase()===code.toLowerCase());
+  if(!v)return;
+  const fields={vendor:'f-vendor',agent:'f-agent',shipMode:'f-shipMode',forwarder:'f-forwarder',payment:'f-payment'};
+  Object.entries(fields).forEach(([k,id])=>{
+    const el=document.getElementById(id);
+    if(el&&v[k]!==undefined&&v[k]!=='')el.value=v[k];
+  });
+}
+
+function openVendorPicker(){
+  // Show a simple vendor list to pick from
+  if(!vendors.length){toast('尚無廠商資料，請先在廠商維護中新增');return;}
+  const existing=document.getElementById('vPickerOv');if(existing)existing.remove();
+  const ov=document.createElement('div');
+  ov.id='vPickerOv';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end';
+  ov.innerHTML=`<div style="background:var(--sf);border-radius:20px 20px 0 0;width:100%;max-height:70vh;overflow-y:auto;padding:16px">
+    <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--tx)">選擇廠商</div>
+    ${vendors.map(v=>`<div onclick="pickVendor('${v.vendorCode||''}');document.getElementById('vPickerOv').remove()" style="padding:12px 4px;border-bottom:1px solid var(--bd);cursor:pointer">
+      <div style="font-size:13px;font-weight:600;color:var(--tx)">${safe(v.vendorCode||'')} · ${safe(v.vendor||'')}</div>
+      <div style="font-size:11px;color:var(--tx3)">${safe(v.agent||'')}</div>
+    </div>`).join('')}
+    <button onclick="document.getElementById('vPickerOv').remove()" style="width:100%;margin-top:12px;padding:12px;border-radius:10px;background:var(--sf2);border:1px solid var(--bd);font-size:14px;cursor:pointer;font-family:inherit;color:var(--tx2)">取消</button>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+function pickVendor(code){
+  const el=document.getElementById('f-vendorCode');
+  if(el){el.value=code;autoFillVendor(code);}
+}
+
+function refreshSels(){
+  refreshModelSelect();
+  const bSel=(id,k,blank=false)=>{
+    const el=document.getElementById(id);if(!el)return;
+    const v=el.value;
+    el.innerHTML=(blank?'<option value="">—</option>':'')+
+      (opts[k]||[]).map(o=>`<option>${safe(o)}</option>`).join('');
+    el.value=v;
+  };
+  bSel('f-plant','plant');bSel('f-dept','dept');
+  bSel('f-vendor','vendor');bSel('f-agent','agent',true);bSel('f-model','model');
+  bSel('f-country','country',true);bSel('f-city','city',true);
+  bSel('f-shipMode','shipMode',true);
+  const cs=document.getElementById('f-currency');
+  if(cs){const v=cs.value;cs.innerHTML=Object.keys(rates).filter(k=>k!=='NTD').map(k=>`<option>${k}</option>`).join('')+'<option>NTD</option>';cs.value=v;}
+}
+
+function openDet(idOrNew){
+  eid=idOrNew==='new'?null:idOrNew;
+  const r=eid?data.find(x=>x.id===eid):{};
+  document.getElementById('detTitle').textContent=eid?`${r.vendor||''} · ${r.model||''}`:'新增採購';
+  document.getElementById('detDelBtn').style.display=eid?'block':'none';
+  refreshModelSelect(r.model||'');  // pass model value so it's pre-selected correctly
+  refreshSels();
+  ['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','status'].forEach(f=>{
+    const el=document.getElementById('f-'+f);if(el)el.value=r[f]||'';
+  });
+  document.getElementById('f-qty').value=r.qty||1;
+  document.getElementById('f-quote').value=r.quote||'';
+  document.getElementById('f-amount').value=r.amount||'';
+  document.getElementById('f-amountNTD').value=r.amountNTD||calcNTDv(r.amount,r.currency)||'';
+  document.getElementById('f-pctD').value=r.pctD||'';
+  document.getElementById('f-pctM').value=r.pctM||'';
+  document.getElementById('f-pctA').value=r.pctA||'';
+  const todayDet=new Date().toISOString().slice(0,10);
+  if(r.deliveries&&r.deliveries.length){
+    detDeliveries=r.deliveries.map(d=>({
+      etd:d.etd||'',eta:d.eta||'',qty:d.qty||'',sn:d.sn||'',
+      payments:(d.payments||[]).map((p,pi)=>({
+        ...p,
+        invoiceDate:p.invoiceDate||todayDet,
+        arrivalDate:p.arrivalDate||(pi===0?(d.eta||''):((d.payments&&d.payments[0]&&d.payments[0].arrivalDate)||d.eta||'')),
+        arrivalQty:p.arrivalQty!==undefined&&p.arrivalQty!==''?p.arrivalQty:(d.qty||'')
+      }))
+    }));
+  } else {
+    detDeliveries=[{etd:'',eta:'',qty:'',sn:'',payments:[{invoiceDate:todayDet,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel:'訂金款',pct:'',payAmt:'',claimType:'',claimDate:'',payDate:''}]}];
+  }
+  renderDPListM();
+  document.getElementById('detPage').classList.add('open');
+  document.getElementById('detScroll').scrollTop=0;
+}
+
+function closeDet(){document.getElementById('detPage').classList.remove('open');}
+
+// Delivery + Payment rendering for mobile
+function renderDPListM(){
+  const container=document.getElementById('dpListM');
+  container.innerHTML='';
+  detDeliveries.forEach((d,ci)=>renderDPCardM(ci,container));
+}
+
+function renderDPCardM(ci,container){
+  const d=detDeliveries[ci];
+  const div=document.createElement('div');
+  div.className='batch-card';div.setAttribute('data-ci',ci);
+  div.innerHTML=`
+    <div class="batch-header">
+      <span class="batch-num">批次 ${ci+1}</span>
+      <button class="batch-del-btn" onclick="removeDPM(${ci})">移除</button>
+    </div>
+    <div class="batch-grid">
+      <div class="batch-field"><label>ETD確認交期</label><input type="date" value="${d.etd}" oninput="detDeliveries[${ci}].etd=this.value"></div>
+      <div class="batch-field"><label>ETA預計到廠</label><input type="date" value="${d.eta}" oninput="detDeliveries[${ci}].eta=this.value;syncEtaToPayments(${ci},this.value)"></div>
+      <div class="batch-field"><label>本批數量</label><input type="number" value="${d.qty}" placeholder="台" oninput="detDeliveries[${ci}].qty=this.value;syncQtyToPayments(${ci},this.value)"></div>
+      <div class="batch-field"><label>S/N</label><input value="${safe(d.sn||'')}" oninput="detDeliveries[${ci}].sn=this.value"></div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;padding-top:8px;border-top:1px dashed var(--bd2)">付款明細</div>
+    <div id="pays-m-${ci}"></div>
+    <button class="add-pay-btn" onclick="addPayRowM(${ci})">＋ 新增付款筆</button>`;
+  container.appendChild(div);
+  d.payments.forEach((p,pi)=>renderPayRowM(ci,pi));
+}
+
+function renderPayRowM(ci,pi){
+  const d=detDeliveries[ci];if(!d)return;
+  const p=d.payments[pi];if(!p)return;
+  const con=document.getElementById(`pays-m-${ci}`);if(!con)return;
+  const ex=con.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);if(ex)ex.remove();
+  const stOpts=(opts.payStage||[]).map(s=>`<option${p.stageLabel===s?' selected':''}>${safe(s)}</option>`).join('');
+  const ctOpts=(opts.claimType||[]).map(s=>`<option${p.claimType===s?' selected':''}>${safe(s)}</option>`).join('');
+  const div=document.createElement('div');
+  div.className='pay-row-m';div.setAttribute('data-ci',ci);div.setAttribute('data-pi',pi);
+  div.innerHTML=`
+    <div class="pay-row-m-hd">
+      <span class="pay-row-m-num">付款 ${pi+1}</span>
+      <button class="pay-del-btn" onclick="removePayRowM(${ci},${pi})">×</button>
+    </div>
+    <div class="pay-grid-m">
+      <div class="pay-field-m"><label>期別名稱</label><select data-st onchange="onStChM(${ci},${pi},this.value)">${stOpts}</select></div>
+      <div class="pay-field-m"><label>比例%</label><input type="number" data-pct value="${p.pct||''}" placeholder="30" oninput="detDeliveries[${ci}].payments[${pi}].pct=this.value;recalcPayRow(${ci},${pi})"></div>
+      <div class="pay-field-m"><label>付款金額(原幣)</label><input data-pa value="${p.payAmt||''}" placeholder="自動計算" oninput="detDeliveries[${ci}].payments[${pi}].payAmt=this.value"></div>
+      <div class="pay-field-m"><label>發票日期</label><input type="date" value="${p.invoiceDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].invoiceDate=this.value"></div>
+      <div class="pay-field-m"><label>發票號碼</label><input value="${safe(p.invoice||'')}" oninput="detDeliveries[${ci}].payments[${pi}].invoice=this.value"></div>
+      <div class="pay-field-m"><label>實際到廠日</label><input type="date" class="ad-inp" value="${p.arrivalDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].arrivalDate=this.value"></div>
+      <div class="pay-field-m"><label>到廠數量</label><input type="number" class="aq-inp" value="${p.arrivalQty!==undefined&&p.arrivalQty!==''?p.arrivalQty:(d.qty||'')}" oninput="detDeliveries[${ci}].payments[${pi}].arrivalQty=this.value;if(${pi}===0)cascadeAqM(${ci},this.value);recalcPayRow(${ci},${pi})"></div>
+      <div class="pay-field-m"><label>請款方式</label><select data-ct onchange="detDeliveries[${ci}].payments[${pi}].claimType=this.value"><option value="">—</option>${ctOpts}</select></div>
+      <div class="pay-field-m"><label>憑證時間</label><input type="date" value="${p.voucherDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].voucherDate=this.value"></div>
+      <div class="pay-field-m"><label>請款時間</label><input type="date" value="${p.claimDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].claimDate=this.value"></div>
+      <div class="pay-field-m"><label>付款日期</label><input type="date" value="${p.payDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].payDate=this.value"></div>
+      <div class="pay-field-m" style="grid-column:1/-1"><label>備註</label><input value="${safe(p.payRemark||'')}" placeholder="備註..." oninput="detDeliveries[${ci}].payments[${pi}].payRemark=this.value"></div>
+    </div>`;
+  con.appendChild(div);
+  setTimeout(()=>recalcPayRow(ci,pi),10);
+}
+
+// Payment calculation
+function recalcPayRow(ci,pi){
+  const d=detDeliveries[ci];if(!d)return;
+  const p=d.payments[pi];if(!p)return;
+  const amount=Number(document.getElementById('f-amount').value)||0;
+  const arrQty=Number(p.arrivalQty)||1;
+  const st=p.stageLabel;
+  const getHdr=(id)=>{const el=document.getElementById(id);return el&&el.value!==''?Number(el.value):null;};
+  let pct=null;
+  if(st==='訂金款')pct=getHdr('f-pctD');
+  else if(st==='交機款')pct=getHdr('f-pctM');
+  else if(st==='驗收款')pct=getHdr('f-pctA');
+  if(pct!==null){
+    p.pct=String(pct);
+    const card=document.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);
+    if(card){const el=card.querySelector('[data-pct]');if(el)el.value=String(pct);}
+    const calc=Math.round(amount*(pct/100)*arrQty);
+    p.payAmt=String(calc);
+    if(card){const el=card.querySelector('[data-pa]');if(el)el.value=String(calc);}
+  }
+}
+
+function onStChM(ci,pi,val){
+  detDeliveries[ci].payments[pi].stageLabel=val;
+  detDeliveries[ci].payments[pi].pct='';
+  detDeliveries[ci].payments[pi].payAmt='';
+  recalcPayRow(ci,pi);
+}
+
+function syncEtaToPayments(ci,eta){
+  detDeliveries[ci].payments.forEach((p,pi)=>{
+    p.arrivalDate=eta;
+    const row=document.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);
+    if(row){const el=row.querySelector('.ad-inp');if(el)el.value=eta;}
+  });
+}
+
+function syncQtyToPayments(ci,newQ){
+  detDeliveries[ci].payments.forEach((p,pi)=>{
+    p.arrivalQty=newQ;
+    const row=document.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);
+    if(row){const el=row.querySelector('.aq-inp');if(el)el.value=newQ;}
+    recalcPayRow(ci,pi);
+  });
+}
+
+function cascadeAqM(ci,firstAq){
+  detDeliveries[ci].payments.forEach((p,pi)=>{
+    if(pi>0){p.arrivalQty=firstAq;const row=document.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);if(row){const el=row.querySelector('.aq-inp');if(el)el.value=firstAq;}recalcPayRow(ci,pi);}
+  });
+}
+
+function addDP(){
+  detDeliveries.push({etd:'',eta:'',qty:'',sn:'',payments:[{invoiceDate:new Date().toISOString().slice(0,10),invoice:'',arrivalDate:'',arrivalQty:'',stageLabel:'訂金款',pct:'',payAmt:'',claimType:'',claimDate:'',payDate:''}]});
+  const ci=detDeliveries.length-1;
+  const con=document.getElementById('dpListM');
+  renderDPCardM(ci,con);
+}
+
+function removeDPM(ci){
+  if(!confirm(`確定移除批次 ${ci+1}？`))return;
+  detDeliveries.splice(ci,1);
+  renderDPListM();
+}
+
+function addPayRowM(ci){
+  const d=detDeliveries[ci];
+  const pi=d.payments.length;
+  const arrivalDate=pi===0?(d.eta||''):(d.payments[0].arrivalDate||d.eta||'');
+  const arrivalQty=pi===0?(d.qty||''):(d.payments[0].arrivalQty||d.qty||'');
+  d.payments.push({invoiceDate:new Date().toISOString().slice(0,10),invoice:'',arrivalDate,arrivalQty,stageLabel:'訂金款',pct:'',payAmt:'',claimType:'',claimDate:'',payDate:''});
+  renderPayRowM(ci,pi);
+  setTimeout(()=>recalcPayRow(ci,pi),20);
+}
+
+function removePayRowM(ci,pi){
+  detDeliveries[ci].payments.splice(pi,1);
+  const con=document.getElementById(`pays-m-${ci}`);
+  if(con){con.innerHTML='';detDeliveries[ci].payments.forEach((_,pi2)=>renderPayRowM(ci,pi2));}
+}
+
+function getDPsM(){
+  return detDeliveries.map(d=>({
+    etd:d.etd,eta:d.eta,qty:d.qty,sn:d.sn,
+    payments:d.payments.map(p=>({
+      invoiceDate:p.invoiceDate,invoice:p.invoice,arrivalDate:p.arrivalDate,
+      arrivalQty:p.arrivalQty,stageLabel:p.stageLabel,pct:p.pct,
+      payAmt:p.payAmt,claimType:p.claimType,voucherDate:p.voucherDate,
+      claimDate:p.claimDate,payDate:p.payDate,payRemark:p.payRemark
+    }))
+  }));
+}
+
+async function saveRec(){
+  const sf=['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','status'];
+  const rec={};
+  sf.forEach(f=>{const el=document.getElementById('f-'+f);if(el)rec[f]=el.value;});
+  rec.qty=Number(document.getElementById('f-qty').value)||1;
+  rec.quote=Number(document.getElementById('f-quote').value)||0;
+  rec.amount=Number(document.getElementById('f-amount').value)||0;
+  rec.amountNTD=Number(document.getElementById('f-amountNTD').value)||calcNTDv(rec.amount,rec.currency);
+  rec.pctD=Number(document.getElementById('f-pctD').value)||0;
+  rec.pctM=Number(document.getElementById('f-pctM').value)||0;
+  rec.pctA=Number(document.getElementById('f-pctA').value)||0;
+  rec.deliveries=getDPsM();
+  // Auto-status
+  const today=new Date().toISOString().slice(0,10);
+  if(rec.deliveries&&rec.deliveries.length){
+    const lastD=rec.deliveries[rec.deliveries.length-1];
+    const pays=lastD.payments||[];
+    if(pays.length){const lastP=pays[pays.length-1];if(lastP.arrivalDate&&lastP.arrivalDate<=today)rec.status='已交貨';}
+  }
+  if(eid){const idx=data.findIndex(x=>x.id===eid);data[idx]={...data[idx],...rec};}
+  else{rec.id=nid++;data.push(rec);}
+  showLoading(true);
+  await save();
+  showLoading(false);
+  closeDet();
+  toast(eid?'✓ 已更新':'✓ 已新增');
+  renderCards();renderPayCards();
+}
+
+async function deleteCurRec(){
+  if(!eid||!confirm('確定刪除此筆採購？'))return;
+  data=data.filter(r=>r.id!==eid);
+  showLoading(true);await save();showLoading(false);
+  closeDet();toast('✓ 已刪除');renderCards();renderPayCards();
+}
+
+// ══════════════════════════════════════════════════
+//  SETTINGS (stub - redirect to more info)
+// ══════════════════════════════════════════════════
+function openSettings(type){
+  toast('設定功能請使用桌機版完整操作');
+}
+
+// ══════════════════════════════════════════════════
+//  EXPORT / IMPORT
+// ══════════════════════════════════════════════════
+function exportJSON(){
+  const b=new Blob([JSON.stringify({data,nid,opts,modelNames,rates,hols,ts:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);
+  a.download='採購備份_'+new Date().toLocaleDateString('zh-TW').replace(/\//g,'')+'.json';
+  a.click();toast('✓ 備份已下載');
+}
+
+async function importJSON(e){
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(!d.data||!Array.isArray(d.data))throw 1;
+      if(!confirm(`確定還原備份？\n載入${d.data.length}筆並同步到雲端`))return;
+      data=d.data;nid=d.nid||data.length+1;
+      if(d.opts)opts={...DO,...d.opts};
+      if(d.rates)rates={...DR,...d.rates};
+      if(d.hols)hols=d.hols;
+      showLoading(true);
+      await Promise.all([save(),saveO(),saveR(),saveH()]);
+      showLoading(false);
+      refreshSels();renderCards();renderPayCards();
+      toast('✓ 備份已還原並同步');
+    }catch{alert('備份檔格式錯誤');}
+  };
+  reader.readAsText(f);e.target.value='';
+}
+
+function exportExcel(){
+  if(typeof XLSX==='undefined'){toast('套件載入中');return;}
+  const wb=XLSX.utils.book_new();
+  const h1=['廠區','部門','PO號','廠商','代理商','設備型號','設備名稱','數量','幣別','報價(原幣)','成交金額(原幣)','成交金額(台幣)','料號','LT','Line','TT','CEA','PO日期','無產證','國家','產地','付款','貨代','運送方式','吊掛','狀態','備註','ETD','ETA','訂金%','交機%','驗收%'];
+  const r1=data.map(r=>[r.plant,r.dept,r.pr,r.vendor,r.agent,r.model,r.name,r.qty,r.currency,r.quote,r.amount,r.amountNTD||calcNTDv(r.amount,r.currency),r.partno,r.lt,r.line,r.tt,r.cea,r.podate,r.noCert,r.country,r.city,r.payment,r.forwarder,r.shipMode,r.rigging,r.status,r.remark,r.deliveries&&r.deliveries[0]?r.deliveries[0].etd:'',r.deliveries&&r.deliveries[0]?r.deliveries[0].eta:'',r.pctD,r.pctM,r.pctA]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([h1,...r1]),'設備歷程');
+  XLSX.writeFile(wb,'設備採購管理_'+new Date().toLocaleDateString('zh-TW').replace(/\//g,'')+'.xlsx');
+  toast('✓ Excel已匯出');
+}
+
+
+// ══════════════════════════════════════════════════
+//  SETTINGS MODALS
+// ══════════════════════════════════════════════════
+let curSetType = '';
+const OL_M = {
+  plant:'廠區', dept:'部門',
+  payStage:'付款期別', claimType:'請款方式',
+  country:'國家', city:'產地城市', shipMode:'運送方式'
+};
+let curOptCat = Object.keys(OL_M)[0];
+let codeEditKey = '', codeEditType = '';
+
+function openSetModal(type){
+  curSetType = type;
+  const modal = document.getElementById('setModal');
+  const title = document.getElementById('setModalTitle');
+  const body = document.getElementById('setModalBody');
+  const saveBtn = document.getElementById('setModalSaveBtn');
+  const titles = {opts:'選單維護', rates:'匯率維護', hols:'假日維護', codes:'付款/貨代代號'};
+  title.textContent = titles[type] || '設定';
+  saveBtn.style.display = type === 'codes' ? 'none' : 'block';
+  renderSetBody(type, body);
+  modal.classList.add('open');
+}
+
+function closeSetModal(){
+  document.getElementById('setModal').classList.remove('open');
+}
+
+async function saveSetModal(){
+  showLoading(true);
+  if(curSetType === 'rates') await saveR();
+  else if(curSetType === 'hols') await saveH();
+  else if(curSetType === 'opts') await saveO();
+  showLoading(false);
+  refreshSels();
+  toast('✓ 已儲存');
+  closeSetModal();
+}
+
+function renderSetBody(type, body){
+  if(type === 'rates') renderRatesEdit(body);
+  else if(type === 'hols') renderHolsEdit(body);
+  else if(type === 'opts') renderOptsEdit(body);
+  else if(type === 'codes') renderCodesEdit(body);
+}
+
+// ── 匯率維護 ──────────────────────────────────────
+function renderRatesEdit(body){
+  const curs = Object.keys(rates);
+  body.innerHTML = `
+    <div class="set-modal-label">1 外幣 = ? 台幣</div>
+    ${curs.map(c => `
+      <div class="rate-row">
+        <span class="cur-badge">${safe(c)}</span>
+        <input type="number" step="0.001" value="${rates[c]||''}"
+          oninput="rates['${c}']=Number(this.value)"
+          ${c==='NTD'?'readonly style="color:var(--tx3)"':''}
+          placeholder="0.000">
+        <span class="rate-unit">NT$</span>
+        ${c!=='NTD'?`<button onclick="delRate('${c}',this.closest('.rate-row'))" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer">×</button>`:''}
+      </div>`).join('')}
+    <div class="add-item-row" style="margin-top:12px">
+      <input id="newCurCode" placeholder="新幣別代碼（如 EUR）" style="text-transform:uppercase">
+      <input id="newCurRate" type="number" step="0.001" placeholder="匯率" style="max-width:100px">
+      <button class="add-item-btn" onclick="addRate()">新增</button>
+    </div>`;
+}
+
+function delRate(c, row){
+  if(!confirm(`刪除 ${c}？`))return;
+  delete rates[c];
+  row.remove();
+}
+
+function addRate(){
+  const code = (document.getElementById('newCurCode').value||'').trim().toUpperCase();
+  const rate = Number(document.getElementById('newCurRate').value)||0;
+  if(!code){toast('請輸入幣別代碼');return;}
+  if(rates[code]!==undefined){toast('此幣別已存在');return;}
+  rates[code] = rate;
+  renderRatesEdit(document.getElementById('setModalBody'));
+}
+
+// ── 假日維護 ──────────────────────────────────────
+function renderHolsEdit(body){
+  const sorted = [...hols].sort((a,b)=>a.date>b.date?1:-1);
+  body.innerHTML = `
+    <div class="set-modal-label">國定假日</div>
+    <div id="holsList">
+      ${sorted.map((h,i)=>`
+        <div class="hol-row">
+          <span class="hol-date">${safe(h.date)}</span>
+          <span class="hol-name">${safe(h.name)}</span>
+          <button class="hol-del" onclick="delHol('${h.date}')">×</button>
+        </div>`).join('')}
+    </div>
+    <div class="set-modal-label" style="margin-top:16px">新增假日</div>
+    <div class="add-item-row">
+      <input id="newHolDate" type="date" style="flex:1.2">
+      <input id="newHolName" placeholder="假日名稱" style="flex:1.5">
+      <button class="add-item-btn" onclick="addHol()">新增</button>
+    </div>`;
+}
+
+function delHol(date){
+  hols = hols.filter(h=>h.date!==date);
+  renderHolsEdit(document.getElementById('setModalBody'));
+}
+
+function addHol(){
+  const date = document.getElementById('newHolDate').value;
+  const name = document.getElementById('newHolName').value.trim();
+  if(!date||!name){toast('請填入日期和名稱');return;}
+  if(hols.find(h=>h.date===date)){toast('此日期已存在');return;}
+  hols.push({date,name});
+  hols.sort((a,b)=>a.date>b.date?1:-1);
+  document.getElementById('newHolDate').value='';
+  document.getElementById('newHolName').value='';
+  renderHolsEdit(document.getElementById('setModalBody'));
+}
+
+// ── 選單維護（簡化版）────────────────────────────
+function renderOptsEdit(body){
+  const cats = Object.keys(OL_M);
+  body.innerHTML = `
+    <div class="opt-cat-pills">
+      ${cats.map(k=>`<div class="opt-cat-pill${k===curOptCat?' active':''}" onclick="swOptCat('${k}')">${OL_M[k]}</div>`).join('')}
+    </div>
+    <div class="set-modal-label">${OL_M[curOptCat]} 選項</div>
+    <div id="optItemsList">
+      ${(opts[curOptCat]||[]).map((v,i)=>`
+        <div class="opt-item-row">
+          <input value="${safe(v)}" oninput="opts['${curOptCat}'][${i}]=this.value">
+          <button class="opt-item-del" onclick="delOpt(${i})">×</button>
+        </div>`).join('')}
+    </div>
+    <div class="add-item-row" style="margin-top:8px">
+      <input id="newOptVal" placeholder="新增選項...">
+      <button class="add-item-btn" onclick="addOpt()">新增</button>
+    </div>`;
+}
+
+function swOptCat(k){
+  curOptCat=k;
+  renderOptsEdit(document.getElementById('setModalBody'));
+}
+
+function delOpt(i){
+  opts[curOptCat].splice(i,1);
+  renderOptsEdit(document.getElementById('setModalBody'));
+}
+
+function addOpt(){
+  const val = document.getElementById('newOptVal').value.trim();
+  if(!val){toast('請輸入選項名稱');return;}
+  if(!opts[curOptCat])opts[curOptCat]=[];
+  opts[curOptCat].push(val);
+  document.getElementById('newOptVal').value='';
+  renderOptsEdit(document.getElementById('setModalBody'));
+}
+
+// ── 付款/貨代代號維護 ────────────────────────────
+let curCodeType = 'payCode';
+function renderCodesEdit(body){
+  body.innerHTML = `
+    <div class="opt-cat-pills" style="margin-bottom:12px">
+      <div class="opt-cat-pill${curCodeType==='payCode'?' active':''}" onclick="swCodeType('payCode')">付款代號</div>
+      <div class="opt-cat-pill${curCodeType==='fwdCode'?' active':''}" onclick="swCodeType('fwdCode')">貨代代號</div>
+    </div>
+    <div id="codesList">
+      ${(opts[curCodeType]||[]).map((c,i)=>`
+        <div class="code-row" onclick="openCodeEdit('${curCodeType}','${safe(c)}')">
+          <span class="code-badge">${safe(c)}</span>
+          <span class="code-short">${safe((codeDesc[curCodeType+'Short']&&codeDesc[curCodeType+'Short'][c])||codeDesc[curCodeType][c]||'')}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+        </div>`).join('')}
+    </div>
+    <div class="add-item-row" style="margin-top:10px">
+      <input id="newCodeVal" placeholder="新代號（如 J94）">
+      <button class="add-item-btn" onclick="addCode()">新增</button>
+    </div>`;
+}
+
+function swCodeType(t){
+  curCodeType=t;
+  renderCodesEdit(document.getElementById('setModalBody'));
+}
+
+function addCode(){
+  const val = document.getElementById('newCodeVal').value.trim();
+  if(!val){toast('請輸入代號');return;}
+  if(!opts[curCodeType])opts[curCodeType]=[];
+  if(opts[curCodeType].includes(val)){toast('此代號已存在');return;}
+  opts[curCodeType].push(val);
+  document.getElementById('newCodeVal').value='';
+  renderCodesEdit(document.getElementById('setModalBody'));
+}
+
+// Code detail edit page
+function openCodeEdit(type, code){
+  codeEditType=type; codeEditKey=code;
+  const shortKey = type+'Short';
+  const short = (codeDesc[shortKey]&&codeDesc[shortKey][code])||'';
+  const desc = (codeDesc[type]&&codeDesc[type][code])||'';
+  const lbl = type==='payCode'?'付款代號':'貨代代號';
+  document.getElementById('setModalTitle').textContent = `編輯${lbl}`;
+  document.getElementById('setModalSaveBtn').style.display='block';
+  document.getElementById('setModalSaveBtn').onclick = saveCodeEdit;
+  document.getElementById('setModalBody').innerHTML = `
+    <div class="form-section">
+      <div class="form-row">
+        <div class="form-label">${lbl}</div>
+        <div class="form-input-box"><input id="ceCode" class="form-input" value="${safe(code)}" placeholder="代號"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">簡要備註</div>
+        <div class="form-input-box"><input id="ceShort" class="form-input" value="${safe(short)}" placeholder="簡短說明（顯示於列表）"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">備註</div>
+        <textarea id="ceDesc" class="form-textarea" placeholder="詳細備註...">${safe(desc)}</textarea>
+      </div>
+      <div class="form-row">
+        <button onclick="delCodeItem()" style="width:100%;padding:11px;background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">刪除此代號</button>
+      </div>
+    </div>`;
+}
+
+async function saveCodeEdit(){
+  const newCode = document.getElementById('ceCode').value.trim();
+  const short = document.getElementById('ceShort').value.trim();
+  const desc = document.getElementById('ceDesc').value.trim();
+  if(!newCode){toast('代號不能為空');return;}
+  const shortKey = codeEditType+'Short';
+  // Update opts array
+  const idx = opts[codeEditType].indexOf(codeEditKey);
+  if(idx>=0)opts[codeEditType][idx]=newCode;
+  // Update desc
+  if(!codeDesc[codeEditType])codeDesc[codeEditType]={};
+  if(!codeDesc[shortKey])codeDesc[shortKey]={};
+  if(codeEditKey!==newCode){
+    delete codeDesc[codeEditType][codeEditKey];
+    delete codeDesc[shortKey][codeEditKey];
+  }
+  codeDesc[codeEditType][newCode]=desc;
+  codeDesc[shortKey][newCode]=short;
+  showLoading(true);
+  await saveO();
+  showLoading(false);
+  refreshSels();
+  toast('✓ 已儲存');
+  // Go back to codes list
+  document.getElementById('setModalTitle').textContent='付款/貨代代號';
+  document.getElementById('setModalSaveBtn').style.display='none';
+  document.getElementById('setModalSaveBtn').onclick=saveSetModal;
+  renderCodesEdit(document.getElementById('setModalBody'));
+}
+
+async function delCodeItem(){
+  if(!confirm(`確定刪除「${codeEditKey}」？`))return;
+  opts[codeEditType]=opts[codeEditType].filter(c=>c!==codeEditKey);
+  delete codeDesc[codeEditType][codeEditKey];
+  const shortKey=codeEditType+'Short';
+  if(codeDesc[shortKey])delete codeDesc[shortKey][codeEditKey];
+  showLoading(true);
+  await saveO();
+  showLoading(false);
+  refreshSels();
+  toast('✓ 已刪除');
+  document.getElementById('setModalTitle').textContent='付款/貨代代號';
+  document.getElementById('setModalSaveBtn').style.display='none';
+  document.getElementById('setModalSaveBtn').onclick=saveSetModal;
+  renderCodesEdit(document.getElementById('setModalBody'));
+}
+
+
+// ══════════════════════════════════════════════════
+//  廠商維護
+// ══════════════════════════════════════════════════
+let vendorEditIdx = -1;
+
+function openVendorMaint(){
+  renderVendorList();
+  document.getElementById('vendorMaintPage').classList.add('open');
+}
+
+function renderVendorList(){
+  const el=document.getElementById('vendorList');
+  if(!el)return;
+  if(!vendors.length){
+    el.innerHTML=`<div style="text-align:center;padding:32px;color:var(--tx3);font-size:14px">尚無廠商資料<br><button onclick="addVendorNew()" style="margin-top:12px;padding:10px 20px;border-radius:10px;background:#93939B;color:#fff;border:none;font-size:14px;cursor:pointer;font-family:inherit">新增第一筆</button></div>`;
+    return;
+  }
+  el.innerHTML=vendors.map((v,i)=>`
+    <div onclick="openVendorEdit(${i})" style="display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--sf);border-radius:12px;border:1px solid var(--bd);margin-bottom:8px;cursor:pointer">
+      <div style="width:40px;height:40px;border-radius:10px;background:#E2EBF2;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3D5F78" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700;color:var(--tx)">${safe(v.vendorCode||'')} · ${safe(v.vendor||'')}</div>
+        <div style="font-size:12px;color:var(--tx3)">${safe(v.agent||'')}${v.country?' · '+safe(v.country):''}</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+    </div>`).join('');
+}
+
+function addVendorNew(){
+  vendorEditIdx=-1;
+  document.getElementById('vendorEditTitle').textContent='新增廠商';
+  document.getElementById('vendorDelBtn').style.display='none';
+  const fields=['vendorCode','vendor','agent','country','shipMode','payment','forwarder','tel','mobile','contact','email','remark'];
+  fields.forEach(f=>{const el=document.getElementById('ve-'+f);if(el)el.value='';}); 
+  const dw=document.getElementById('veCodeDupWarn');if(dw)dw.textContent='';
+  // populate selects
+  const bSel2=(id,k)=>{const el=document.getElementById(id);if(!el)return;el.innerHTML='<option value="">—</option>'+(opts[k]||[]).map(o=>`<option>${safe(o)}</option>`).join('');};
+  bSel2('ve-country','country');bSel2('ve-shipMode','shipMode');
+  document.getElementById('vendorEditPage').classList.add('open');
+  const dw2=document.getElementById('veCodeDupWarn');if(dw2)dw2.textContent='';
+}
+
+function openVendorEdit(i){
+  vendorEditIdx=i;
+  const v=vendors[i];
+  document.getElementById('vendorEditTitle').textContent='編輯廠商';
+  document.getElementById('vendorDelBtn').style.display='block';
+  const bSel2=(id,k,val)=>{const el=document.getElementById(id);if(!el)return;el.innerHTML='<option value="">—</option>'+(opts[k]||[]).map(o=>`<option${o===val?' selected':''}>${safe(o)}</option>`).join('');};
+  bSel2('ve-country','country',v.country||'');
+  bSel2('ve-shipMode','shipMode',v.shipMode||'');
+  const textFields=['vendorCode','vendor','agent','payment','forwarder','tel','mobile','contact','email','remark'];
+  textFields.forEach(f=>{const el=document.getElementById('ve-'+f);if(el)el.value=v[f]||'';});
+  document.getElementById('vendorEditPage').classList.add('open');
+  const dw2=document.getElementById('veCodeDupWarn');if(dw2)dw2.textContent='';
+}
+
+function closeVendorEdit(){
+  document.getElementById('vendorEditPage').classList.remove('open');
+}
+
+async function saveVendorEdit(){
+  const fields=['vendorCode','vendor','agent','country','shipMode','payment','forwarder','tel','mobile','contact','email','remark'];
+  const rec={};
+  fields.forEach(f=>{const el=document.getElementById('ve-'+f);if(el)rec[f]=el.value;});
+  if(!rec.vendorCode&&!rec.vendor){toast('請填入廠商代號或廠商名稱');return;}
+  // Check dup
+  if(rec.vendorCode){
+    const isDup=vendors.some((v,i)=>v.vendorCode&&v.vendorCode.toUpperCase()===rec.vendorCode.toUpperCase()&&i!==vendorEditIdx);
+    if(isDup){toast('⚠ 廠商代號已存在，請使用不同代號');return;}
+  }
+  if(vendorEditIdx>=0){vendors[vendorEditIdx]={...vendors[vendorEditIdx],...rec};}
+  else{vendors.push(rec);}
+  showLoading(true);await saveVendors();showLoading(false);
+  // Update model select in main form
+  refreshModelSelect();
+  closeVendorEdit();
+  renderVendorList();
+  toast('✓ 廠商資料已儲存');
+}
+
+async function deleteVendorEdit(){
+  if(!confirm('確定刪除此廠商？'))return;
+  vendors.splice(vendorEditIdx,1);
+  showLoading(true);await saveVendors();showLoading(false);
+  closeVendorEdit();
+  renderVendorList();
+  toast('✓ 已刪除');
+}
+
+// ══════════════════════════════════════════════════
+//  設備型號維護
+// ══════════════════════════════════════════════════
+let modelEditIdx = -1;
+
+function openModelMaint(){
+  renderModelList();
+  document.getElementById('modelMaintPage').classList.add('open');
+}
+
+function renderModelList(){
+  const el=document.getElementById('modelList');
+  if(!el)return;
+  if(!models.length){
+    el.innerHTML=`<div style="text-align:center;padding:32px;color:var(--tx3);font-size:14px">尚無型號資料<br><button onclick="addModelNew()" style="margin-top:12px;padding:10px 20px;border-radius:10px;background:#93939B;color:#fff;border:none;font-size:14px;cursor:pointer;font-family:inherit">新增第一筆</button></div>`;
+    return;
+  }
+  el.innerHTML=models.map((m,i)=>`
+    <div onclick="openModelEdit(${i})" style="display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--sf);border-radius:12px;border:1px solid var(--bd);margin-bottom:8px;cursor:pointer">
+      <div style="width:40px;height:40px;border-radius:10px;background:#E5EDEA;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3D6647" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700;color:var(--tx)">${safe(m.model||'')}</div>
+        <div style="font-size:12px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${safe(m.name||'')}</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+    </div>`).join('');
+}
+
+function addModelNew(){
+  modelEditIdx=-1;
+  document.getElementById('modelEditTitle').textContent='新增設備型號';
+  document.getElementById('modelDelBtn').style.display='none';
+  const fields=['model','name','remark'];
+  fields.forEach(f=>{const el=document.getElementById('me-'+f);if(el)el.value='';}); 
+  const mw=document.getElementById('meModelDupWarn');if(mw)mw.textContent='';
+  const sel=['me-country','me-city','me-rigging','me-noCert'];
+  sel.forEach(id=>{const el=document.getElementById(id);if(el)el.selectedIndex=0;});
+  const bSel2=(id,k)=>{const el=document.getElementById(id);if(!el)return;el.innerHTML='<option value="">—</option>'+(opts[k]||[]).map(o=>`<option>${safe(o)}</option>`).join('');};
+  bSel2('me-country','country');bSel2('me-city','city');
+  document.getElementById('modelEditPage').classList.add('open');
+  const mw2=document.getElementById('meModelDupWarn');if(mw2)mw2.textContent='';
+}
+
+function openModelEdit(i){
+  modelEditIdx=i;
+  const m=models[i];
+  document.getElementById('modelEditTitle').textContent='編輯型號';
+  document.getElementById('modelDelBtn').style.display='block';
+  const bSel2=(id,k,val)=>{const el=document.getElementById(id);if(!el)return;el.innerHTML='<option value="">—</option>'+(opts[k]||[]).map(o=>`<option${o===val?' selected':''}>${safe(o)}</option>`).join('');};
+  bSel2('me-country','country',m.country||'');
+  bSel2('me-city','city',m.city||'');
+  ['model','name','remark'].forEach(f=>{const el=document.getElementById('me-'+f);if(el)el.value=m[f]||'';});
+  ['rigging','noCert'].forEach(f=>{const el=document.getElementById('me-'+f);if(el)el.value=m[f]||'';});
+  document.getElementById('modelEditPage').classList.add('open');
+  const mw2=document.getElementById('meModelDupWarn');if(mw2)mw2.textContent='';
+}
+
+function closeModelEdit(){
+  document.getElementById('modelEditPage').classList.remove('open');
+}
+
+async function saveModelEdit(){
+  const textFields=['model','name','remark'];
+  const selFields=['country','city','rigging','noCert'];
+  const rec={};
+  textFields.forEach(f=>{const el=document.getElementById('me-'+f);if(el)rec[f]=el.value;});
+  selFields.forEach(f=>{const el=document.getElementById('me-'+f);if(el)rec[f]=el.value;});
+  if(!rec.model){toast('請填入設備型號');return;}
+  // Check dup
+  const isDupM=models.some((m,i)=>m.model&&m.model.toLowerCase()===rec.model.toLowerCase()&&i!==modelEditIdx);
+  if(isDupM){toast('⚠ 設備型號已存在，請使用不同型號');return;}
+  if(modelEditIdx>=0){models[modelEditIdx]={...models[modelEditIdx],...rec};}
+  else{models.push(rec);}
+  showLoading(true);await saveModels();showLoading(false);
+  refreshModelSelect();
+  closeModelEdit();
+  renderModelList();
+  toast('✓ 型號資料已儲存');
+}
+
+async function deleteModelEdit(){
+  if(!confirm('確定刪除此型號？'))return;
+  models.splice(modelEditIdx,1);
+  showLoading(true);await saveModels();showLoading(false);
+  closeModelEdit();
+  renderModelList();
+  toast('✓ 已刪除');
+}
+
+function refreshModelSelect(selectedVal){
+  const el=document.getElementById('f-model');if(!el)return;
+  const cur=selectedVal!==undefined?selectedVal:el.value;
+  const allModels=[...models];
+  // Add any opts.model entries not already in models array
+  (opts.model||[]).forEach(m=>{
+    if(m&&!allModels.find(x=>x.model===m))allModels.push({model:m,name:modelNames[m]||''});
+  });
+  el.innerHTML='<option value="">—</option>'+allModels.map(m=>`<option${m.model===cur?' selected':''}>${safe(m.model||'')}</option>`).join('');
+}
+
+
+// ── 設備型號資料遷移：若 models 空但 opts.model 有舊資料，自動轉換 ──
+function migrateModelsFromOpts(){
+  if(models.length>0)return;
+  if(!opts.model||!opts.model.length)return;
+  models=opts.model.map(m=>({
+    model:m, name:modelNames[m]||'',
+    country:'',city:'',rigging:'',noCert:'',remark:''
+  }));
+  console.log('migrated',models.length,'models from opts.model');
+  saveModels().catch(e=>console.warn('migration save failed:',e));
+}
+
+
+// ── 重複代號檢查 ────────────────────────────────────
+function checkVendorCodeDup(code){
+  const warn = document.getElementById('veCodeDupWarn');
+  if(!warn) return;
+  if(!code || code.length < 2){ warn.textContent=''; return; }
+  const isDup = vendors.some((v, i) => 
+    v.vendorCode && v.vendorCode.toUpperCase() === code.toUpperCase() && i !== vendorEditIdx
+  );
+  warn.textContent = isDup ? '⚠ 此廠商代號已存在' : '';
+}
+
+function checkModelDup(model){
+  const warn = document.getElementById('meModelDupWarn');
+  if(!warn) return;
+  if(!model){ warn.textContent=''; return; }
+  const isDup = models.some((m, i) => 
+    m.model && m.model.toLowerCase() === model.toLowerCase() && i !== modelEditIdx
+  );
+  warn.textContent = isDup ? '⚠ 此型號已存在' : '';
+}
+
+// ══════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════
+if(sessionStorage.getItem(SESSION_KEY)==='1'){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  startApp();
+} else {
+  setTimeout(()=>document.getElementById('pwInput').focus(),300);
+}
+</script>
+</body>
+</html>
