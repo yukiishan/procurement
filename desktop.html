@@ -1221,8 +1221,8 @@ async function saveR(){
   try{await apiPost('saveRates',rates);localCache('rates',rates);}
   catch(err){console.error('儲存匯率失敗:',err);ntf('❌ 儲存失敗');}
 }
-async function saveVendors(){try{await apiPost('saveVendors',vendors);localCache('vendors',vendors);}catch(err){console.error(err);ntf('❌ 儲存失敗');}}
-async function saveModels(){try{await apiPost('saveModels',models);localCache('models',models);}catch(err){console.error(err);ntf('❌ 儲存失敗');}}
+async function saveVendors(){await apiPost('saveVendors',vendors);localCache('vendors',vendors);}
+async function saveModels(){await apiPost('saveModels',models);localCache('models',models);}
 async function saveH(){
   try{await apiPost('saveHols',hols);localCache('hols',hols);}
   catch(err){console.error('儲存假日失敗:',err);ntf('❌ 儲存失敗');}
@@ -1269,20 +1269,23 @@ function refreshSels(){
 // FIX 1: autoFillName always updates (no guard), triggered on every change
 function autoFillModelDesk(){
   const m=document.getElementById('f-model').value;
+  if(!m)return;
+  // Search in models array first
   const md=models.find(x=>x.model===m);
   if(md){
-    const fields={name:'f-name',country:'f-country',city:'f-city',rigging:'f-rigging',noCert:'f-noCert'};
-    Object.entries(fields).forEach(([k,id])=>{
+    // Auto-fill text fields
+    const fld={name:'f-name',rigging:'f-rigging',noCert:'f-noCert'};
+    Object.entries(fld).forEach(([k,id])=>{
       const el=document.getElementById(id);
       if(el&&md[k]!==undefined&&md[k]!=='')el.value=md[k];
     });
-    bSel('f-country','country',true);bSel('f-city','city',true);
-    document.getElementById('f-country').value=md.country||'';
-    document.getElementById('f-city').value=md.city||'';
-  } else {
-    const n=modelNames[m];
+    // Auto-fill select fields
+    if(md.country){bSel('f-country','country',true);document.getElementById('f-country').value=md.country;}
+    if(md.city){bSel('f-city','city',true);document.getElementById('f-city').value=md.city;}
+  } else if(modelNames[m]){
+    // Fallback: modelNames dict
     const el=document.getElementById('f-name');
-    if(el&&n!==undefined)el.value=n;
+    if(el)el.value=modelNames[m];
   }
 }
 
@@ -1722,6 +1725,13 @@ function recalcAll(){
 }
 
 function getUsedQty(){
+  // Read directly from DOM batch qty inputs for accuracy
+  const inputs=document.querySelectorAll('#dplist .dpdeliv input[type="number"]');
+  if(inputs.length>0){
+    let total=0;
+    inputs.forEach(inp=>total+=Number(inp.value)||0);
+    return total;
+  }
   return detDeliveries.reduce((s,d)=>s+(Number(d.qty)||0),0);
 }
 
@@ -1887,7 +1897,7 @@ function renderPayRow(ci,pi){
   const row=document.createElement('div');
   row.className='payrow';
   row.setAttribute('data-ci',ci);row.setAttribute('data-pi',pi);
-  row.style.gridTemplateColumns='repeat(7,1fr) auto';
+  row.style.gridTemplateColumns='1fr 1.2fr 1fr 0.7fr 1fr 0.6fr 1fr auto';
   row.innerHTML=`
     <div class="pf"><label>發票日期</label><input type="date" value="${p.invoiceDate}" oninput="detDeliveries[${ci}].payments[${pi}].invoiceDate=this.value"></div>
     <div class="pf" style="min-width:90px"><label>發票號碼</label><input value="${safe(p.invoice||'')}" oninput="detDeliveries[${ci}].payments[${pi}].invoice=this.value"></div>
@@ -1901,12 +1911,11 @@ function renderPayRow(ci,pi){
     <div class="pf"><label>比例%</label><input type="number" class="pct-inp" value="${p.pct||''}" placeholder="30" oninput="detDeliveries[${ci}].payments[${pi}].pct=this.value;recalcPayRow(${ci},${pi})"></div>
     <div class="pf"><label>付款金額(原幣)</label><input class="pa-inp" value="${p.payAmt||''}" placeholder="自動計算" oninput="detDeliveries[${ci}].payments[${pi}].payAmt=this.value"></div>
     <div class="pf" style="justify-content:flex-end;align-items:flex-end"><button class="btn xs danger" onclick="removePayRow(${ci},${pi})">✕</button></div>
-    <div class="pf" style="grid-column:1/3"><label>請款方式</label><select class="ct-sel" onchange="detDeliveries[${ci}].payments[${pi}].claimType=this.value"><option value="">—</option>${ctOpts}</select></div>
+    <div class="pf"><label>請款方式</label><select class="ct-sel" onchange="detDeliveries[${ci}].payments[${pi}].claimType=this.value"><option value="">—</option>${ctOpts}</select></div>
     <div class="pf"><label>憑證時間</label><input type="date" value="${p.voucherDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].voucherDate=this.value"></div>
     <div class="pf"><label>請款時間</label><input type="date" value="${p.claimDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].claimDate=this.value"></div>
     <div class="pf"><label>付款日期</label><input type="date" value="${p.payDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].payDate=this.value"></div>
-    <div class="pf" style="grid-column:5/8"><label>備註</label><input value="${safe(p.payRemark||'')}" placeholder="備註..." oninput="detDeliveries[${ci}].payments[${pi}].payRemark=this.value"></div>
-    <div class="pf"></div>
+    <div class="pf" style="grid-column:5/9"><label>備註</label><input value="${safe(p.payRemark||'')}" placeholder="備註..." oninput="detDeliveries[${ci}].payments[${pi}].payRemark=this.value"></div>
   `;
   container.appendChild(row);
   setTimeout(()=>recalcPayRow(ci,pi),10);
@@ -2684,6 +2693,7 @@ function openModelEdit(idxOrNew){
 }
 
 async function saveModelDetDesk(){
+  console.log('[saveModelDetDesk] called, models.length=',models.length,'modelDetIdx=',modelDetIdx);
   const textFields=['model','name','remark'];const selFields=['country','city','rigging','noCert'];
   const rec={};
   textFields.forEach(f=>{const el=document.getElementById('md-'+f);if(el)rec[f]=el.value||'';});
