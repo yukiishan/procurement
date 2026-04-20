@@ -494,6 +494,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .fst-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 .fst-btn{padding:3px 9px;font-size:11px;font-weight:500;}
 
+.pfst-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}.pfst-btn{padding:3px 9px;font-size:11px;font-weight:500;}
 </style>
 </head>
 <body>
@@ -708,7 +709,13 @@ tbody td{padding:8px 7px;vertical-align:middle}
 <div id="tab-payment" style="display:none">
   <div class="toolbar">
     <input type="text" id="psrch" placeholder="🔍 搜尋 PO / 廠商..." oninput="renderPay()">
-    <select id="pfSt" onchange="renderPay()"><option value="">所有付款狀態</option><option>未付</option><option>部分付款</option><option>已付清</option></select>
+    <div style="display:flex;gap:4px;align-items:center">
+      <button class="btn sm pfst-btn active" data-st="" onclick="setPFSt('',this)">全部</button>
+      <button class="btn sm pfst-btn" data-st="未付" onclick="setPFSt('未付',this)">未付</button>
+      <button class="btn sm pfst-btn" data-st="部分付款" onclick="setPFSt('部分付款',this)">部分付款</button>
+      <button class="btn sm pfst-btn" data-st="已付清" onclick="setPFSt('已付清',this)">已付清</button>
+      <input type="hidden" id="pfSt" value="">
+    </div>
     <div class="spacer"></div>
   </div>
   <div class="content"><div class="twrap"><table>
@@ -1725,12 +1732,9 @@ function recalcAll(){
 }
 
 function getUsedQty(){
-  // Read directly from DOM batch qty inputs for accuracy
-  const inputs=document.querySelectorAll('#dplist .dpdeliv input[type="number"]');
+  const inputs=document.querySelectorAll('.batch-qty-inp');
   if(inputs.length>0){
-    let total=0;
-    inputs.forEach(inp=>total+=Number(inp.value)||0);
-    return total;
+    let t=0;inputs.forEach(inp=>t+=Number(inp.value)||0);return t;
   }
   return detDeliveries.reduce((s,d)=>s+(Number(d.qty)||0),0);
 }
@@ -1861,7 +1865,7 @@ function renderDPCard(ci){
             const row3=document.querySelector('[data-ci=&quot;'+ci3+'&quot;][data-pi=&quot;'+pi3+'&quot;]');
             if(row3){const ad3=row3.querySelector('.ad-inp');if(ad3)ad3.value=etaVal;}
           });"></div>
-      <div class="pf"><label>本批數量<span style="display:block;min-height:13px;font-size:9px"></span></label><input type="number" value="${d.qty}" placeholder="台" min="0" oninput="
+      <div class="pf"><label>本批數量<span style="display:block;min-height:13px;font-size:9px"></span></label><input type="number" class="batch-qty-inp" value="${d.qty}" placeholder="台" min="0" oninput="
         const ci2=${ci};const newQ=this.value;detDeliveries[ci2].qty=newQ;
         const pays2=detDeliveries[ci2].payments;
         pays2.forEach((p2,pi2)=>{
@@ -2626,7 +2630,8 @@ async function saveVendorDetDesk(){
   const rec={};fields.forEach(f=>{const el=document.getElementById('vd-'+f);if(el)rec[f]=el.value;});
   if(!rec.vendorCode&&!rec.vendor){ntf('請填入廠商代號或廠商名稱');return;}
   if(rec.vendorCode){
-    const isDup=vendors.some((v,i)=>v.vendorCode&&v.vendorCode.toUpperCase()===rec.vendorCode.toUpperCase()&&i!==vendorDetIdx);
+    const cv2=String(rec.vendorCode).toUpperCase();
+    const isDup=vendors.some((v,i)=>v.vendorCode!=null&&String(v.vendorCode).toUpperCase()===cv2&&i!==vendorDetIdx);
     if(isDup){ntf('⚠ 廠商代號已存在，請使用不同代號');return;}
   }
   if(vendorDetIdx>=0){vendors[vendorDetIdx]={...vendors[vendorDetIdx],...rec};}
@@ -2693,13 +2698,12 @@ function openModelEdit(idxOrNew){
 }
 
 async function saveModelDetDesk(){
-  console.log('[saveModelDetDesk] called, models.length=',models.length,'modelDetIdx=',modelDetIdx);
   const textFields=['model','name','remark'];const selFields=['country','city','rigging','noCert'];
   const rec={};
   textFields.forEach(f=>{const el=document.getElementById('md-'+f);if(el)rec[f]=el.value||'';});
   selFields.forEach(f=>{const el=document.getElementById('md-'+f);if(el)rec[f]=el.value||'';});
   if(!rec.model){alert('請填入設備型號');return;}
-  const isDupM=models.some((m,i)=>m.model&&m.model.toLowerCase()===rec.model.toLowerCase()&&i!==modelDetIdx);
+  const isDupM=models.some((m,i)=>m.model!=null&&String(m.model).toLowerCase()===String(rec.model).toLowerCase()&&i!==modelDetIdx);
   if(isDupM){alert('此設備型號已存在');return;}
   if(modelDetIdx>=0){models[modelDetIdx]={...models[modelDetIdx],...rec};}
   else{models.push(rec);}
@@ -2756,8 +2760,9 @@ function checkVendorCodeDupDesk(code){
   const warn=document.getElementById('vdCodeDupWarn');
   if(!warn)return;
   if(!code||code.length<1){warn.textContent='';return;}
+  const cv=String(code).toUpperCase();
   const isDup=vendors.some((v,i)=>
-    v.vendorCode&&v.vendorCode.toUpperCase()===code.toUpperCase()&&i!==vendorDetIdx
+    v.vendorCode!=null&&String(v.vendorCode).toUpperCase()===cv&&i!==vendorDetIdx
   );
   warn.textContent=isDup?'⚠ 此廠商代號已存在':'';
 }
@@ -2766,8 +2771,9 @@ function checkModelDupDesk(model){
   const warn=document.getElementById('mdModelDupWarn');
   if(!warn)return;
   if(!model){warn.textContent='';return;}
+  const mv=String(model).toLowerCase();
   const isDup=models.some((m,i)=>
-    m.model&&m.model.toLowerCase()===model.toLowerCase()&&i!==modelDetIdx
+    m.model!=null&&String(m.model).toLowerCase()===mv&&i!==modelDetIdx
   );
   warn.textContent=isDup?'⚠ 此型號已存在':'';
 }
@@ -2778,6 +2784,14 @@ function setFSt(val, btn){
   document.querySelectorAll('.fst-btn').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   renderList();
+}
+
+
+function setPFSt(val,btn){
+  document.getElementById('pfSt').value=val;
+  document.querySelectorAll('.pfst-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderPay();
 }
 
 // 自動檢查是否已登入
