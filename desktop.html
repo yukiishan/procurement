@@ -2023,8 +2023,7 @@ function exportExcel(){
   XLSX.writeFile(wb,'設備採購管理_'+new Date().toLocaleDateString('zh-TW').replace(/\//g,'')+'.xlsx');ntf('✓ Excel已匯出');
 }
 function exportJSON(){const b=new Blob([JSON.stringify({data,nid,opts,modelNames,rates,hols,ts:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='採購備份_'+new Date().toLocaleDateString('zh-TW').replace(/\//g,'')+'.json';a.click();ntf('✓ 備份已下載');}
-async 
-function importJSON(e){const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(!d.data||!Array.isArray(d.data))throw 1;if(!confirm(`確定還原？載入${d.data.length}筆`))return;data=d.data;nid=d.nid||data.length+1;if(d.opts)opts={...DO,...d.opts};if(d.modelNames)modelNames={...DN_DEF,...d.modelNames};if(d.rates)rates={...DR,...d.rates};if(d.hols)hols=d.hols;save();saveO();saveR();saveH();refreshSels();renderList();ntf('✓ 備份已還原');}catch{alert('備份檔格式錯誤');}};reader.readAsText(f);e.target.value='';}
+async function importJSON(e){const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(!d.data||!Array.isArray(d.data))throw 1;if(!confirm(`確定還原？載入${d.data.length}筆`))return;data=d.data;nid=d.nid||data.length+1;if(d.opts)opts={...DO,...d.opts};if(d.modelNames)modelNames={...DN_DEF,...d.modelNames};if(d.rates)rates={...DR,...d.rates};if(d.hols)hols=d.hols;save();saveO();saveR();saveH();refreshSels();renderList();ntf('✓ 備份已還原');}catch{alert('備份檔格式錯誤');}};reader.readAsText(f);e.target.value='';}
 
 const codeDesc={payCode:{},fwdCode:{}};
 
@@ -2098,10 +2097,8 @@ function checkAuth(){
 }
 
 function doLogin(){
-  console.log('[doLogin] called, input value length:', document.getElementById('pwInput')?.value?.length);
   const input = document.getElementById('pwInput');
   const err = document.getElementById('lerr');
-  console.log('[doLogin] PWD match:', input.value === PWD);
   if(input.value === PWD){
     sessionStorage.setItem(SESSION_KEY,'1');
     document.getElementById('ls').style.display='none';
@@ -2451,10 +2448,8 @@ function renderMobDash(){
 const _origStartApp = startApp;
 // Override startApp to also init mobile after load
 async function startApp(){
-  console.log('[startApp] called');
   try{
     initCalY();
-    console.log('[startApp] initCalY done');
     await load();
     migrateModelsFromOpts();
     refreshSels();
