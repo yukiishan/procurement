@@ -2010,7 +2010,7 @@ function renderModelNames(){
 }
 function rmOpt(i){opts[curOptCat].splice(i,1);renderOptList();}
 function addOptI(){if(!opts[curOptCat])opts[curOptCat]=[];opts[curOptCat].push('');renderOptList();const ins=document.querySelectorAll('#optlist input');if(ins.length)ins[ins.length-1].focus();}
-async async function saveOpts(){
+async function saveOpts(){
   const ins=document.querySelectorAll('#optlist input');
   opts[curOptCat]=Array.from(ins).map(i=>i.value.trim()).filter(Boolean);
   if(curOptCat==='model'){
@@ -2130,7 +2130,7 @@ function openCodeDet(key,i){
   document.getElementById('codeDetOv').classList.add('open');
 }
 function closeCodeDet(){document.getElementById('codeDetOv').classList.remove('open');}
-async async function saveCodeDet(){
+async function saveCodeDet(){
   const newCode=document.getElementById('codeDetCode').value.trim();
   const shortVal=document.getElementById('codeDetShort').value.trim();
   const descVal=document.getElementById('codeDetDesc').value.trim();
