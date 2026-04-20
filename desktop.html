@@ -112,7 +112,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .qty-warn{font-size:10px;color:var(--rtx);font-weight:600;margin-left:8px}
 .dpdeliv{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:6px}
 .dppayh{font-size:10px;font-weight:700;color:var(--tx2);padding:5px 0 4px;border-top:1px dashed var(--bd2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
-.payrow{display:grid;gap:4px;margin-bottom:5px;background:var(--sf);border-radius:6px;padding:5px 6px;border:1px solid var(--bd);overflow-x:auto}
+.payrow{display:grid;gap:4px 6px;margin-bottom:5px;background:var(--sf);border-radius:6px;padding:6px 8px;border:1px solid var(--bd)}
 .pf{display:flex;flex-direction:column;gap:2px}
 .pf label{font-size:9px;color:var(--tx3);font-weight:600;text-transform:uppercase}
 .pf input,.pf select{font-size:11px;padding:3px 5px;border:1px solid var(--bd);border-radius:4px;background:var(--sf);color:var(--tx);font-family:inherit;width:100%}
@@ -490,6 +490,10 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .mob-setting-row:last-child{border-bottom:none}
 .mob-setting-row:active{background:var(--m-card2,#FAF7F4)}
 
+
+.fst-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.fst-btn{padding:3px 9px;font-size:11px;font-weight:500;}
+
 </style>
 </head>
 <body>
@@ -674,7 +678,13 @@ tbody td{padding:8px 7px;vertical-align:middle}
     <input type="text" id="srch" placeholder="🔍 搜尋 PO / 廠商 / 設備..." oninput="renderList()">
     <select id="fDept" onchange="renderList()"><option value="">所有部門</option></select>
     <select id="fCur" onchange="renderList()"><option value="">所有幣別</option><option>JPY</option><option>USD</option><option>NTD</option><option>EUR</option></select>
-    <select id="fSt" onchange="renderList()"><option value="">所有狀態</option><option>處理中</option><option>待交貨</option><option>已交貨</option></select>
+    <div style="display:flex;gap:4px;align-items:center">
+    <button class="btn sm fst-btn active" data-st="" onclick="setFSt('',this)">全部</button>
+    <button class="btn sm fst-btn" data-st="處理中" onclick="setFSt('處理中',this)">處理中</button>
+    <button class="btn sm fst-btn" data-st="待交貨" onclick="setFSt('待交貨',this)">待交貨</button>
+    <button class="btn sm fst-btn" data-st="已交貨" onclick="setFSt('已交貨',this)">已交貨</button>
+    <input type="hidden" id="fSt" value="">
+  </div>
     <div class="spacer"></div><span style="font-size:11px;color:var(--tx3)" id="rc"></span>
   </div>
   <div class="content">
@@ -934,7 +944,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
         <div class="fg"><label>代理商</label><input id="f-agent" placeholder="代理商"></div>
         <div class="fg"><label>設備型號</label><select id="f-model" onchange="autoFillModelDesk()"></select></div>
         <!-- Row 3: 數量 + 設備名稱 -->
-        <div class="fg"><label>數量（總）<span id="qtyWarnHd" style="color:var(--rtx);font-size:9px"></span></label><input id="f-qty" type="number" value="1" min="1" oninput="recalcAll();checkQty()"></div>
+        <div class="fg"><label>數量（總）<span id="qtyWarnHd" style="color:var(--rtx);font-size:9px"></span></label><input id="f-qty" type="number" value="1" min="1" oninput="recalcAll();updateQtyInfo()"></div>
         <div class="fg full s3"><label>設備名稱</label><input id="f-name" placeholder="設備完整名稱"></div>
         <!-- Row 4: PO日期 CEA LT TT -->
         <div class="fg"><label>PO日期</label><input id="f-podate" type="date"></div>
@@ -1821,7 +1831,7 @@ function renderDPCard(ci){
     </div>
     <div class="dpdeliv">
       <div class="pf"><label>ETD確認交期
-          <span class="dp-ts" id="etd-ts-${ci}" style="font-size:9px;color:var(--tx3);font-weight:400;display:block;margin-top:1px">${d.etdUpdated?'更新 '+d.etdUpdated:''}</span>
+          <span class="dp-ts" id="etd-ts-${ci}" style="font-size:9px;color:var(--tx3);font-weight:400;display:block;margin-top:1px;min-height:13px">${d.etdUpdated?'更新 '+d.etdUpdated:''}</span>
         </label><input type="date" value="${d.etd}" oninput="
           detDeliveries[${ci}].etd=this.value;
           const ts=new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
@@ -1829,7 +1839,7 @@ function renderDPCard(ci){
           const el=document.getElementById('etd-ts-${ci}');if(el)el.textContent='更新 '+ts;
         "></div>
       <div class="pf"><label>ETA預計到廠
-          <span class="dp-ts" id="eta-ts-${ci}" style="font-size:9px;color:var(--tx3);font-weight:400;display:block;margin-top:1px">${d.etaUpdated?'更新 '+d.etaUpdated:''}</span>
+          <span class="dp-ts" id="eta-ts-${ci}" style="font-size:9px;color:var(--tx3);font-weight:400;display:block;margin-top:1px;min-height:13px">${d.etaUpdated?'更新 '+d.etaUpdated:''}</span>
         </label><input type="date" value="${d.eta}" oninput="
           const ci3=${ci};const etaVal=this.value;detDeliveries[ci3].eta=etaVal;
           const ts3=new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
@@ -1841,7 +1851,7 @@ function renderDPCard(ci){
             const row3=document.querySelector('[data-ci=&quot;'+ci3+'&quot;][data-pi=&quot;'+pi3+'&quot;]');
             if(row3){const ad3=row3.querySelector('.ad-inp');if(ad3)ad3.value=etaVal;}
           });"></div>
-      <div class="pf"><label>本批數量</label><input type="number" value="${d.qty}" placeholder="台" min="0" oninput="
+      <div class="pf"><label>本批數量<span style="display:block;min-height:13px;font-size:9px"></span></label><input type="number" value="${d.qty}" placeholder="台" min="0" oninput="
         const ci2=${ci};const newQ=this.value;detDeliveries[ci2].qty=newQ;
         const pays2=detDeliveries[ci2].payments;
         pays2.forEach((p2,pi2)=>{
@@ -1851,7 +1861,7 @@ function renderDPCard(ci){
           recalcPayRow(ci2,pi2);
         });
         updateQtyInfo()"></div>
-      <div class="pf"><label>S/N</label><input value="${safe(d.sn||'')}" oninput="detDeliveries[${ci}].sn=this.value"></div>
+      <div class="pf"><label>S/N<span style="display:block;min-height:13px;font-size:9px"></span></label><input value="${safe(d.sn||'')}" oninput="detDeliveries[${ci}].sn=this.value"></div>
     </div>
     <div class="dppayh">付款明細 <button class="addbtn" style="display:inline-block;width:auto;padding:2px 8px;margin-left:8px" onclick="addPayRow(${ci})">＋ 新增付款筆</button></div>
     <div class="pay-rows-container"></div>`;
@@ -1877,10 +1887,10 @@ function renderPayRow(ci,pi){
   const row=document.createElement('div');
   row.className='payrow';
   row.setAttribute('data-ci',ci);row.setAttribute('data-pi',pi);
-  row.style.gridTemplateColumns='repeat(13,minmax(70px,1fr)) auto';
+  row.style.gridTemplateColumns='repeat(7,1fr) auto';
   row.innerHTML=`
     <div class="pf"><label>發票日期</label><input type="date" value="${p.invoiceDate}" oninput="detDeliveries[${ci}].payments[${pi}].invoiceDate=this.value"></div>
-    <div class="pf"><label>發票號碼</label><input value="${safe(p.invoice||'')}" oninput="detDeliveries[${ci}].payments[${pi}].invoice=this.value"></div>
+    <div class="pf" style="min-width:90px"><label>發票號碼</label><input value="${safe(p.invoice||'')}" oninput="detDeliveries[${ci}].payments[${pi}].invoice=this.value"></div>
     <div class="pf"><label>實際到廠日</label><input type="date" class="ad-inp" value="${p.arrivalDate}" oninput="detDeliveries[${ci}].payments[${pi}].arrivalDate=this.value"></div>
     <div class="pf"><label>到廠數量</label><input type="number" class="aq-inp" value="${p.arrivalQty!==undefined&&p.arrivalQty!==''?p.arrivalQty:(d.qty||'')}" placeholder="台" oninput="detDeliveries[${ci}].payments[${pi}].arrivalQty=this.value;if(${pi}===0)cascadeAq(${ci},this.value);recalcPayRow(${ci},${pi})"${ci}"][data-pi="'+pi2+'"]');
       if(rowN){const aqN=rowN.querySelector('.aq-inp');if(aqN)aqN.value=this.value;}
@@ -1890,12 +1900,14 @@ function renderPayRow(ci,pi){
     <div class="pf"><label>期別名稱</label><select class="st-sel" onchange="onStCh(${ci},${pi},this.value)">${stageOpts}</select></div>
     <div class="pf"><label>比例%</label><input type="number" class="pct-inp" value="${p.pct||''}" placeholder="30" oninput="detDeliveries[${ci}].payments[${pi}].pct=this.value;recalcPayRow(${ci},${pi})"></div>
     <div class="pf"><label>付款金額(原幣)</label><input class="pa-inp" value="${p.payAmt||''}" placeholder="自動計算" oninput="detDeliveries[${ci}].payments[${pi}].payAmt=this.value"></div>
-    <div class="pf"><label>請款方式</label><select class="ct-sel" onchange="detDeliveries[${ci}].payments[${pi}].claimType=this.value"><option value="">—</option>${ctOpts}</select></div>
+    <div class="pf" style="justify-content:flex-end;align-items:flex-end"><button class="btn xs danger" onclick="removePayRow(${ci},${pi})">✕</button></div>
+    <div class="pf" style="grid-column:1/3"><label>請款方式</label><select class="ct-sel" onchange="detDeliveries[${ci}].payments[${pi}].claimType=this.value"><option value="">—</option>${ctOpts}</select></div>
     <div class="pf"><label>憑證時間</label><input type="date" value="${p.voucherDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].voucherDate=this.value"></div>
     <div class="pf"><label>請款時間</label><input type="date" value="${p.claimDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].claimDate=this.value"></div>
     <div class="pf"><label>付款日期</label><input type="date" value="${p.payDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].payDate=this.value"></div>
-    <div class="pf"><label>備註</label><input value="${safe(p.payRemark||'')}" placeholder="備註..." oninput="detDeliveries[${ci}].payments[${pi}].payRemark=this.value"></div>
-    <div class="pf" style="justify-content:flex-end;align-items:flex-end"><button class="btn xs danger" onclick="removePayRow(${ci},${pi})">✕</button></div>`;
+    <div class="pf" style="grid-column:5/8"><label>備註</label><input value="${safe(p.payRemark||'')}" placeholder="備註..." oninput="detDeliveries[${ci}].payments[${pi}].payRemark=this.value"></div>
+    <div class="pf"></div>
+  `;
   container.appendChild(row);
   setTimeout(()=>recalcPayRow(ci,pi),10);
 }
@@ -2674,17 +2686,27 @@ function openModelEdit(idxOrNew){
 async function saveModelDetDesk(){
   const textFields=['model','name','remark'];const selFields=['country','city','rigging','noCert'];
   const rec={};
-  textFields.forEach(f=>{const el=document.getElementById('md-'+f);if(el)rec[f]=el.value;});
-  selFields.forEach(f=>{const el=document.getElementById('md-'+f);if(el)rec[f]=el.value;});
-  if(!rec.model){ntf('請填入設備型號');return;}
+  textFields.forEach(f=>{const el=document.getElementById('md-'+f);if(el)rec[f]=el.value||'';});
+  selFields.forEach(f=>{const el=document.getElementById('md-'+f);if(el)rec[f]=el.value||'';});
+  if(!rec.model){alert('請填入設備型號');return;}
   const isDupM=models.some((m,i)=>m.model&&m.model.toLowerCase()===rec.model.toLowerCase()&&i!==modelDetIdx);
-  if(isDupM){ntf('⚠ 設備型號已存在，請使用不同型號');return;}
+  if(isDupM){alert('此設備型號已存在');return;}
   if(modelDetIdx>=0){models[modelDetIdx]={...models[modelDetIdx],...rec};}
   else{models.push(rec);}
-  showLoading(true);await saveModels();showLoading(false);
-  refreshModelSelectDesk();
-  document.getElementById('modelDetOv').classList.remove('open');
-  renderModelTab();ntf('✓ 型號資料已儲存');
+  showLoading(true);
+  try{
+    await saveModels();
+    localCache('models',models);
+    refreshModelSelectDesk();
+    document.getElementById('modelDetOv').classList.remove('open');
+    renderModelTab();
+    ntf('✓ 型號資料已儲存');
+  }catch(e){
+    console.error('saveModels error:',e);
+    alert('儲存失敗：'+e.message);
+  }finally{
+    showLoading(false);
+  }
 }
 
 async function deleteModelDetDesk(){
@@ -2738,6 +2760,14 @@ function checkModelDupDesk(model){
     m.model&&m.model.toLowerCase()===model.toLowerCase()&&i!==modelDetIdx
   );
   warn.textContent=isDup?'⚠ 此型號已存在':'';
+}
+
+
+function setFSt(val, btn){
+  document.getElementById('fSt').value=val;
+  document.querySelectorAll('.fst-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderList();
 }
 
 // 自動檢查是否已登入
