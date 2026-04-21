@@ -1356,13 +1356,18 @@ function openModelPickerDesk(){
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center';
   ov.innerHTML=`<div style="background:var(--sf);border-radius:var(--rl);padding:16px;width:400px;max-width:90vw;max-height:75vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2)">
     <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--tx)">選擇設備型號</div>
-    <input id="mPickerSrch" placeholder="🔍 搜尋型號 / 設備名稱..." oninput="renderModelPickerList()" style="padding:7px 10px;border:1px solid var(--bd);border-radius:8px;font-size:12px;margin-bottom:8px;font-family:inherit;background:var(--sf2);color:var(--tx);outline:none">
+    <input id="mPickerSrch" placeholder="🔍 搜尋型號 / 設備名稱..." style="padding:7px 10px;border:1px solid var(--bd);border-radius:8px;font-size:12px;margin-bottom:8px;font-family:inherit;background:var(--sf2);color:var(--tx);outline:none">
     <div id="mPickerList" style="overflow-y:auto;flex:1"></div>
     <button onclick="document.getElementById('mPickerOverlay').remove()" style="width:100%;margin-top:10px;padding:7px;border-radius:8px;background:var(--sf2);border:1px solid var(--bd);font-size:12px;cursor:pointer;font-family:inherit;color:var(--tx2)">取消</button>
   </div>`;
   document.body.appendChild(ov);
   renderModelPickerList();
-  setTimeout(()=>document.getElementById('mPickerSrch')?.focus(),100);
+  const mSrch=document.getElementById('mPickerSrch');
+  if(mSrch){
+    mSrch.addEventListener('input',renderModelPickerList);
+    mSrch.addEventListener('keyup',renderModelPickerList);
+    setTimeout(()=>mSrch.focus(),100);
+  }
 }
 
 function pickModelDesk(modelCode){
@@ -1379,13 +1384,18 @@ function openVendorPickerDesk(){
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center';
   ov.innerHTML=`<div style="background:var(--sf);border-radius:var(--rl);padding:16px;width:400px;max-width:90vw;max-height:75vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2)">
     <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--tx)">選擇廠商</div>
-    <input id="pickerSrch" placeholder="🔍 搜尋廠商代號 / 廠商名稱..." oninput="renderVendorPickerList()" style="padding:7px 10px;border:1px solid var(--bd);border-radius:8px;font-size:12px;margin-bottom:8px;font-family:inherit;background:var(--sf2);color:var(--tx);outline:none">
+    <input id="pickerSrch" placeholder="🔍 搜尋廠商代號 / 廠商名稱..." style="padding:7px 10px;border:1px solid var(--bd);border-radius:8px;font-size:12px;margin-bottom:8px;font-family:inherit;background:var(--sf2);color:var(--tx);outline:none">
     <div id="vPickerList" style="overflow-y:auto;flex:1"></div>
     <button onclick="document.getElementById('vPickerOverlay').remove()" style="width:100%;margin-top:10px;padding:7px;border-radius:8px;background:var(--sf2);border:1px solid var(--bd);font-size:12px;cursor:pointer;font-family:inherit;color:var(--tx2)">取消</button>
   </div>`;
   document.body.appendChild(ov);
   renderVendorPickerList();
-  setTimeout(()=>document.getElementById('pickerSrch')?.focus(),100);
+  const vSrch=document.getElementById('pickerSrch');
+  if(vSrch){
+    vSrch.addEventListener('input',renderVendorPickerList);
+    vSrch.addEventListener('keyup',renderVendorPickerList);
+    setTimeout(()=>vSrch.focus(),100);
+  }
 }
 
 function pickVendorDesk(code){
