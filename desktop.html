@@ -963,7 +963,12 @@ tbody td{padding:8px 7px;vertical-align:middle}
         </div>
         <div class="fg"><label>廠商</label><input id="f-vendor" placeholder="廠商名稱"></div>
         <div class="fg"><label>代理商</label><input id="f-agent" placeholder="代理商"></div>
-        <div class="fg"><label>設備型號</label><select id="f-model" onchange="autoFillModelDesk()"></select></div>
+        <div class="fg"><label>設備型號 <span style="font-size:9px;color:var(--tx3);font-weight:400">輸入後自動帶入設備資料</span></label>
+          <div style="display:flex;gap:4px">
+            <input id="f-model" placeholder="如 1180" style="flex:1;text-transform:uppercase" oninput="this.value=this.value.toUpperCase();autoFillModelDesk()">
+            <button class="btn xs" onclick="openModelPickerDesk()" type="button">選擇</button>
+          </div>
+        </div>
         <!-- Row 3: 數量 + 設備名稱 -->
         <div class="fg"><label>數量（總）<span id="qtyWarnHd" style="color:var(--rtx);font-size:9px"></span></label><input id="f-qty" type="number" value="1" min="1" oninput="recalcAll();updateQtyInfo()"></div>
         <div class="fg full s3"><label>設備名稱</label><input id="f-name" placeholder="設備完整名稱"></div>
@@ -1270,11 +1275,12 @@ function bSel(id,k,blank=false,src=null){
   el.value=v;
 }
 function refreshModelSelectDesk(sel){
+  // f-model is now an input field (not select), just set value if provided
   const el=document.getElementById('f-model');if(!el)return;
-  const cur=sel!==undefined?sel:el.value;
-  // Use models[] only; fallback to opts.model if empty (old data)
-  const src=models.length>0?models:(opts.model||[]).map(m=>({model:m,name:modelNames[m]||''}));
-  el.innerHTML='<option value="">—</option>'+src.map(m=>`<option${String(m.model||'')===cur?' selected':''}>${safe(m.model||'')}</option>`).join('');
+  if(sel!==undefined && sel!==''){
+    el.value=sel;
+    autoFillModelDesk();
+  }
 }
 function refreshSels(){
   refreshModelSelectDesk();
@@ -1322,23 +1328,64 @@ function autoFillVendorDesk(code){
   if(v.shipMode){bSel('f-shipMode','shipMode',true);document.getElementById('f-shipMode').value=v.shipMode;}
 }
 
+function renderVendorPickerList(){
+  const q=(document.getElementById('pickerSrch')?.value||'').toLowerCase();
+  const filtered=vendors.filter(v=>!q||JSON.stringify(v).toLowerCase().includes(q));
+  const el=document.getElementById('vPickerList'); if(!el)return;
+  el.innerHTML=filtered.map(v=>`<div onclick="pickVendorDesk('${safe(v.vendorCode||'')}');document.getElementById('vPickerOverlay').remove()" style="padding:9px 12px;border-radius:8px;border:1px solid var(--bd);cursor:pointer;background:var(--sf);margin-bottom:5px" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background='var(--sf)'">
+    <div style="font-size:12px;font-weight:700;color:var(--tx);font-family:monospace">${safe(v.vendorCode||'')} <span style="font-weight:600;font-family:inherit"> · ${safe(v.vendor||'')}</span></div>
+    <div style="font-size:11px;color:var(--tx3)">${safe(v.agent||'')}</div>
+  </div>`).join('');
+}
+
+function renderModelPickerList(){
+  const q=(document.getElementById('mPickerSrch')?.value||'').toLowerCase();
+  const filtered=models.filter(m=>!q||JSON.stringify(m).toLowerCase().includes(q));
+  const el=document.getElementById('mPickerList'); if(!el)return;
+  el.innerHTML=filtered.map(m=>`<div onclick="pickModelDesk('${safe(m.model||'')}');document.getElementById('mPickerOverlay').remove()" style="padding:9px 12px;border-radius:8px;border:1px solid var(--bd);cursor:pointer;background:var(--sf);margin-bottom:5px" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background='var(--sf)'">
+    <div style="font-size:12px;font-weight:700;color:var(--tx);font-family:monospace">${safe(m.model||'')}</div>
+    <div style="font-size:11px;color:var(--tx3)">${safe(m.name||'')}</div>
+  </div>`).join('');
+}
+
+function openModelPickerDesk(){
+  if(!models.length){ntf('尚無型號資料，請先在設備型號中新增');return;}
+  const existing=document.getElementById('mPickerOverlay');if(existing)existing.remove();
+  const ov=document.createElement('div');
+  ov.id='mPickerOverlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML=`<div style="background:var(--sf);border-radius:var(--rl);padding:16px;width:400px;max-width:90vw;max-height:75vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--tx)">選擇設備型號</div>
+    <input id="mPickerSrch" placeholder="🔍 搜尋型號 / 設備名稱..." oninput="renderModelPickerList()" style="padding:7px 10px;border:1px solid var(--bd);border-radius:8px;font-size:12px;margin-bottom:8px;font-family:inherit;background:var(--sf2);color:var(--tx);outline:none">
+    <div id="mPickerList" style="overflow-y:auto;flex:1"></div>
+    <button onclick="document.getElementById('mPickerOverlay').remove()" style="width:100%;margin-top:10px;padding:7px;border-radius:8px;background:var(--sf2);border:1px solid var(--bd);font-size:12px;cursor:pointer;font-family:inherit;color:var(--tx2)">取消</button>
+  </div>`;
+  document.body.appendChild(ov);
+  renderModelPickerList();
+  setTimeout(()=>document.getElementById('mPickerSrch')?.focus(),100);
+}
+
+function pickModelDesk(modelCode){
+  const el=document.getElementById('f-model');
+  if(el)el.value=modelCode;
+  autoFillModelDesk();
+}
+
 function openVendorPickerDesk(){
   if(!vendors.length){ntf('尚無廠商資料，請先在廠商維護中新增');return;}
   const existing=document.getElementById('vPickerOverlay');if(existing)existing.remove();
   const ov=document.createElement('div');
   ov.id='vPickerOverlay';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center';
-  ov.innerHTML=`<div style="background:var(--sf);border-radius:var(--rl);padding:16px;min-width:320px;max-width:480px;max-height:70vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+  ov.innerHTML=`<div style="background:var(--sf);border-radius:var(--rl);padding:16px;width:400px;max-width:90vw;max-height:75vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2)">
     <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--tx)">選擇廠商</div>
-    <div style="display:flex;flex-direction:column;gap:5px">
-    ${vendors.map(v=>`<div onclick="pickVendorDesk('${safe(v.vendorCode||'')}');document.getElementById('vPickerOverlay').remove()" style="padding:9px 12px;border-radius:8px;border:1px solid var(--bd);cursor:pointer;background:var(--sf)" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background='var(--sf)'">
-      <div style="font-size:12px;font-weight:600;color:var(--tx)">${safe(v.vendorCode||'')} · ${safe(v.vendor||'')}</div>
-      <div style="font-size:11px;color:var(--tx3)">${safe(v.agent||'')}</div>
-    </div>`).join('')}
-    </div>
+    <input id="pickerSrch" placeholder="🔍 搜尋廠商代號 / 廠商名稱..." oninput="renderVendorPickerList()" style="padding:7px 10px;border:1px solid var(--bd);border-radius:8px;font-size:12px;margin-bottom:8px;font-family:inherit;background:var(--sf2);color:var(--tx);outline:none">
+    <div id="vPickerList" style="overflow-y:auto;flex:1"></div>
     <button onclick="document.getElementById('vPickerOverlay').remove()" style="width:100%;margin-top:10px;padding:7px;border-radius:8px;background:var(--sf2);border:1px solid var(--bd);font-size:12px;cursor:pointer;font-family:inherit;color:var(--tx2)">取消</button>
   </div>`;
   document.body.appendChild(ov);
+  renderVendorPickerList();
+  setTimeout(()=>document.getElementById('pickerSrch')?.focus(),100);
 }
 
 function pickVendorDesk(code){
