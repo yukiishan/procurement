@@ -2919,6 +2919,23 @@ function showDayPopup(ds, evList, holName){
   document.body.appendChild(ov);
 }
 
+
+// ── 日期欄位自動帶入當年 ─────────────────────────
+// 當日期輸入框為空且獲得焦點時，自動填入當天日期
+// 使用者 Tab 到年份時即為當前年，可繼續 Tab 修改月/日
+document.addEventListener('focusin', function(e){
+  const el = e.target;
+  if(el.tagName === 'INPUT' && el.type === 'date' && !el.value){
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth()+1).padStart(2,'0');
+    const d = String(today.getDate()).padStart(2,'0');
+    el.value = `${y}-${m}-${d}`;
+    // Trigger oninput if exists (to update data model)
+    el.dispatchEvent(new Event('input', {bubbles:true}));
+  }
+}, true);
+
 // 自動檢查是否已登入
 if(checkAuth()){
   document.getElementById('ls').style.display='none';
