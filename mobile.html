@@ -611,7 +611,13 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
         <div><div class="form-label">代理商</div><div class="form-input-box"><input id="ve-agent" class="form-input" placeholder="代理商"></div></div>
       </div>
       <div class="form-row row-2">
-        <div><div class="form-label">國家</div><div class="form-input-box"><select id="ve-country" class="form-select"></select></div></div>
+        <div>
+            <div class="form-label">國家</div>
+            <div class="form-input-box" style="display:flex;gap:6px;align-items:center">
+              <input id="ve-country" class="form-input" placeholder="國家" style="flex:1">
+              <button onclick="openOptPickerMob('ve-country','選擇國家',opts.country||DO.country)" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;font-family:inherit" type="button">選擇</button>
+            </div>
+          </div></div>
         <div><div class="form-label">運送方式</div><div class="form-input-box"><select id="ve-shipMode" class="form-select"></select></div></div>
       </div>
       <div class="form-row row-2">
@@ -669,8 +675,20 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
       </div>
       <div class="form-row"><div class="form-label">設備名稱</div><div class="form-input-box"><input id="me-name" class="form-input" placeholder="設備完整名稱"></div></div>
       <div class="form-row row-2">
-        <div><div class="form-label">國家</div><div class="form-input-box"><select id="me-country" class="form-select"></select></div></div>
-        <div><div class="form-label">產地城市</div><div class="form-input-box"><select id="me-city" class="form-select"></select></div></div>
+        <div>
+            <div class="form-label">國家</div>
+            <div class="form-input-box" style="display:flex;gap:6px;align-items:center">
+              <input id="me-country" class="form-input" placeholder="國家" style="flex:1">
+              <button onclick="openOptPickerMob('me-country','選擇國家',opts.country||DO.country)" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;font-family:inherit" type="button">選擇</button>
+            </div>
+          </div></div>
+        <div>
+            <div class="form-label">產地城市</div>
+            <div class="form-input-box" style="display:flex;gap:6px;align-items:center">
+              <input id="me-city" class="form-input" placeholder="產地城市" style="flex:1">
+              <button onclick="openOptPickerMob('me-city','選擇城市',opts.city||DO.city)" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;font-family:inherit" type="button">選擇</button>
+            </div>
+          </div></div>
       </div>
       <div class="form-row row-2">
         <div><div class="form-label">吊掛</div><div class="form-input-box"><select id="me-rigging" class="form-select"><option value="">—</option><option>是</option><option>否</option><option>-</option></select></div></div>
@@ -770,8 +788,20 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
         <div><div class="form-label">Line</div><div class="form-input-box"><input id="f-line" class="form-input" placeholder="#1..."></div></div>
       </div>
       <div class="form-row row-2">
-        <div><div class="form-label">國家</div><div class="form-input-box"><select id="f-country" class="form-select"></select></div></div>
-        <div><div class="form-label">產地（城市）</div><div class="form-input-box"><select id="f-city" class="form-select"></select></div></div>
+        <div>
+            <div class="form-label">國家</div>
+            <div class="form-input-box" style="display:flex;gap:6px;align-items:center">
+              <input id="f-country" class="form-input" placeholder="國家" style="flex:1">
+              <button onclick="openOptPickerMob('f-country','選擇國家',opts.country||DO.country)" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;font-family:inherit" type="button">選擇</button>
+            </div>
+          </div></div>
+        <div>
+            <div class="form-label">產地（城市）</div>
+            <div class="form-input-box" style="display:flex;gap:6px;align-items:center">
+              <input id="f-city" class="form-input" placeholder="產地（城市）" style="flex:1">
+              <button onclick="openOptPickerMob('f-city','選擇城市',opts.city||DO.city)" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;font-family:inherit" type="button">選擇</button>
+            </div>
+          </div></div>
       </div>
     </div>
 
@@ -1128,6 +1158,37 @@ function showDayPopup(ds, evList, holName){
     </div>`;
   ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
   document.body.appendChild(ov);
+}
+
+
+// ── 通用選項 Picker（手機版）─────────────────────────
+function openOptPickerMob(fieldId, title, optList){
+  const existing=document.getElementById('optPickerMobOv');if(existing)existing.remove();
+  const ov=document.createElement('div');
+  ov.id='optPickerMobOv';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:flex-end';
+  ov.innerHTML=`<div style="background:var(--sf);border-radius:16px 16px 0 0;width:100%;max-height:75vh;display:flex;flex-direction:column;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom))">
+    <div style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:10px">${title}</div>
+    <input id="optPickerMobSrch" placeholder="🔍 搜尋（中文或英文）..." style="padding:9px 12px;border:1px solid var(--bd);border-radius:10px;font-size:14px;margin-bottom:10px;font-family:inherit;background:var(--sf2);color:var(--tx);outline:none;width:100%;box-sizing:border-box">
+    <div id="optPickerMobList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px"></div>
+    <button onclick="document.getElementById('optPickerMobOv').remove()" style="width:100%;margin-top:10px;padding:12px;border-radius:10px;background:var(--sf2);border:1px solid var(--bd);font-size:14px;cursor:pointer;font-family:inherit;color:var(--tx2)">取消</button>
+  </div>`;
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);
+  
+  function renderOptListMob(){
+    const q=(document.getElementById('optPickerMobSrch')?.value||'').toLowerCase();
+    const filtered=(optList||[]).filter(o=>!q||o.toLowerCase().includes(q));
+    const el=document.getElementById('optPickerMobList');if(!el)return;
+    el.innerHTML=filtered.map(o=>`<div onclick="const el2=document.getElementById('${fieldId}');if(el2)el2.value='${o}';document.getElementById('optPickerMobOv').remove()" style="padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--sf);font-size:14px;color:var(--tx)">${safe(o)}</div>`).join('');
+  }
+  renderOptListMob();
+  const srch=document.getElementById('optPickerMobSrch');
+  if(srch){
+    srch.addEventListener('input',renderOptListMob);
+    srch.addEventListener('keyup',renderOptListMob);
+    setTimeout(()=>srch.focus(),100);
+  }
 }
 
 async function startApp(){
@@ -1565,8 +1626,6 @@ function refreshSels(){
   bSel('f-dept','dept');
   // 不再呼叫 bSel('f-model','model') — 已由 refreshModelSelect() 處理
   // 不再呼叫 bSel('f-vendor','vendor') — vendor 由廠商維護管理
-  bSel('f-country','country',true);
-  bSel('f-city','city',true);
   bSel('f-shipMode','shipMode',true);
   const cs=document.getElementById('f-currency');
   if(cs){const v=cs.value;cs.innerHTML=Object.keys(rates).filter(k=>k!=='NTD').map(k=>`<option>${k}</option>`).join('')+'<option>NTD</option>';cs.value=v;}
@@ -2174,7 +2233,7 @@ function addVendorNew(){
   const dw=document.getElementById('veCodeDupWarn');if(dw)dw.textContent='';
   // populate selects
   const bSel2=(id,k)=>{const el=document.getElementById(id);if(!el)return;el.innerHTML='<option value="">—</option>'+(opts[k]||[]).map(o=>`<option>${safe(o)}</option>`).join('');};
-  bSel2('ve-country','country');bSel2('ve-shipMode','shipMode');
+  bSel2('ve-shipMode','shipMode');
   document.getElementById('vendorEditPage').classList.add('open');
   const dw2=document.getElementById('veCodeDupWarn');if(dw2)dw2.textContent='';
 }
@@ -2185,7 +2244,7 @@ function openVendorEdit(i){
   document.getElementById('vendorEditTitle').textContent='編輯廠商';
   document.getElementById('vendorDelBtn').style.display='block';
   const bSel2=(id,k,val)=>{const el=document.getElementById(id);if(!el)return;el.innerHTML='<option value="">—</option>'+(opts[k]||[]).map(o=>`<option${o===val?' selected':''}>${safe(o)}</option>`).join('');};
-  bSel2('ve-country','country',v.country||'');
+  const elVC=document.getElementById('ve-country');if(elVC)elVC.value=v.country||'';
   bSel2('ve-shipMode','shipMode',v.shipMode||'');
   const textFields=['vendorCode','vendor','agent','payment','forwarder','tel','mobile','contact','email','remark'];
   textFields.forEach(f=>{const el=document.getElementById('ve-'+f);if(el)el.value=v[f]||'';});
@@ -2266,7 +2325,7 @@ function addModelNew(){
   const sel=['me-country','me-city','me-rigging','me-noCert'];
   sel.forEach(id=>{const el=document.getElementById(id);if(el)el.selectedIndex=0;});
   const bSel2=(id,k)=>{const el=document.getElementById(id);if(!el)return;el.innerHTML='<option value="">—</option>'+(opts[k]||[]).map(o=>`<option>${safe(o)}</option>`).join('');};
-  bSel2('me-country','country');bSel2('me-city','city');
+  
   document.getElementById('modelEditPage').classList.add('open');
   const mw2=document.getElementById('meModelDupWarn');if(mw2)mw2.textContent='';
 }
@@ -2277,8 +2336,8 @@ function openModelEdit(i){
   document.getElementById('modelEditTitle').textContent='編輯型號';
   document.getElementById('modelDelBtn').style.display='block';
   const bSel2=(id,k,val)=>{const el=document.getElementById(id);if(!el)return;el.innerHTML='<option value="">—</option>'+(opts[k]||[]).map(o=>`<option${o===val?' selected':''}>${safe(o)}</option>`).join('');};
-  bSel2('me-country','country',m.country||'');
-  bSel2('me-city','city',m.city||'');
+  const elMC=document.getElementById('me-country');if(elMC)elMC.value=m.country||'';
+  const elMCI=document.getElementById('me-city');if(elMCI)elMCI.value=m.city||'';
   ['model','name','remark'].forEach(f=>{const el=document.getElementById('me-'+f);if(el)el.value=m[f]||'';});
   ['rigging','noCert'].forEach(f=>{const el=document.getElementById('me-'+f);if(el)el.value=m[f]||'';});
   document.getElementById('modelEditPage').classList.add('open');

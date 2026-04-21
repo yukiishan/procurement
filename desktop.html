@@ -509,6 +509,12 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .cal-ev-detail{font-size:11px;color:var(--tx2);line-height:1.6}
 .cal-no-ev{text-align:center;padding:24px;color:var(--tx3);font-size:13px}
 
+
+/* Email tag input */
+.email-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 10px;background:var(--blue-bg);color:var(--blue-tx);border-radius:20px;font-size:12px;font-weight:500;white-space:nowrap}
+.email-tag button{background:none;border:none;cursor:pointer;color:var(--blue-tx);font-size:14px;line-height:1;padding:0 0 1px 0;opacity:.7}
+.email-tag button:hover{opacity:1}
+
 </style>
 </head>
 <body>
@@ -834,7 +840,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
         <div class="fg"><label>廠商名稱</label><input id="vd-vendor" placeholder="廠商全名"></div>
         <div class="fg"><label>代理商</label><input id="vd-agent" placeholder="代理商名稱"></div>
         <!-- Row2: 國家 運送方式 (空) -->
-        <div class="fg"><label>國家</label><select id="vd-country"></select></div>
+        <div class="fg"><label>國家</label><div style="display:flex;gap:4px"><input id="vd-country" placeholder="如 日本" style="flex:1"><button class="btn xs" type="button" onclick="openOptPicker('vd-country','選擇國家',opts.country||DO.country)">選擇</button></div></div>
         <div class="fg"><label>運送方式</label><select id="vd-shipMode"></select></div>
         <div class="fg"></div>
         <!-- Row3: 付款方式 貨代代號 (空) -->
@@ -850,8 +856,13 @@ tbody td{padding:8px 7px;vertical-align:middle}
         <div class="fg"><label>行動電話</label><input id="vd-mobile" placeholder="行動電話" type="tel"></div>
         <div class="fg"><label>聯絡人</label><input id="vd-contact" placeholder="聯絡人姓名"></div>
         <!-- Row2: E-mail full width -->
-        <div class="fg full"><label>E-mail <span style="font-size:9px;font-weight:400;color:var(--tx3)">多個 mail 用逗號或 Tab 分隔</span></label>
-          <textarea id="vd-email" rows="3" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;resize:vertical;outline:none" placeholder="mail1@example.com, mail2@example.com"></textarea>
+        <div class="fg full"><label>E-mail <span style="font-size:9px;font-weight:400;color:var(--tx3)">輸入後按 Enter 新增</span></label>
+          <div id="vd-email-wrap" style="min-height:40px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);padding:4px 6px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;cursor:text" onclick="document.getElementById('vd-email-inp').focus()">
+            <div id="vd-email-tags" style="display:contents"></div>
+            <input id="vd-email-inp" placeholder="輸入 email 後按 Enter..." style="border:none;background:none;outline:none;font-size:13px;color:var(--tx);font-family:inherit;min-width:180px;flex:1;padding:3px 2px"
+              onkeydown="emailTagKeydown(event,'vd')" type="email">
+          </div>
+          <input type="hidden" id="vd-email">
         </div>
         <!-- Row3: 備註 full width -->
         <div class="fg full"><label>備註</label>
@@ -884,8 +895,8 @@ tbody td{padding:8px 7px;vertical-align:middle}
         </div>
         <div class="fg s3"><label>設備名稱</label><input id="md-name" placeholder="設備完整名稱"></div>
         <!-- Row2: 國家 產地城市 吊掛 無產證 -->
-        <div class="fg"><label>國家</label><select id="md-country"></select></div>
-        <div class="fg"><label>產地城市</label><select id="md-city"></select></div>
+        <div class="fg"><label>國家</label><div style="display:flex;gap:4px"><input id="md-country" placeholder="如 日本" style="flex:1"><button class="btn xs" type="button" onclick="openOptPicker('md-country','選擇國家',opts.country||DO.country)">選擇</button></div></div>
+        <div class="fg"><label>產地城市</label><div style="display:flex;gap:4px"><input id="md-city" placeholder="如 東京" style="flex:1"><button class="btn xs" type="button" onclick="openOptPicker('md-city','選擇城市',opts.city||DO.city)">選擇</button></div></div>
         <div class="fg"><label>吊掛</label><select id="md-rigging"><option value="">—</option><option>是</option><option>否</option><option>-</option></select></div>
         <div class="fg"><label>無產證</label><select id="md-noCert"><option value="">—</option><option>是</option><option>否</option><option>-</option></select></div>
         <!-- Row3: 備註 full -->
@@ -985,8 +996,8 @@ tbody td{padding:8px 7px;vertical-align:middle}
         <!-- Row 6: 料號 Line 國家 產地 -->
         <div class="fg"><label>料號</label><input id="f-partno" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div>
         <div class="fg"><label>Line</label><input id="f-line" placeholder="#1..."></div>
-        <div class="fg"><label>國家</label><select id="f-country"></select></div>
-        <div class="fg"><label>產地（城市）</label><select id="f-city"></select></div>
+        <div class="fg"><label>國家</label><div style="display:flex;gap:4px"><input id="f-country" placeholder="如 日本" style="flex:1"><button class="btn xs" type="button" onclick="openOptPicker('f-country','選擇國家',opts.country||DO.country)">選擇</button></div></div>
+        <div class="fg"><label>產地（城市）</label><div style="display:flex;gap:4px"><input id="f-city" placeholder="如 東京" style="flex:1"><button class="btn xs" type="button" onclick="openOptPicker('f-city','選擇城市',opts.city||DO.city)">選擇</button></div></div>
         <!-- Row 7: 付款 貨代 運送方式 吊掛 -->
         <div class="fg"><label>付款</label><input id="f-payment" placeholder="如 J94" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div>
         <div class="fg"><label>貨代</label><input id="f-forwarder" placeholder="如 I32" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div>
@@ -1285,7 +1296,6 @@ function refreshModelSelectDesk(sel){
 function refreshSels(){
   refreshModelSelectDesk();
   bSel('f-plant','plant');bSel('f-dept','dept');
-  bSel('f-country','country',true);bSel('f-city','city',true);
   bSel('f-shipMode','shipMode',true);
   const fd=document.getElementById('fDept');
   if(fd)fd.innerHTML='<option value="">所有部門</option>'+(opts.dept||[]).map(d=>`<option>${safe(d)}</option>`).join('');
@@ -1306,9 +1316,9 @@ function autoFillModelDesk(){
       const el=document.getElementById(id);
       if(el&&md[k]!==undefined&&md[k]!=='')el.value=md[k];
     });
-    // Auto-fill select fields
-    if(md.country){bSel('f-country','country',true);document.getElementById('f-country').value=md.country;}
-    if(md.city){bSel('f-city','city',true);document.getElementById('f-city').value=md.city;}
+    // Auto-fill country/city inputs
+    if(md.country){const ec=document.getElementById('f-country');if(ec)ec.value=md.country;}
+    if(md.city){const eci=document.getElementById('f-city');if(eci)eci.value=md.city;}
   } else if(modelNames[m]){
     // Fallback: modelNames dict
     const el=document.getElementById('f-name');
@@ -2707,8 +2717,8 @@ function openVendorEdit(idxOrNew){
   const v=vendorDetIdx>=0?vendors[vendorDetIdx]:{};
   document.getElementById('vendorDetTitle').textContent=vendorDetIdx>=0?`編輯廠商：${v.vendorCode||''}`:'新增廠商';
   document.getElementById('vendorDetDelBtn').style.display=vendorDetIdx>=0?'inline-flex':'none';
-  bSel('vd-country','country',true);bSel('vd-shipMode','shipMode',true);
-  ['vendorCode','vendor','agent','payment','forwarder','tel','mobile','contact','email','remark'].forEach(f=>{
+  bSel('vd-shipMode','shipMode',true);
+  ['vendorCode','vendor','agent','payment','forwarder','tel','mobile','contact','remark'].forEach(f=>{
     const el=document.getElementById('vd-'+f);if(el)el.value=v[f]||'';
   });
   document.getElementById('vd-country').value=v.country||'';
@@ -2779,7 +2789,7 @@ function openModelEdit(idxOrNew){
   const m=modelDetIdx>=0?models[modelDetIdx]:{};
   document.getElementById('modelDetTitle').textContent=modelDetIdx>=0?`編輯型號：${m.model||''}`:'新增型號';
   document.getElementById('modelDetDelBtn').style.display=modelDetIdx>=0?'inline-flex':'none';
-  bSel('md-country','country',true);bSel('md-city','city',true);
+  
   ['model','name','remark'].forEach(f=>{const el=document.getElementById('md-'+f);if(el)el.value=m[f]||'';});
   document.getElementById('md-country').value=m.country||'';
   document.getElementById('md-city').value=m.city||'';
@@ -2935,6 +2945,85 @@ document.addEventListener('focusin', function(e){
     el.dispatchEvent(new Event('input', {bubbles:true}));
   }
 }, true);
+
+
+// ── Email Tag Input ──────────────────────────────
+function emailTagKeydown(e, prefix){
+  if(e.key==='Enter'||e.key===','){
+    e.preventDefault();
+    const inp=document.getElementById(prefix+'-email-inp');
+    const val=(inp.value||'').trim().replace(/,$/,'');
+    if(val)addEmailTag(prefix, val);
+    inp.value='';
+  } else if(e.key==='Backspace'){
+    const inp=document.getElementById(prefix+'-email-inp');
+    if(!inp.value){
+      // Remove last tag
+      const tags=document.getElementById(prefix+'-email-tags');
+      if(tags&&tags.lastElementChild)tags.lastElementChild.remove();
+      syncEmailHidden(prefix);
+    }
+  }
+}
+
+function addEmailTag(prefix, email){
+  const tags=document.getElementById(prefix+'-email-tags');
+  if(!tags)return;
+  // Check duplicate
+  const existing=Array.from(tags.querySelectorAll('.email-tag span')).map(s=>s.textContent.toLowerCase());
+  if(existing.includes(email.toLowerCase()))return;
+  const tag=document.createElement('div');
+  tag.className='email-tag';
+  tag.innerHTML=`<span>${email}</span><button type="button" onclick="this.parentElement.remove();syncEmailHidden('${prefix}')" title="移除">×</button>`;
+  tags.appendChild(tag);
+  syncEmailHidden(prefix);
+}
+
+function syncEmailHidden(prefix){
+  const tags=document.getElementById(prefix+'-email-tags');
+  const hidden=document.getElementById(prefix+'-email');
+  if(!tags||!hidden)return;
+  hidden.value=Array.from(tags.querySelectorAll('.email-tag span')).map(s=>s.textContent).join(',');
+}
+
+function loadEmailTags(prefix, emailStr){
+  const tags=document.getElementById(prefix+'-email-tags');
+  if(!tags)return;
+  tags.innerHTML='';
+  if(!emailStr)return;
+  // Support comma, semicolon, newline separated
+  emailStr.split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean).forEach(e=>addEmailTag(prefix,e));
+}
+
+
+// ── 通用選項 Picker（國家/城市等）────────────────────
+function openOptPicker(fieldId, title, optList){
+  const existing=document.getElementById('optPickerOv');if(existing)existing.remove();
+  const ov=document.createElement('div');
+  ov.id='optPickerOv';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML=`<div style="background:var(--sf);border-radius:var(--rl);padding:16px;width:340px;max-width:90vw;max-height:75vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--tx)">${title}</div>
+    <input id="optPickerSrch" placeholder="🔍 搜尋..." style="padding:7px 10px;border:1px solid var(--bd);border-radius:8px;font-size:12px;margin-bottom:8px;font-family:inherit;background:var(--sf2);color:var(--tx);outline:none">
+    <div id="optPickerList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:4px"></div>
+    <button onclick="document.getElementById('optPickerOv').remove()" style="width:100%;margin-top:10px;padding:7px;border-radius:8px;background:var(--sf2);border:1px solid var(--bd);font-size:12px;cursor:pointer;font-family:inherit;color:var(--tx2)">取消</button>
+  </div>`;
+  document.body.appendChild(ov);
+  
+  function renderOptList(){
+    const q=(document.getElementById('optPickerSrch')?.value||'').toLowerCase();
+    const filtered=optList.filter(o=>!q||o.toLowerCase().includes(q));
+    const el=document.getElementById('optPickerList');if(!el)return;
+    el.innerHTML=filtered.map(o=>`<div onclick="document.getElementById('${fieldId}').value='${o}';document.getElementById('${fieldId}').dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('optPickerOv').remove()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--bd);cursor:pointer;background:var(--sf);font-size:12px;color:var(--tx)" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background='var(--sf)'">${safe(o)}</div>`).join('');
+  }
+  renderOptList();
+  const srch=document.getElementById('optPickerSrch');
+  if(srch){
+    srch.addEventListener('input',renderOptList);
+    srch.addEventListener('keyup',renderOptList);
+    setTimeout(()=>srch.focus(),100);
+  }
+}
 
 // 自動檢查是否已登入
 if(checkAuth()){
