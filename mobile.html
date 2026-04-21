@@ -1489,6 +1489,7 @@ function pickVendor(code){
 }
 
 function refreshSels(){
+  // f-model: 只用 models[]（型號資料工作表），不用 opts.model
   refreshModelSelect();
   const bSel=(id,k,blank=false)=>{
     const el=document.getElementById(id);if(!el)return;
@@ -1497,9 +1498,12 @@ function refreshSels(){
       (opts[k]||[]).map(o=>`<option>${safe(o)}</option>`).join('');
     el.value=v;
   };
-  bSel('f-plant','plant');bSel('f-dept','dept');
-  bSel('f-vendor','vendor');bSel('f-agent','agent',true);bSel('f-model','model');
-  bSel('f-country','country',true);bSel('f-city','city',true);
+  bSel('f-plant','plant');
+  bSel('f-dept','dept');
+  // 不再呼叫 bSel('f-model','model') — 已由 refreshModelSelect() 處理
+  // 不再呼叫 bSel('f-vendor','vendor') — vendor 由廠商維護管理
+  bSel('f-country','country',true);
+  bSel('f-city','city',true);
   bSel('f-shipMode','shipMode',true);
   const cs=document.getElementById('f-currency');
   if(cs){const v=cs.value;cs.innerHTML=Object.keys(rates).filter(k=>k!=='NTD').map(k=>`<option>${k}</option>`).join('')+'<option>NTD</option>';cs.value=v;}
