@@ -934,14 +934,14 @@ async function fetchFromAPI(){
   rates={...DR,...(rr||{})};Object.keys(DR).forEach(k=>{if(rates[k]==null)rates[k]=DR[k];});
   hols=hr||[...DH];
   codeDesc.payCode=(cr&&cr.payCode)||{};codeDesc.fwdCode=(cr&&cr.fwdCode)||{};
-  vendors=vr||[];models=mr||[];
+  vendors=Array.isArray(vr)?vr:[];models=Array.isArray(mr)?mr:[];
   lc('data',{records:data,nextId:nid});lc('opts',{opts,modelNames});lc('rates',rates);lc('hols',hols);
   lc('vendors',vendors);lc('models',models);
   return true;
 }
 
 async function load(){
-  const hasCache=!!lr('data');
+  const hasCache=!!lr('data')&&!!lr('models');
   if(hasCache){
     // 有快取：立即從快取渲染，不顯示 loading
     loadFromCache();
@@ -949,20 +949,18 @@ async function load(){
     // 第一次開啟：顯示 loading 等 API
     showLoading(true);
   }
-  // 背景呼叫 API
+  // 呼叫 API（有快取時為背景更新，無快取時為等待）
   try{
     const ok=await fetchFromAPI();
-    if(ok&&hasCache){
-      // 快取存在時靜默更新 UI
+    if(ok){
+      // 不論有無快取，API 完成後都刷新選單
       refreshSels();
       renderCards();renderPayCards();renderStatsPreview();
-      // 不顯示 toast，避免干擾
     }
   }catch(e){
     const errMsg=e&&e.message?e.message:String(e);
     console.warn('API失敗，使用快取',errMsg);
     if(!hasCache){
-      // 第一次且無快取才提示
       toast('⚠ 無法連線，請確認網路');
     }
   }
@@ -1107,13 +1105,20 @@ function showDayPopup(ds, evList, holName){
 
 async function startApp(){
   initCalY();
-  // load() 會從快取立即渲染，再背景更新 API
-  loadFromCache();        // 立即從快取渲染（同步）
-  migrateModelsFromOpts();
-  refreshSels();
-  renderCards();renderPayCards();renderCal();renderStatsPreview();
-  // 背景 API 同步
-  load();
+  const hasCache=!!lr('data')&&!!lr('models');
+  if(hasCache){
+    // 有快取：先從快取立即渲染
+    loadFromCache();
+    refreshSels();
+    renderCards();renderPayCards();renderCal();renderStatsPreview();
+  }
+  // 呼叫 load（有快取時背景更新，無快取時等待）
+  await load();
+  // 無快取時 load() 完成後才渲染
+  if(!hasCache){
+    refreshSels();
+    renderCards();renderPayCards();renderCal();renderStatsPreview();
+  }
 }
 
 // ══════════════════════════════════════════════════
