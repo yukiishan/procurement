@@ -778,7 +778,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
   <div class="detbody">
     <div class="sec">
       <div class="fgg c4">
-        <div class="fg s2"><label id="codeDetCodeLbl">付款代號</label><input id="codeDetCode" placeholder="代號"></div>
+        <div class="fg s2"><label id="codeDetCodeLbl">付款代號</label><input id="codeDetCode" placeholder="代號" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
         <div class="fg full"><label>簡要備註</label><input id="codeDetShort" placeholder="簡要備註（顯示於列表）"></div>
         <div class="fg full"><label>備註</label><textarea id="codeDetDesc" rows="5" placeholder="詳細備註內容..."></textarea></div>
       </div>
@@ -838,8 +838,8 @@ tbody td{padding:8px 7px;vertical-align:middle}
         <div class="fg"><label>運送方式</label><select id="vd-shipMode"></select></div>
         <div class="fg"></div>
         <!-- Row3: 付款方式 貨代代號 (空) -->
-        <div class="fg"><label>付款方式</label><input id="vd-payment" placeholder="付款代號"></div>
-        <div class="fg"><label>貨代代號</label><input id="vd-forwarder" placeholder="如 I32"></div>
+        <div class="fg"><label>付款代號</label><input id="vd-payment" placeholder="付款代號" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="fg"><label>貨代代號</label><input id="vd-forwarder" placeholder="如 I32" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
         <div class="fg"></div>
       </div>
     </div>
@@ -2170,7 +2170,7 @@ function renderCodeTab(key){
   </tr>`).join('');
 }
 async function addCodeRow(key){
-  const code=prompt('輸入代號（如 J94）:');
+  const code=(prompt('輸入代號（如 J94）:')||'').toUpperCase().trim();
   if(!code)return;
   if(!opts[key])opts[key]=[];
   if(opts[key].includes(code.trim())){alert('此代號已存在');return;}
@@ -2201,7 +2201,7 @@ function openCodeDet(key,i){
 }
 function closeCodeDet(){document.getElementById('codeDetOv').classList.remove('open');}
 async function saveCodeDet(){
-  const newCode=document.getElementById('codeDetCode').value.trim();
+  const newCode=document.getElementById('codeDetCode').value.trim().toUpperCase();
   const shortVal=document.getElementById('codeDetShort').value.trim();
   const descVal=document.getElementById('codeDetDesc').value.trim();
   if(!newCode){alert('代號不能為空');return;}

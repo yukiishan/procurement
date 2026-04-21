@@ -615,8 +615,8 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
         <div><div class="form-label">運送方式</div><div class="form-input-box"><select id="ve-shipMode" class="form-select"></select></div></div>
       </div>
       <div class="form-row row-2">
-        <div><div class="form-label">付款方式</div><div class="form-input-box"><input id="ve-payment" class="form-input" placeholder="付款方式"></div></div>
-        <div><div class="form-label">貨代代號</div><div class="form-input-box"><input id="ve-forwarder" class="form-input" placeholder="貨代代號"></div></div>
+        <div><div class="form-label">付款代號</div><div class="form-input-box"><input id="ve-payment" class="form-input" placeholder="如 J04" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div></div>
+        <div><div class="form-label">貨代代號</div><div class="form-input-box"><input id="ve-forwarder" class="form-input" placeholder="如 I32" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div></div>
       </div>
     </div>
     <div class="form-section">
@@ -773,7 +773,7 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
     <div class="form-section">
       <div class="form-section-title">付款條件</div>
       <div class="form-row row-2">
-        <div><div class="form-label">付款</div><div class="form-input-box"><input id="f-payment" class="form-input" placeholder="如 J94" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div></div>
+        <div><div class="form-label">付款代號</div><div class="form-input-box"><input id="f-payment" class="form-input" placeholder="如 J94" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div></div>
         <div><div class="form-label">貨代</div><div class="form-input-box"><input id="f-forwarder" class="form-input" placeholder="如 I32" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div></div>
       </div>
       <div class="form-row row-2">
@@ -830,7 +830,6 @@ const DO={
   dept:['SMT','LGA FC','QFN FC','DIP','其他'],
   vendor:['YAMAHA','FUJI','TOWA','EO','Heller','BESI','DISCO','技嘉','揚發','常鴻新','其他'],
   agent:['C.P.M(普科)','from PTI','—'],
-  model:['YSP10','BSM2464G','NXT M3II','YPM1180','1913MK7','1913MK3','2100FC HS-S2','DFM-2800','其他'],
   payStage:['訂金款','交機款','驗收款','首付款','第二期','第三期'],
   claimType:['請款單','憑證黏貼','buy-off','驗收單'],
   country:['日本','美國','台灣','韓國','德國','荷蘭','以色列','中國','其他'],
@@ -1945,7 +1944,7 @@ function renderCodesEdit(body){
         </div>`).join('')}
     </div>
     <div class="add-item-row" style="margin-top:10px">
-      <input id="newCodeVal" placeholder="新代號（如 J94）">
+      <input id="newCodeVal" placeholder="新代號（如 J94）" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
       <button class="add-item-btn" onclick="addCode()">新增</button>
     </div>`;
 }
@@ -1956,7 +1955,7 @@ function swCodeType(t){
 }
 
 function addCode(){
-  const val = document.getElementById('newCodeVal').value.trim();
+  const val = document.getElementById('newCodeVal').value.trim().toUpperCase();
   if(!val){toast('請輸入代號');return;}
   if(!opts[curCodeType])opts[curCodeType]=[];
   if(opts[curCodeType].includes(val)){toast('此代號已存在');return;}
@@ -1979,7 +1978,7 @@ function openCodeEdit(type, code){
     <div class="form-section">
       <div class="form-row">
         <div class="form-label">${lbl}</div>
-        <div class="form-input-box"><input id="ceCode" class="form-input" value="${safe(code)}" placeholder="代號"></div>
+        <div class="form-input-box"><input id="ceCode" class="form-input" value="${safe(code)}" placeholder="代號" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
       </div>
       <div class="form-row">
         <div class="form-label">簡要備註</div>
@@ -1996,7 +1995,7 @@ function openCodeEdit(type, code){
 }
 
 async function saveCodeEdit(){
-  const newCode = document.getElementById('ceCode').value.trim();
+  const newCode = document.getElementById('ceCode').value.trim().toUpperCase();
   const short = document.getElementById('ceShort').value.trim();
   const desc = document.getElementById('ceDesc').value.trim();
   if(!newCode){toast('代號不能為空');return;}
@@ -2238,24 +2237,13 @@ async function deleteModelEdit(){
 function refreshModelSelect(selectedVal){
   const el=document.getElementById('f-model');if(!el)return;
   const cur=selectedVal!==undefined?selectedVal:el.value;
-  // Use models[] (型號資料) as single source of truth
-  // Only fall back to opts.model if models[] is empty (old data migration)
-  const src=models.length>0?models:(opts.model||[]).map(m=>({model:m,name:modelNames[m]||''}));
-  el.innerHTML='<option value="">—</option>'+src.map(m=>`<option${String(m.model||'')===cur?' selected':''}>${safe(m.model||'')}</option>`).join('');
+  // ONLY use models[] from 型號資料 sheet - no fallback to old opts.model
+  el.innerHTML='<option value="">—</option>'+models.map(m=>`<option${String(m.model||'')===cur?' selected':''}>${safe(m.model||'')}</option>`).join('');
 }
 
 
 // ── 設備型號資料遷移：若 models 空但 opts.model 有舊資料，自動轉換 ──
-function migrateModelsFromOpts(){
-  if(models.length>0)return;
-  if(!opts.model||!opts.model.length)return;
-  models=opts.model.map(m=>({
-    model:m, name:modelNames[m]||'',
-    country:'',city:'',rigging:'',noCert:'',remark:''
-  }));
-  console.log('migrated',models.length,'models from opts.model');
-  saveModels().catch(e=>console.warn('migration save failed:',e));
-}
+function migrateModelsFromOpts(){ /* disabled: models[] is now authoritative */ }
 
 
 // ── 重複代號檢查 ────────────────────────────────────
