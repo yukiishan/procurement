@@ -921,20 +921,41 @@ function loadFromCache(){
   const h=lr('hols');hols=h||[...DH];
   const vv=lr('vendors');vendors=vv||[];
   const mm=lr('models');models=mm||[];
+  console.log('[loadFromCache] models:', models.length, 'vendors:', vendors.length);
 }
 
 // 從 API 取得最新資料（非同步，背景更新）
 async function fetchFromAPI(){
-  const res=await apiGet('getAll');
-  if(!res)return false;
-  const {data:dr,opts:or,rates:rr,hols:hr,codes:cr,vendors:vr,models:mr}=res;
+  let dr,or,rr,hr,cr,vr,mr;
+  try{
+    // 嘗試 getAll（1次請求，最快）
+    const all=await apiGet('getAll');
+    // apiGet 已解包 {ok,data}，all = {data:{records,...}, opts:{}, rates:{}, ...}
+    if(all&&all.data&&all.data.records!==undefined){
+      dr=all.data; or=all.opts; rr=all.rates; hr=all.hols;
+      cr=all.codes; vr=all.vendors; mr=all.models;
+      console.log('[fetchFromAPI] getAll OK, models:', (mr||[]).length);
+    } else {
+      throw new Error('getAll not available');
+    }
+  }catch(e){
+    // Fallback：7個個別呼叫（舊版 Apps Script 相容）
+    console.log('[fetchFromAPI] fallback to individual calls');
+    [dr,or,rr,hr,cr,vr,mr]=await Promise.all([
+      apiGet('getData'),apiGet('getOptions'),apiGet('getRates'),
+      apiGet('getHols'),apiGet('getCodes'),
+      apiGet('getVendors'),apiGet('getModels')
+    ]);
+  }
   data=(dr&&dr.records)||[];nid=(dr&&dr.nextId)||data.length+1;
   opts={...DO,...(or||{})};Object.keys(DO).forEach(k=>{if(!opts[k]||!opts[k].length)opts[k]=[...DO[k]];});
   modelNames={...DN_DEF};
   rates={...DR,...(rr||{})};Object.keys(DR).forEach(k=>{if(rates[k]==null)rates[k]=DR[k];});
   hols=hr||[...DH];
   codeDesc.payCode=(cr&&cr.payCode)||{};codeDesc.fwdCode=(cr&&cr.fwdCode)||{};
-  vendors=Array.isArray(vr)?vr:[];models=Array.isArray(mr)?mr:[];
+  vendors=Array.isArray(vr)?vr:[];
+  models=Array.isArray(mr)?mr:[];
+  console.log('[fetchFromAPI] done - models:', models.length, 'vendors:', vendors.length);
   lc('data',{records:data,nextId:nid});lc('opts',{opts,modelNames});lc('rates',rates);lc('hols',hols);
   lc('vendors',vendors);lc('models',models);
   return true;
