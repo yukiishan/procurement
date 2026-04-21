@@ -292,6 +292,21 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
 .add-item-row{display:flex;gap:8px;margin-top:8px}
 .add-item-row input{flex:1;font-size:15px;padding:9px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--sf2);color:var(--tx);font-family:inherit;outline:none}
 .add-item-btn{padding:9px 14px;border-radius:10px;background:#93939B;color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+
+/* Calendar Day Popup */
+.cal-day-popup-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center}
+.cal-day-popup{background:var(--sf);border-radius:var(--rl);width:min(400px,90vw);max-height:70vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.cal-day-popup-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--sf)}
+.cal-day-popup-title{font-size:15px;font-weight:700;color:var(--tx)}
+.cal-day-popup-body{padding:12px 16px}
+.cal-ev-item{padding:10px 12px;border-radius:10px;margin-bottom:8px;border:1px solid var(--bd)}
+.cal-ev-etd{background:#dcfce7;border-color:#bbf7d0}
+.cal-ev-eta{background:#dbeafe;border-color:#bfdbfe}
+.cal-ev-hol{background:#fee2e2;border-color:#fecaca}
+.cal-ev-title{font-size:12px;font-weight:700;margin-bottom:4px}
+.cal-ev-detail{font-size:11px;color:var(--tx2);line-height:1.6}
+.cal-no-ev{text-align:center;padding:24px;color:var(--tx3);font-size:13px}
+
 </style>
 </head>
 <body>
@@ -315,6 +330,9 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
   <!-- Header -->
   <div class="app-header" id="appHeader">
     <h1 id="headerTitle">採購清單</h1>
+    <button class="hdr-btn" id="syncBtn" onclick="manualSync()" title="重新同步">
+      <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+    </button>
     <button class="hdr-btn" onclick="showSearch()" id="searchBtn">
       <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     </button>
@@ -914,7 +932,10 @@ async function load(){
     const h=lr('hols');hols=h||[...DH];
     const vv=lr('vendors');vendors=vv||[];
     const mm=lr('models');models=mm||[];
-    toast('⚠ 離線模式');
+    // Show error detail for debugging
+    const errMsg=e&&e.message?e.message:String(e);
+    console.error('Load error detail:',errMsg);
+    toast('⚠ 離線模式：'+errMsg.slice(0,40));
   }
   showLoading(false);
 }
@@ -950,6 +971,92 @@ function doLogin(){
     err.textContent='密碼錯誤';input.value='';input.focus();
     setTimeout(()=>err.textContent='',2500);
   }
+}
+
+
+async function manualSync(){
+  const btn=document.getElementById('syncBtn');
+  if(btn){btn.style.opacity='0.4';btn.style.pointerEvents='none';}
+  await load();
+  migrateModelsFromOpts();
+  refreshSels();
+  renderCards();renderPayCards();renderCal();renderStatsPreview();
+  if(btn){btn.style.opacity='1';btn.style.pointerEvents='';}
+  toast('✓ 資料已同步');
+}
+
+function onMobETDChange(ci, val){
+  detDeliveries[ci].etd=val;
+  const ts=new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  detDeliveries[ci].etdUpdated=ts;
+  const el=document.getElementById('mob-etd-ts-'+ci);
+  if(el)el.textContent='更新 '+ts;
+}
+
+function onMobETAChange(ci, val){
+  detDeliveries[ci].eta=val;
+  const ts=new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  detDeliveries[ci].etaUpdated=ts;
+  const el=document.getElementById('mob-eta-ts-'+ci);
+  if(el)el.textContent='更新 '+ts;
+  syncEtaToPayments(ci,val);
+}
+
+
+function showDayPopup(ds, evList, holName){
+  // Parse date for display
+  const [y,m,d]=ds.split('-').map(Number);
+  const dt=new Date(y,m-1,d);
+  const wdays=['日','一','二','三','四','五','六'];
+  const title=`${y}/${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')} (${wdays[dt.getDay()]})`;
+  
+  let body='';
+  if(holName){
+    body+=`<div class="cal-ev-item cal-ev-hol"><div class="cal-ev-title">🎌 ${safe(holName)}</div><div class="cal-ev-detail">國定假日</div></div>`;
+  }
+  if(!evList||!evList.length){
+    if(!holName) body+='<div class="cal-no-ev">當天無排程</div>';
+  } else {
+    evList.forEach(ev=>{
+      const isEtd=ev.cls==='evetd';
+      const cls=isEtd?'cal-ev-etd':'cal-ev-eta';
+      const type=isEtd?'ETD 確認交期':'ETA 預計到廠';
+      // Parse label: (ETD)PR-1/vendor/model/qty or (ETA)...
+      const raw=ev.lbl.replace(/^\(ET[DA]\)/,'');
+      const parts=raw.split('/');
+      const pr=parts[0]||'';
+      const vendor=parts[1]||'';
+      const model=parts[2]||'';
+      const qty=parts[3]||'';
+      // Find the record for more details
+      const r=data.find(x=>{
+        const batchNum=pr.split('-').pop();
+        return x.pr===pr.split('-').slice(0,-1).join('-') || pr.startsWith(x.pr+'-');
+      });
+      body+=`<div class="cal-ev-item ${cls}">
+        <div class="cal-ev-title">${isEtd?'📦':'✈️'} ${safe(type)}</div>
+        <div class="cal-ev-detail">
+          PO：${safe(pr)}<br>
+          廠商：${safe(vendor)}<br>
+          型號：${safe(model)}<br>
+          數量：${safe(qty)} 台
+        </div>
+      </div>`;
+    });
+  }
+  
+  const ov=document.createElement('div');
+  ov.className='cal-day-popup-ov';
+  ov.innerHTML=`
+    <div class="cal-day-popup">
+      <div class="cal-day-popup-hd">
+        <div class="cal-day-popup-title">${title}</div>
+        <button onclick="this.closest('.cal-day-popup-ov').remove()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--tx3)">✕</button>
+      </div>
+      <div class="cal-day-popup-body">${body}</div>
+    </div>`;
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);
 }
 
 async function startApp(){
@@ -1000,6 +1107,7 @@ function getFiltered(){
     if(curFilter==='all'){}
     else if(curFilter.startsWith('status:')&&r.status!==curFilter.slice(7))return false;
     else if(curFilter.startsWith('cur:')&&r.currency!==curFilter.slice(4))return false;
+    else if(curFilter==='noCert:是'&&r.noCert!=='是')return false;
     if(q&&!JSON.stringify(r).toLowerCase().includes(q))return false;
     return true;
   });
@@ -1150,7 +1258,9 @@ function renderCal(){
       const tc=e.cls==='evetd'?'#166534':e.cls==='evetaL'?'#1e40af':e.cls==='evetaF'?'#991b1b':'#374151';
       return`<div style="font-size:9px;padding:1px 3px;border-radius:3px;margin-bottom:1px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:${bg};color:${tc}" title="${safe(e.lbl)}">${safe(e.lbl)}</div>`;
     }).join('');
-    h+=`<div style="min-height:56px;border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);padding:3px;background:${bg};overflow:hidden"><div style="${dateStyle}">${d}</div>${eHtml}</div>`;
+    const cellEvs=evs[ds]||[];
+    const holN=(hols.find(h=>h.date===ds)||{}).name||'';
+    h+=`<div onclick="showDayPopup('${ds}',[${cellEvs.map(e=>`{cls:'${e.cls}',lbl:'${e.lbl.replace(/'/g,"\\'")}' }`).join(',')}],'${holN.replace(/'/g,"\\'")}' )" style="min-height:56px;border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);padding:3px;background:${bg};overflow:hidden;cursor:pointer"><div style="${dateStyle}">${d}</div>${eHtml}</div>`;
   }
   const rem=(7-(sdow+tot)%7)%7;
   for(let i=1;i<=rem;i++){const dow=(sdow+tot+i-1)%7;h+=`<div style="min-height:56px;border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);padding:3px;background:${dow===0||dow===6?'#f8f9fc':'var(--sf2)'}"><div style="font-size:11px;color:var(--tx3)">${i}</div></div>`;}
@@ -1196,7 +1306,7 @@ function renderDashboard(){
       <div class="dc-sub" style="color:rgba(255,255,255,.7)">${Number(totNTD).toLocaleString()}</div>
     </div>
     <div class="dash-card"><div class="dc-lbl">採購筆數</div><div class="dc-val">${data.length}</div><div class="dc-sub">${data.reduce((s,r)=>s+(r.qty||1),0)} 台</div></div>
-    <div class="dash-card"><div class="dc-lbl">無產證</div><div class="dc-val" style="color:var(--red)">${noCert}</div><div class="dc-sub">件</div></div>
+    <div class="dash-card" onclick="switchTab('list');curFilter='noCert:是';renderCards();" style="cursor:pointer;border:1.5px solid var(--red-bg)"><div class="dc-lbl">無產證 ↗</div><div class="dc-val" style="color:var(--red)">${noCert}</div><div class="dc-sub">件</div></div>
     <div class="dash-card"><div class="dc-lbl">處理中</div><div class="dc-val" style="color:var(--blue)">${bs['處理中']||0}</div><div class="dc-sub">筆</div></div>
     <div class="dash-card"><div class="dc-lbl">待交貨</div><div class="dc-val" style="color:var(--amber)">${bs['待交貨']||0}</div><div class="dc-sub">筆</div></div>
     <div class="dash-card"><div class="dc-lbl">已交貨</div><div class="dc-val" style="color:var(--green)">${bs['已交貨']||0}</div><div class="dc-sub">筆</div></div>
@@ -1341,6 +1451,7 @@ function openDet(idOrNew){
   if(r.deliveries&&r.deliveries.length){
     detDeliveries=r.deliveries.map(d=>({
       etd:d.etd||'',eta:d.eta||'',qty:d.qty||'',sn:d.sn||'',
+      etdUpdated:d.etdUpdated||'',etaUpdated:d.etaUpdated||'',
       payments:(d.payments||[]).map((p,pi)=>({
         ...p,
         invoiceDate:p.invoiceDate||todayDet,
@@ -1375,8 +1486,14 @@ function renderDPCardM(ci,container){
       <button class="batch-del-btn" onclick="removeDPM(${ci})">移除</button>
     </div>
     <div class="batch-grid">
-      <div class="batch-field"><label>ETD確認交期</label><input type="date" value="${d.etd}" oninput="detDeliveries[${ci}].etd=this.value"></div>
-      <div class="batch-field"><label>ETA預計到廠</label><input type="date" value="${d.eta}" oninput="detDeliveries[${ci}].eta=this.value;syncEtaToPayments(${ci},this.value)"></div>
+      <div class="batch-field">
+        <label>ETD確認交期<span id="mob-etd-ts-${ci}" style="display:block;font-size:10px;color:var(--tx3);font-weight:400;min-height:14px">${d.etdUpdated?'更新 '+d.etdUpdated:''}</span></label>
+        <input type="date" value="${d.etd}" oninput="onMobETDChange(${ci},this.value)">
+      </div>
+      <div class="batch-field">
+        <label>ETA預計到廠<span id="mob-eta-ts-${ci}" style="display:block;font-size:10px;color:var(--tx3);font-weight:400;min-height:14px">${d.etaUpdated?'更新 '+d.etaUpdated:''}</span></label>
+        <input type="date" value="${d.eta}" oninput="onMobETAChange(${ci},this.value)">
+      </div>
       <div class="batch-field"><label>本批數量</label><input type="number" value="${d.qty}" placeholder="台" oninput="detDeliveries[${ci}].qty=this.value;syncQtyToPayments(${ci},this.value)"></div>
       <div class="batch-field"><label>S/N</label><input value="${safe(d.sn||'')}" oninput="detDeliveries[${ci}].sn=this.value"></div>
     </div>
@@ -1502,7 +1619,8 @@ function removePayRowM(ci,pi){
 
 function getDPsM(){
   return detDeliveries.map(d=>({
-    etd:d.etd,eta:d.eta,qty:d.qty,sn:d.sn,
+    etd:d.etd,eta:d.eta,qty:d.qty,sn:d.sn||'',
+    etdUpdated:d.etdUpdated||'',etaUpdated:d.etaUpdated||'',
     payments:d.payments.map(p=>({
       invoiceDate:p.invoiceDate,invoice:p.invoice,arrivalDate:p.arrivalDate,
       arrivalQty:p.arrivalQty,stageLabel:p.stageLabel,pct:p.pct,

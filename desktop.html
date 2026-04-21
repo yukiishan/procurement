@@ -495,6 +495,20 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .fst-btn{padding:3px 9px;font-size:11px;font-weight:500;}
 
 .pfst-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}.pfst-btn{padding:3px 9px;font-size:11px;font-weight:500;}
+
+.cal-day-popup-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center}
+.cal-day-popup{background:var(--sf);border-radius:var(--rl);width:min(480px,90vw);max-height:75vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.cal-day-popup-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--sf)}
+.cal-day-popup-title{font-size:15px;font-weight:700;color:var(--tx)}
+.cal-day-popup-body{padding:14px 18px}
+.cal-ev-item{padding:10px 12px;border-radius:10px;margin-bottom:8px;border:1px solid var(--bd)}
+.cal-ev-etd{background:#dcfce7;border-color:#bbf7d0}
+.cal-ev-eta{background:#dbeafe;border-color:#bfdbfe}
+.cal-ev-hol{background:#fee2e2;border-color:#fecaca}
+.cal-ev-title{font-size:12px;font-weight:700;margin-bottom:4px}
+.cal-ev-detail{font-size:11px;color:var(--tx2);line-height:1.6}
+.cal-no-ev{text-align:center;padding:24px;color:var(--tx3);font-size:13px}
+
 </style>
 </head>
 <body>
@@ -824,7 +838,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
         <div class="fg"><label>運送方式</label><select id="vd-shipMode"></select></div>
         <div class="fg"></div>
         <!-- Row3: 付款方式 貨代代號 (空) -->
-        <div class="fg"><label>付款方式</label><input id="vd-payment" placeholder="如 T/T 30天"></div>
+        <div class="fg"><label>付款方式</label><input id="vd-payment" placeholder="付款代號"></div>
         <div class="fg"><label>貨代代號</label><input id="vd-forwarder" placeholder="如 I32"></div>
         <div class="fg"></div>
       </div>
@@ -1555,8 +1569,11 @@ function renderCal(){
     const isToday=dt.toDateString()===now.toDateString();
     const isWknd=dow===0||dow===6,isHol=holSet.has(ds);
     let cls='calcell';if(isWknd)cls+=' wknd';if(isHol)cls+=' hol';if(isToday)cls+=' today';
-    const eHtml=(evs[ds]||[]).map(e=>`<div class="calev ${e.cls}" title="${safe(e.lbl)}">${safe(e.lbl)}</div>`).join('');
-    h+=`<div class="${cls}"><div class="caldate">${d}</div>${eHtml}</div>`;
+    const cellEvs=evs[ds]||[];
+    const holN=(hols.find(h=>h.date===ds)||{}).name||'';
+    const eHtml=cellEvs.map(e=>`<div class="calev ${e.cls}" title="${safe(e.lbl)}">${safe(e.lbl)}</div>`).join('');
+    const safeEvs=JSON.stringify(cellEvs).replace(/"/g,"'").replace(/\\/g,'\\\\');
+    h+=`<div class="${cls}" onclick="showDayPopup('${ds}',${safeEvs},'${holN.replace(/'/g,"\\'")}' )" style="cursor:pointer"><div class="caldate">${d}</div>${eHtml}</div>`;
   }
   const rem=(7-(sdow+tot)%7)%7;
   for(let i=1;i<=rem;i++){const dow=(sdow+tot+i-1)%7;h+=`<div class="calcell om${dow===0||dow===6?' wknd':''}"><div class="caldate">${i}</div></div>`;}
@@ -1837,6 +1854,7 @@ function openDet(idOrNew){
   if(r.deliveries&&r.deliveries.length){
     detDeliveries=r.deliveries.map(d=>({
       etd:d.etd||'',eta:d.eta||'',qty:d.qty||'',sn:d.sn||'',
+      etdUpdated:d.etdUpdated||'',etaUpdated:d.etaUpdated||'',
       payments:(d.payments||[]).map((p,pi)=>({
         ...p,
         // Default invoiceDate to today if empty
@@ -1848,7 +1866,7 @@ function openDet(idOrNew){
       }))
     }));
   } else {
-    detDeliveries=[{etd:'',eta:'',qty:'',note:'',payments:[{invoiceDate:todayDet,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel:'訂金款',pct:'',payAmt:'',claimType:'',claimDate:'',payDate:''}]}];
+    detDeliveries=[{etd:'',eta:'',qty:'',sn:'',etdUpdated:'',etaUpdated:'',payments:[{invoiceDate:todayDet,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel:'訂金款',pct:'',payAmt:'',claimType:'',voucherDate:'',claimDate:'',payDate:'',payRemark:'',pctManual:false,payAmtManual:false}]}];
   }
 
   renderDPList();
@@ -2470,8 +2488,11 @@ function renderMobCal(){
     const isToday=dt.toDateString()===now.toDateString();
     const isWknd=dow===0||dow===6,isHol=holSet.has(ds);
     let cls='calcell';if(isWknd)cls+=' wknd';if(isHol)cls+=' hol';if(isToday)cls+=' today';
-    const eHtml=(evs[ds]||[]).map(e=>`<div class="calev ${e.cls}" title="${safe(e.lbl)}">${safe(e.lbl)}</div>`).join('');
-    h+=`<div class="${cls}"><div class="caldate">${d}</div>${eHtml}</div>`;
+    const cellEvs=evs[ds]||[];
+    const holN=(hols.find(h=>h.date===ds)||{}).name||'';
+    const eHtml=cellEvs.map(e=>`<div class="calev ${e.cls}" title="${safe(e.lbl)}">${safe(e.lbl)}</div>`).join('');
+    const safeEvs=JSON.stringify(cellEvs).replace(/"/g,"'").replace(/\\/g,'\\\\');
+    h+=`<div class="${cls}" onclick="showDayPopup('${ds}',${safeEvs},'${holN.replace(/'/g,"\\'")}' )" style="cursor:pointer"><div class="caldate">${d}</div>${eHtml}</div>`;
   }
   const rem=(7-(sdow+tot)%7)%7;
   for(let i=1;i<=rem;i++){const dow=(sdow+tot+i-1)%7;h+=`<div class="calcell om${dow===0||dow===6?' wknd':''}"><div class="caldate">${i}</div></div>`;}
@@ -2806,6 +2827,39 @@ function setPFSt(val,btn){
   document.querySelectorAll('.pfst-btn').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   renderPay();
+}
+
+
+function showDayPopup(ds, evList, holName){
+  const [y,m,d]=ds.split('-').map(Number);
+  const dt=new Date(y,m-1,d);
+  const wdays=['日','一','二','三','四','五','六'];
+  const title=`${y}/${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')} (${wdays[dt.getDay()]})`;
+  let body='';
+  if(holName){
+    body+=`<div class="cal-ev-item cal-ev-hol"><div class="cal-ev-title">🎌 ${safe(holName)}</div><div class="cal-ev-detail">國定假日</div></div>`;
+  }
+  if(!evList||!evList.length){
+    if(!holName) body+='<div class="cal-no-ev">當天無排程</div>';
+  } else {
+    evList.forEach(ev=>{
+      const isEtd=ev.cls==='evetd';
+      const cls=isEtd?'cal-ev-etd':'cal-ev-eta';
+      const type=isEtd?'ETD 確認交期':'ETA 預計到廠';
+      const raw=ev.lbl.replace(/^\(ET[DA]\)/,'');
+      const parts=raw.split('/');
+      const pr=parts[0]||'';const vendor=parts[1]||'';const model=parts[2]||'';const qty=parts[3]||'';
+      body+=`<div class="cal-ev-item ${cls}">
+        <div class="cal-ev-title">${isEtd?'📦':'✈️'} ${safe(type)}</div>
+        <div class="cal-ev-detail">PO：${safe(pr)}<br>廠商：${safe(vendor)}<br>型號：${safe(model)}<br>數量：${safe(qty)} 台</div>
+      </div>`;
+    });
+  }
+  const ov=document.createElement('div');
+  ov.className='cal-day-popup-ov';
+  ov.innerHTML=`<div class="cal-day-popup"><div class="cal-day-popup-hd"><div class="cal-day-popup-title">${title}</div><button onclick="this.closest('.cal-day-popup-ov').remove()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--tx3);padding:0">✕</button></div><div class="cal-day-popup-body">${body}</div></div>`;
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);
 }
 
 // 自動檢查是否已登入
