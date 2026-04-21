@@ -307,6 +307,9 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
 .cal-ev-detail{font-size:11px;color:var(--tx2);line-height:1.6}
 .cal-no-ev{text-align:center;padding:24px;color:var(--tx3);font-size:13px}
 
+
+@keyframes spin{to{transform:rotate(360deg)}}
+
 </style>
 </head>
 <body>
@@ -911,31 +914,58 @@ async function apiPost(a,p){const r=await fetch(API_URL,{method:'POST',body:JSON
 function lc(k,v){try{localStorage.setItem('pv6_'+k,JSON.stringify(v));}catch(e){}}
 function lr(k){try{const s=localStorage.getItem('pv6_'+k);return s?JSON.parse(s):null;}catch(e){return null;}}
 
+// 從快取讀取資料（同步，不等 API）
+function loadFromCache(){
+  const d=lr('data');if(d){data=d.records||[];nid=d.nextId||data.length+1;}
+  const o=lr('opts');if(o){opts={...DO,...(o.opts||{})};modelNames=o.modelNames||{...DN_DEF};}else{opts={...DO};modelNames={...DN_DEF};}
+  const r=lr('rates');rates=r?{...DR,...r}:{...DR};
+  const h=lr('hols');hols=h||[...DH];
+  const vv=lr('vendors');vendors=vv||[];
+  const mm=lr('models');models=mm||[];
+}
+
+// 從 API 取得最新資料（非同步，背景更新）
+async function fetchFromAPI(){
+  const res=await apiGet('getAll');
+  if(!res)return false;
+  const {data:dr,opts:or,rates:rr,hols:hr,codes:cr,vendors:vr,models:mr}=res;
+  data=(dr&&dr.records)||[];nid=(dr&&dr.nextId)||data.length+1;
+  opts={...DO,...(or||{})};Object.keys(DO).forEach(k=>{if(!opts[k]||!opts[k].length)opts[k]=[...DO[k]];});
+  modelNames={...DN_DEF};
+  rates={...DR,...(rr||{})};Object.keys(DR).forEach(k=>{if(rates[k]==null)rates[k]=DR[k];});
+  hols=hr||[...DH];
+  codeDesc.payCode=(cr&&cr.payCode)||{};codeDesc.fwdCode=(cr&&cr.fwdCode)||{};
+  vendors=vr||[];models=mr||[];
+  lc('data',{records:data,nextId:nid});lc('opts',{opts,modelNames});lc('rates',rates);lc('hols',hols);
+  lc('vendors',vendors);lc('models',models);
+  return true;
+}
+
 async function load(){
-  showLoading(true);
+  const hasCache=!!lr('data');
+  if(hasCache){
+    // 有快取：立即從快取渲染，不顯示 loading
+    loadFromCache();
+  } else {
+    // 第一次開啟：顯示 loading 等 API
+    showLoading(true);
+  }
+  // 背景呼叫 API
   try{
-    const [dr,or,rr,hr,cr,vr,mr]=await Promise.all([apiGet('getData'),apiGet('getOptions'),apiGet('getRates'),apiGet('getHols'),apiGet('getCodes'),apiGet('getVendors'),apiGet('getModels')]);
-    data=dr.records||[];nid=dr.nextId||data.length+1;
-    opts={...DO,...(or||{})};Object.keys(DO).forEach(k=>{if(!opts[k]||!opts[k].length)opts[k]=[...DO[k]];});
-    modelNames={...DN_DEF};
-    rates={...DR,...(rr||{})};Object.keys(DR).forEach(k=>{if(rates[k]==null)rates[k]=DR[k];});
-    hols=hr||[...DH];
-    codeDesc.payCode=(cr&&cr.payCode)||{};codeDesc.fwdCode=(cr&&cr.fwdCode)||{};
-    vendors=vr||[];models=mr||[];
-    lc('data',{records:data,nextId:nid});lc('opts',{opts,modelNames});lc('rates',rates);lc('hols',hols);
-    lc('vendors',vendors);lc('models',models);
+    const ok=await fetchFromAPI();
+    if(ok&&hasCache){
+      // 快取存在時靜默更新 UI
+      refreshSels();
+      renderCards();renderPayCards();renderStatsPreview();
+      // 不顯示 toast，避免干擾
+    }
   }catch(e){
-    console.warn('API失敗，使用快取',e);
-    const d=lr('data');if(d){data=d.records||[];nid=d.nextId||data.length+1;}
-    const o=lr('opts');if(o){opts={...DO,...(o.opts||{})};modelNames=o.modelNames||{...DN_DEF};}else{opts={...DO};modelNames={...DN_DEF};}
-    const r=lr('rates');rates=r?{...DR,...r}:{...DR};
-    const h=lr('hols');hols=h||[...DH];
-    const vv=lr('vendors');vendors=vv||[];
-    const mm=lr('models');models=mm||[];
-    // Show error detail for debugging
     const errMsg=e&&e.message?e.message:String(e);
-    console.error('Load error detail:',errMsg);
-    toast('⚠ 離線模式：'+errMsg.slice(0,40));
+    console.warn('API失敗，使用快取',errMsg);
+    if(!hasCache){
+      // 第一次且無快取才提示
+      toast('⚠ 無法連線，請確認網路');
+    }
   }
   showLoading(false);
 }
@@ -976,13 +1006,30 @@ function doLogin(){
 
 async function manualSync(){
   const btn=document.getElementById('syncBtn');
-  if(btn){btn.style.opacity='0.4';btn.style.pointerEvents='none';}
-  await load();
-  migrateModelsFromOpts();
-  refreshSels();
-  renderCards();renderPayCards();renderCal();renderStatsPreview();
-  if(btn){btn.style.opacity='1';btn.style.pointerEvents='';}
-  toast('✓ 資料已同步');
+  if(btn){
+    btn.style.opacity='0.4';btn.style.pointerEvents='none';
+    btn.style.animation='spin 1s linear infinite';
+  }
+  showLoading(true);
+  try{
+    const ok=await fetchFromAPI();
+    if(ok){
+      migrateModelsFromOpts();
+      refreshSels();
+      renderCards();renderPayCards();renderCal();renderStatsPreview();
+      toast('✓ 資料已同步');
+    }else{
+      toast('⚠ 同步失敗，請重試');
+    }
+  }catch(e){
+    console.warn('sync error:',e);
+    toast('⚠ 同步失敗：'+String(e.message||e).slice(0,30));
+  }
+  showLoading(false);
+  if(btn){
+    btn.style.opacity='1';btn.style.pointerEvents='';
+    btn.style.animation='';
+  }
 }
 
 function onMobETDChange(ci, val){
@@ -1061,10 +1108,13 @@ function showDayPopup(ds, evList, holName){
 
 async function startApp(){
   initCalY();
-  await load();
-  migrateModelsFromOpts();  // 若 models 空則從舊 opts.model 遷移
-  refreshSels();        // 必須在 load() 後，models/vendors 才有資料
+  // load() 會從快取立即渲染，再背景更新 API
+  loadFromCache();        // 立即從快取渲染（同步）
+  migrateModelsFromOpts();
+  refreshSels();
   renderCards();renderPayCards();renderCal();renderStatsPreview();
+  // 背景 API 同步
+  load();
 }
 
 // ══════════════════════════════════════════════════
