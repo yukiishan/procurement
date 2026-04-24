@@ -89,7 +89,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .detov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80;overflow-y:auto}
 .detov.open{display:block}
 .detpanel{background:var(--sf);min-height:100vh;max-width:920px;margin:0 auto}
-.dethd{display:flex;align-items:center;gap:8px;padding:9px 14px;background:var(--bg);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.dethd{display:flex;align-items:center;gap:8px;padding:9px 14px;position:sticky;top:0;z-index:10;background:var(--sf);background:var(--bg);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .dethd h2{font-size:14px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .detback{cursor:pointer;font-size:21px;color:var(--tx2);background:none;border:none;line-height:1;padding:0 3px}
 .detbody{padding:11px 14px;padding-bottom:50px}
@@ -783,10 +783,29 @@ tbody td{padding:8px 7px;vertical-align:middle}
   </div>
   <div class="detbody">
     <div class="sec">
-      <div class="fgg c4">
-        <div class="fg s2"><label id="codeDetCodeLbl">付款代號</label><input id="codeDetCode" placeholder="代號" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
-        <div class="fg full"><label>簡要備註</label><input id="codeDetShort" placeholder="簡要備註（顯示於列表）"></div>
-        <div class="fg full"><label>備註</label><textarea id="codeDetDesc" rows="5" placeholder="詳細備註內容..."></textarea></div>
+      <div class="fgg" style="grid-template-columns:100px 1fr;gap:8px">
+        <!-- Row1: 代號(3碼) + 簡要備註(填滿) -->
+        <div class="fg">
+          <label id="codeDetCodeLbl">付款代號</label>
+          <input id="codeDetCode" placeholder="如 J94" maxlength="3" style="text-transform:uppercase;font-family:monospace;letter-spacing:2px;font-size:15px" oninput="setValPreserveCursor(this,this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+        </div>
+        <div class="fg">
+          <label>簡要備註</label>
+          <input id="codeDetShort" placeholder="簡要備註（顯示於列表）" style="width:100%">
+        </div>
+      </div>
+      <!-- Row2: 三期比例 -->
+      <div id="payPctRow" style="display:none;margin-top:8px">
+        <div class="sechd" style="margin-bottom:6px">付款比例 (%)</div>
+        <div class="fgg c3" style="gap:8px">
+          <div class="fg"><label>訂金款 (%)</label><input id="codeDetPctD" type="number" min="0" max="100" placeholder="" value="0" oninput="syncPayPct()"></div>
+          <div class="fg"><label>交機款 (%)</label><input id="codeDetPctM" type="number" min="0" max="100" placeholder="" value="0" oninput="syncPayPct()"></div>
+          <div class="fg"><label>驗收款 (%)</label><input id="codeDetPctA" type="number" min="0" max="100" placeholder="" value="0" oninput="syncPayPct()"></div>
+        </div>
+        <div id="pctSumWarn" style="font-size:11px;color:var(--rtx);margin-top:4px;min-height:14px"></div>
+      </div>
+      <div class="fgg" style="grid-template-columns:1fr;margin-top:8px">
+        <div class="fg full"><label>備註</label><textarea id="codeDetDesc" rows="3" placeholder="詳細備註內容..." style="width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;resize:vertical;outline:none"></textarea></div>
       </div>
     </div>
   </div>
@@ -834,18 +853,18 @@ tbody td{padding:8px 7px;vertical-align:middle}
         <!-- Row1: 廠商代號 廠商名稱 代理商 -->
         <div class="fg">
           <label>廠商代號</label>
-          <input id="vd-vendorCode" placeholder="英數4碼" maxlength="4" style="text-transform:uppercase;font-family:monospace;letter-spacing:3px;font-size:15px" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');checkVendorCodeDupDesk(this.value)">
+          <input id="vd-vendorCode" autocomplete="off" placeholder="英數4碼" maxlength="4" style="text-transform:uppercase;font-family:monospace;letter-spacing:3px;font-size:15px" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');this.setSelectionRange(s,s);checkVendorCodeDupDesk(this.value)">
           <div id="vdCodeDupWarn" style="color:var(--rtx);font-size:10px;margin-top:2px;min-height:12px;font-weight:600"></div>
         </div>
-        <div class="fg"><label>廠商名稱</label><input id="vd-vendor" placeholder="廠商全名"></div>
-        <div class="fg"><label>代理商</label><input id="vd-agent" placeholder="代理商名稱"></div>
+        <div class="fg"><label>廠商名稱</label><input id="vd-vendor" autocomplete="off" placeholder="廠商全名"></div>
+        <div class="fg"><label>代理商</label><input id="vd-agent" autocomplete="off" placeholder="代理商名稱"></div>
         <!-- Row2: 國家 運送方式 (空) -->
         <div class="fg"><label>國家</label><div style="display:flex;gap:4px"><input id="vd-country" placeholder="如 日本" style="flex:1"><button class="btn xs" type="button" onclick="openOptPicker('vd-country','選擇國家',opts.country||DO.country)">選擇</button></div></div>
         <div class="fg"><label>運送方式</label><select id="vd-shipMode"></select></div>
         <div class="fg"></div>
         <!-- Row3: 付款方式 貨代代號 (空) -->
-        <div class="fg"><label>付款代號</label><input id="vd-payment" placeholder="付款代號" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
-        <div class="fg"><label>貨代代號</label><input id="vd-forwarder" placeholder="如 I32" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="fg"><label>付款代號</label><input id="vd-payment" placeholder="付款代號" style="text-transform:uppercase" oninput="setValPreserveCursor(this,this.value.toUpperCase()"></div>
+        <div class="fg"><label>貨代代號</label><input id="vd-forwarder" placeholder="如 I32" style="text-transform:uppercase" oninput="setValPreserveCursor(this,this.value.toUpperCase()"></div>
         <div class="fg"></div>
       </div>
     </div>
@@ -856,13 +875,8 @@ tbody td{padding:8px 7px;vertical-align:middle}
         <div class="fg"><label>行動電話</label><input id="vd-mobile" placeholder="行動電話" type="tel"></div>
         <div class="fg"><label>聯絡人</label><input id="vd-contact" placeholder="聯絡人姓名"></div>
         <!-- Row2: E-mail full width -->
-        <div class="fg full"><label>E-mail <span style="font-size:9px;font-weight:400;color:var(--tx3)">輸入後按 Enter 新增</span></label>
-          <div id="vd-email-wrap" style="min-height:40px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);padding:4px 6px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;cursor:text" onclick="document.getElementById('vd-email-inp').focus()">
-            <div id="vd-email-tags" style="display:contents"></div>
-            <input id="vd-email-inp" placeholder="輸入 email 後按 Enter..." style="border:none;background:none;outline:none;font-size:13px;color:var(--tx);font-family:inherit;min-width:180px;flex:1;padding:3px 2px"
-              onkeydown="emailTagKeydown(event,'vd')" type="email">
-          </div>
-          <input type="hidden" id="vd-email">
+        <div class="fg full"><label>E-mail <span style="font-size:9px;font-weight:400;color:var(--tx3)">多個 mail 用逗號或換行分隔</span></label>
+          <textarea id="vd-email" rows="3" autocomplete="off" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;resize:vertical;outline:none" placeholder="mail1@example.com, mail2@example.com"></textarea>
         </div>
         <!-- Row3: 備註 full width -->
         <div class="fg full"><label>備註</label>
@@ -887,19 +901,21 @@ tbody td{padding:8px 7px;vertical-align:middle}
   <div class="detbody">
     <div class="sec"><div class="sechd">型號資料</div>
       <div class="fgg c4">
-        <!-- Row1: 設備型號(+dup warn) 設備名稱(span 3) -->
+        <!-- Row1: 型號(warn) + 名稱 + 吊掛 + 無產證 -->
         <div class="fg">
           <label>設備型號</label>
           <input id="md-model" placeholder="型號代碼" oninput="checkModelDupDesk(this.value)" style="text-transform:uppercase">
           <div id="mdModelDupWarn" style="color:var(--rtx);font-size:10px;margin-top:2px;min-height:12px;font-weight:600"></div>
         </div>
-        <div class="fg s3"><label>設備名稱</label><input id="md-name" placeholder="設備完整名稱"></div>
-        <!-- Row2: 國家 產地城市 吊掛 無產證 -->
-        <div class="fg"><label>國家</label><div style="display:flex;gap:4px"><input id="md-country" placeholder="如 日本" style="flex:1"><button class="btn xs" type="button" onclick="openOptPicker('md-country','選擇國家',opts.country||DO.country)">選擇</button></div></div>
-        <div class="fg"><label>產地城市</label><div style="display:flex;gap:4px"><input id="md-city" placeholder="如 東京" style="flex:1"><button class="btn xs" type="button" onclick="openOptPicker('md-city','選擇城市',opts.city||DO.city)">選擇</button></div></div>
+        <div class="fg s2"><label>設備名稱</label><input id="md-name" placeholder="設備完整名稱"></div>
         <div class="fg"><label>吊掛</label><select id="md-rigging"><option value="">—</option><option>是</option><option>否</option><option>-</option></select></div>
         <div class="fg"><label>無產證</label><select id="md-noCert"><option value="">—</option><option>是</option><option>否</option><option>-</option></select></div>
-        <!-- Row3: 備註 full -->
+        <!-- Row2: 國家 + 城市 + 幣別 + (空) -->
+        <div class="fg"><label>國家</label><div style="display:flex;gap:4px"><input id="md-country" placeholder="如 日本" style="flex:1"><button class="btn xs" type="button" onclick="openOptPicker('md-country','選擇國家',opts.country||DO.country)">選擇</button></div></div>
+        <div class="fg"><label>產地城市</label><div style="display:flex;gap:4px"><input id="md-city" placeholder="如 東京" style="flex:1"><button class="btn xs" type="button" onclick="openOptPicker('md-city','選擇城市',opts.city||DO.city)">選擇</button></div></div>
+        <div class="fg"><label>幣別</label><select id="md-currency"><option value="">—</option><option>JPY</option><option>USD</option><option>EUR</option><option>NTD</option></select></div>
+        <div class="fg"></div>
+        <!-- Row3: 備註 -->
         <div class="fg full"><label>備註</label>
           <textarea id="md-remark" rows="3" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;resize:vertical;outline:none"></textarea>
         </div>
@@ -963,12 +979,12 @@ tbody td{padding:8px 7px;vertical-align:middle}
         <!-- Row 1: 廠區 部門 PO號 狀態 -->
         <div class="fg"><label>廠區</label><select id="f-plant"></select></div>
         <div class="fg"><label>部門</label><select id="f-dept"></select></div>
-        <div class="fg"><label>PO號碼</label><input id="f-pr" placeholder="PO號碼" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div>
+        <div class="fg"><label>PO號碼</label><input id="f-pr" placeholder="PO號碼" oninput="setValPreserveCursor(this,this.value.toUpperCase()" style="text-transform:uppercase"></div>
         <div class="fg"><label>狀態</label><select id="f-status"><option>處理中</option><option>待交貨</option><option>已交貨</option></select></div>
         <!-- Row 2: 廠商代號 廠商 代理商 設備型號 -->
         <div class="fg"><label>廠商代號 <span style="font-size:9px;color:var(--tx3);font-weight:400">輸入後自動帶入廠商資料</span></label>
           <div style="display:flex;gap:4px">
-            <input id="f-vendorCode" placeholder="如 YAM" maxlength="4" style="flex:1;text-transform:uppercase;font-family:monospace;letter-spacing:2px" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');autoFillVendorDesk(this.value)">
+            <input id="f-vendorCode" placeholder="如 YAM" maxlength="4" style="flex:1;text-transform:uppercase;font-family:monospace;letter-spacing:2px" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');this.setSelectionRange(s,s);autoFillVendorDesk(this.value)">
             <button class="btn xs" onclick="openVendorPickerDesk()" type="button">選擇</button>
           </div>
         </div>
@@ -985,22 +1001,22 @@ tbody td{padding:8px 7px;vertical-align:middle}
         <div class="fg full s3"><label>設備名稱</label><input id="f-name" placeholder="設備完整名稱"></div>
         <!-- Row 4: PO日期 CEA LT TT -->
         <div class="fg"><label>PO日期</label><input id="f-podate" type="date"></div>
-        <div class="fg"><label>CEA</label><input id="f-cea" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div>
-        <div class="fg"><label>LT</label><input id="f-lt" placeholder="90D / 24W" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div>
-        <div class="fg"><label>TT</label><input id="f-tt" placeholder="Transit Time" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div>
+        <div class="fg"><label>CEA</label><input id="f-cea" oninput="setValPreserveCursor(this,this.value.toUpperCase()" style="text-transform:uppercase"></div>
+        <div class="fg"><label>LT</label><input id="f-lt" placeholder="90D / 24W" oninput="setValPreserveCursor(this,this.value.toUpperCase()" style="text-transform:uppercase"></div>
+        <div class="fg"><label>TT</label><input id="f-tt" placeholder="Transit Time" oninput="setValPreserveCursor(this,this.value.toUpperCase()" style="text-transform:uppercase"></div>
         <!-- Row 5: 幣別 報價 成交原幣 成交台幣 -->
         <div class="fg"><label>幣別</label><select id="f-currency" onchange="calcNTD()"><option>JPY</option><option>USD</option><option>NTD</option><option>EUR</option></select></div>
         <div class="fg"><label>報價（原幣）</label><input id="f-quote" type="number" placeholder="0"></div>
         <div class="fg"><label>成交金額（原幣）</label><input id="f-amount" type="number" placeholder="0" oninput="calcNTD();recalcAll()"></div>
         <div class="fg"><label>成交金額（台幣）</label><input id="f-amountNTD" type="number" readonly placeholder="成交金額×匯率"></div>
         <!-- Row 6: 料號 Line 國家 產地 -->
-        <div class="fg"><label>料號</label><input id="f-partno" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div>
+        <div class="fg"><label>料號</label><input id="f-partno" oninput="setValPreserveCursor(this,this.value.toUpperCase()" style="text-transform:uppercase"></div>
         <div class="fg"><label>Line</label><input id="f-line" placeholder="#1..."></div>
         <div class="fg"><label>國家</label><div style="display:flex;gap:4px"><input id="f-country" placeholder="如 日本" style="flex:1"><button class="btn xs" type="button" onclick="openOptPicker('f-country','選擇國家',opts.country||DO.country)">選擇</button></div></div>
         <div class="fg"><label>產地（城市）</label><div style="display:flex;gap:4px"><input id="f-city" placeholder="如 東京" style="flex:1"><button class="btn xs" type="button" onclick="openOptPicker('f-city','選擇城市',opts.city||DO.city)">選擇</button></div></div>
         <!-- Row 7: 付款 貨代 運送方式 吊掛 -->
-        <div class="fg"><label>付款</label><input id="f-payment" placeholder="如 J94" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div>
-        <div class="fg"><label>貨代</label><input id="f-forwarder" placeholder="如 I32" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div>
+        <div class="fg"><label>付款</label><input id="f-payment" placeholder="如 J94" oninput="setValPreserveCursor(this,this.value.toUpperCase()" style="text-transform:uppercase"></div>
+        <div class="fg"><label>貨代</label><input id="f-forwarder" placeholder="如 I32" oninput="setValPreserveCursor(this,this.value.toUpperCase()" style="text-transform:uppercase"></div>
         <div class="fg"><label>運送方式</label><select id="f-shipMode"></select></div>
         <div class="fg"><label>吊掛</label><select id="f-rigging"><option value="">—</option><option>是</option><option>否</option><option>-</option></select></div>
         <!-- Row 8: 無產證 訂金款 交機款 驗收款 -->
@@ -1316,9 +1332,10 @@ function autoFillModelDesk(){
       const el=document.getElementById(id);
       if(el&&md[k]!==undefined&&md[k]!=='')el.value=md[k];
     });
-    // Auto-fill country/city inputs
+    // Auto-fill country/city/currency inputs
     if(md.country){const ec=document.getElementById('f-country');if(ec)ec.value=md.country;}
     if(md.city){const eci=document.getElementById('f-city');if(eci)eci.value=md.city;}
+    if(md.currency){const ecur=document.getElementById('f-currency');if(ecur)ecur.value=md.currency;}
   } else if(modelNames[m]){
     // Fallback: modelNames dict
     const el=document.getElementById('f-name');
@@ -1905,7 +1922,7 @@ function openDet(idOrNew){
   refreshModelSelectDesk(r.model||'');
   refreshSels();
 
-  ['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','status'].forEach(f=>{
+  ['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'].forEach(f=>{
     const el=document.getElementById('f-'+f);if(el)el.value=r[f]||'';
   });
   document.getElementById('f-qty').value=r.qty||1;
@@ -2052,7 +2069,20 @@ function addPayRow(ci){
   const arrivalDate=pi===0?(d.eta||''):(d.payments[0].arrivalDate||d.eta||'');
   // arrivalQty: first = batch qty, 2+ = first payment's arrivalQty
   const arrivalQty=pi===0?(d.qty||''):(d.payments[0].arrivalQty||d.qty||'');
-  d.payments.push({invoiceDate:today,invoice:'',arrivalDate,arrivalQty,stageLabel:'訂金款',pct:'',payAmt:'',claimType:'',claimDate:'',payDate:''});
+  // V-3: 2nd+ payments carry over invoice date/number from first payment
+  const firstPay=d.payments[0]||{};
+  const invoiceDate=pi===0?today:(firstPay.invoiceDate||today);
+  const invoice=pi===0?'':(firstPay.invoice||'');
+  // Dynamic stage: check pctD→pctM→pctA for default label
+  const payCode=document.getElementById('f-payment')?.value||'';
+  const cd=codeDesc.payCode&&codeDesc.payCode[payCode];
+  let stageLabel='訂金款';
+  if(cd&&typeof cd==='object'){
+    if(pi===0){stageLabel=cd.pctD>0?'訂金款':cd.pctM>0?'交機款':'驗收款';}
+    else if(pi===1){stageLabel=cd.pctM>0?'交機款':'驗收款';}
+    else{stageLabel='驗收款';}
+  }
+  d.payments.push({invoiceDate,invoice,arrivalDate,arrivalQty,stageLabel,pct:'',payAmt:'',claimType:'',voucherDate:'',claimDate:'',payDate:'',payRemark:'',pctManual:false,payAmtManual:false});
   renderPayRow(ci,pi);
   setTimeout(()=>recalcPayRow(ci,pi),20);
 }
@@ -2227,23 +2257,50 @@ function renderCodeTab(key){
   const tb=document.getElementById(tbId);if(!tb)return;
   const codes=opts[key]||[];
   if(!codes.length){tb.innerHTML=`<tr><td colspan="3"><div class="empty">尚無資料，請新增</div></td></tr>`;return;}
-  tb.innerHTML=codes.map((c,i)=>`<tr style="cursor:pointer" onclick="openCodeDet('${key}',${i})">
-    <td style="font-weight:700;font-family:monospace">${safe(c)}</td>
-    <td style="color:var(--tx2)">${safe(codeDesc[key+'Short']&&codeDesc[key+'Short'][c]||codeDesc[key][c]||'')}</td>
+  tb.innerHTML=codes.map((c,i)=>{
+    const cd=codeDesc[key]&&codeDesc[key][c];
+    let shortTxt=safe(codeDesc[key+'Short']&&codeDesc[key+'Short'][c]||'');
+    // Append pct info for payCode
+    if(key==='payCode'&&cd&&typeof cd==='object'&&(cd.pctD||cd.pctM||cd.pctA)){
+      shortTxt+=` <span style="color:var(--tx3);font-size:10px">(${cd.pctD||0}%/${cd.pctM||0}%/${cd.pctA||0}%)</span>`;
+    }
+    return`<tr style="cursor:pointer" onclick="openCodeDet('${key}',${i})">
+    <td style="font-weight:700;font-family:monospace">${safe(String(c))}</td>
+    <td>${shortTxt}</td>
     <td onclick="event.stopPropagation()"><div class="ac">
       <button class="btn xs" onclick="openCodeDet('${key}',${i})">編輯</button>
       <button class="btn xs danger" onclick="delCode('${key}',${i})">刪除</button>
     </div></td>
   </tr>`).join('');
 }
+function openNewCodeDet(key){
+  // Open detail panel for new code
+  codeDetKey=key; codeDetIdx=-1;
+  document.getElementById('codeDetTitle').textContent=key==='payCode'?'新增付款代號':'新增貨代代號';
+  document.getElementById('codeDetCodeLbl').textContent=key==='payCode'?'付款代號':'貨代代號';
+  document.getElementById('codeDetCode').value='';
+  document.getElementById('codeDetShort').value='';
+  document.getElementById('codeDetDesc').value='';
+  const pctRow=document.getElementById('payPctRow');
+  if(pctRow)pctRow.style.display=key==='payCode'?'block':'none';
+  const pctD=document.getElementById('codeDetPctD');
+  const pctM=document.getElementById('codeDetPctM');
+  const pctA=document.getElementById('codeDetPctA');
+  if(pctD)pctD.value=0;if(pctM)pctM.value=0;if(pctA)pctA.value=0;
+  document.getElementById('codeDetOv').classList.add('open');
+}
+
 async function addCodeRow(key){
-  const code=(prompt('輸入代號（如 J94）:')||'').toUpperCase().trim();
-  if(!code)return;
-  if(!opts[key])opts[key]=[];
-  if(opts[key].includes(code.trim())){alert('此代號已存在');return;}
-  opts[key].push(code.trim());
-  showLoading(true);await saveO();showLoading(false);
-  refreshSels();renderCodeTab(key);ntf('✓ 已新增');
+  openNewCodeDet(key);
+}
+
+function syncPayPct(){
+  const d=Number(document.getElementById('codeDetPctD')?.value)||0;
+  const m=Number(document.getElementById('codeDetPctM')?.value)||0;
+  const a=Number(document.getElementById('codeDetPctA')?.value)||0;
+  const sum=d+m+a;
+  const warn=document.getElementById('pctSumWarn');
+  if(warn)warn.textContent=sum>0&&sum!==100?`⚠ 合計 ${sum}%（應為 100%）`:'';
 }
 function delCode(key,i){
   if(!confirm('確定刪除此代號？'))return;
@@ -2272,13 +2329,32 @@ async function saveCodeDet(){
   const shortVal=document.getElementById('codeDetShort').value.trim();
   const descVal=document.getElementById('codeDetDesc').value.trim();
   if(!newCode){alert('代號不能為空');return;}
-  const oldCode=opts[codeDetKey][codeDetIdx]||'';
-  opts[codeDetKey][codeDetIdx]=newCode;
+  // Preserve as string (prevent leading-zero loss)
+  const codeStr=String(newCode);
+  // Handle new vs edit
+  if(codeDetIdx===-1){
+    if(!opts[codeDetKey])opts[codeDetKey]=[];
+    if(opts[codeDetKey].includes(codeStr)){ntf('⚠ 代號已存在');return;}
+    opts[codeDetKey].push(codeStr);
+  } else {
+    const oldCode=String(opts[codeDetKey][codeDetIdx]||'');
+    opts[codeDetKey][codeDetIdx]=codeStr;
+    const sk=codeDetKey+'Short';
+    if(!codeDesc[sk])codeDesc[sk]={};
+    if(oldCode&&oldCode!==codeStr){delete codeDesc[codeDetKey][oldCode];delete codeDesc[sk][oldCode];}
+  }
   const sk=codeDetKey+'Short';
   if(!codeDesc[sk])codeDesc[sk]={};
-  if(oldCode&&oldCode!==newCode){delete codeDesc[codeDetKey][oldCode];delete codeDesc[sk][oldCode];}
-  codeDesc[codeDetKey][newCode]=descVal;
-  codeDesc[sk][newCode]=shortVal;
+  // For payCode: store pct values in desc object
+  if(codeDetKey==='payCode'){
+    const pctD=Number(document.getElementById('codeDetPctD')?.value)||0;
+    const pctM=Number(document.getElementById('codeDetPctM')?.value)||0;
+    const pctA=Number(document.getElementById('codeDetPctA')?.value)||0;
+    codeDesc[codeDetKey][codeStr]={desc:descVal,pctD,pctM,pctA};
+  } else {
+    codeDesc[codeDetKey][codeStr]=descVal;
+  }
+  codeDesc[sk][codeStr]=shortVal;
   showLoading(true);await saveO();showLoading(false);
   refreshSels();closeCodeDet();renderCodeTab(codeDetKey);ntf('✓ 已儲存');
 }
@@ -2718,7 +2794,7 @@ function openVendorEdit(idxOrNew){
   document.getElementById('vendorDetTitle').textContent=vendorDetIdx>=0?`編輯廠商：${v.vendorCode||''}`:'新增廠商';
   document.getElementById('vendorDetDelBtn').style.display=vendorDetIdx>=0?'inline-flex':'none';
   bSel('vd-shipMode','shipMode',true);
-  ['vendorCode','vendor','agent','payment','forwarder','tel','mobile','contact','remark'].forEach(f=>{
+  ['vendorCode','vendor','agent','payment','forwarder','tel','mobile','contact','email','remark'].forEach(f=>{
     const el=document.getElementById('vd-'+f);if(el)el.value=v[f]||'';
   });
   document.getElementById('vd-country').value=v.country||'';
@@ -2791,6 +2867,7 @@ function openModelEdit(idxOrNew){
   document.getElementById('modelDetDelBtn').style.display=modelDetIdx>=0?'inline-flex':'none';
   
   ['model','name','remark'].forEach(f=>{const el=document.getElementById('md-'+f);if(el)el.value=m[f]||'';});
+  const mdCur=document.getElementById('md-currency');if(mdCur)mdCur.value=m.currency||'';
   document.getElementById('md-country').value=m.country||'';
   document.getElementById('md-city').value=m.city||'';
   document.getElementById('md-rigging').value=m.rigging||'';
@@ -2800,7 +2877,7 @@ function openModelEdit(idxOrNew){
 }
 
 async function saveModelDetDesk(){
-  const textFields=['model','name','remark'];const selFields=['country','city','rigging','noCert'];
+  const textFields=['model','name','remark'];const selFields=['country','city','rigging','noCert','currency'];
   const rec={};
   textFields.forEach(f=>{const el=document.getElementById('md-'+f);if(el)rec[f]=el.value||'';});
   selFields.forEach(f=>{const el=document.getElementById('md-'+f);if(el)rec[f]=el.value||'';});
@@ -3023,6 +3100,14 @@ function openOptPicker(fieldId, title, optList){
     srch.addEventListener('keyup',renderOptList);
     setTimeout(()=>srch.focus(),100);
   }
+}
+
+
+// ── 防止 Input 游標跳至末尾 ──────────────────────
+function setValPreserveCursor(el, val){
+  const start=el.selectionStart, end=el.selectionEnd;
+  el.value=val;
+  try{el.setSelectionRange(start,end);}catch(e){}
 }
 
 // 自動檢查是否已登入
