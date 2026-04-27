@@ -150,7 +150,7 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
 .det-nav h2{flex:1;font-size:16px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .det-nav-save{background:#93939B;color:#fff;border:none;padding:8px 16px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
 .det-nav-save:active{opacity:.85}
-.det-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(var(--safe-bot)+20px)}
+.det-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(var(--safe-bot)+20px);min-height:0;height:0}
 
 /* ── FORM SECTIONS ── */
 .form-section{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);margin-bottom:12px;overflow:hidden}
@@ -601,7 +601,7 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
     <h2 id="vendorEditTitle">編輯廠商</h2>
     <button class="det-nav-save" onclick="saveVendorEdit()">儲存</button>
   </div>
-  <div class="det-scroll" style="padding:14px">
+  <div class="det-scroll" style="padding:14px;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;height:0">
     <!-- 基本資料 -->
     <div class="form-section">
       <div class="form-section-title">廠商基本資料</div>
