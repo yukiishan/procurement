@@ -769,7 +769,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
       <button class="btn primary sm" onclick="addCodeRow('fwdCode')">＋ 新增</button>
     </div>
     <div class="twrap"><table>
-      <thead><tr><th>貨代代號</th><th>簡要備註</th><th>操作</th></tr></thead>
+      <thead><tr><th>貨代代號</th><th>運送方式</th><th>簡要備註</th><th>操作</th></tr></thead>
       <tbody id="fwdcodeBody"></tbody>
     </table></div>
   </div>
@@ -794,15 +794,20 @@ tbody td{padding:8px 7px;vertical-align:middle}
           <input id="codeDetShort" placeholder="簡要備註（顯示於列表）" style="width:100%">
         </div>
       </div>
-      <!-- Row2: 三期比例 -->
+      <!-- Row2: 付款比例(payCode) or 運送方式(fwdCode) -->
       <div id="payPctRow" style="display:none;margin-top:8px">
         <div class="sechd" style="margin-bottom:6px">付款比例 (%)</div>
         <div class="fgg c3" style="gap:8px">
-          <div class="fg"><label>訂金款 (%)</label><input id="codeDetPctD" type="number" min="0" max="100" placeholder="" value="0" oninput="syncPayPct()"></div>
-          <div class="fg"><label>交機款 (%)</label><input id="codeDetPctM" type="number" min="0" max="100" placeholder="" value="0" oninput="syncPayPct()"></div>
-          <div class="fg"><label>驗收款 (%)</label><input id="codeDetPctA" type="number" min="0" max="100" placeholder="" value="0" oninput="syncPayPct()"></div>
+          <div class="fg"><label>訂金款 (%)</label><input id="codeDetPctD" type="number" min="0" max="100" value="0" oninput="syncPayPct()"></div>
+          <div class="fg"><label>交機款 (%)</label><input id="codeDetPctM" type="number" min="0" max="100" value="0" oninput="syncPayPct()"></div>
+          <div class="fg"><label>驗收款 (%)</label><input id="codeDetPctA" type="number" min="0" max="100" value="0" oninput="syncPayPct()"></div>
         </div>
-        <div id="pctSumWarn" style="font-size:11px;color:var(--rtx);margin-top:4px;min-height:14px"></div>
+        <div id="pctSumWarn" style="font-size:11px;color:var(--red);margin-top:4px;min-height:14px"></div>
+      </div>
+      <div id="fwdShipRow" style="display:none;margin-top:8px">
+        <div class="fgg" style="grid-template-columns:160px 1fr;gap:8px">
+          <div class="fg"><label>運送方式</label><select id="codeDetShipMode"><option value="">—</option></select></div>
+        </div>
       </div>
       <div class="fgg" style="grid-template-columns:1fr;margin-top:8px">
         <div class="fg full"><label>備註</label><textarea id="codeDetDesc" rows="3" placeholder="詳細備註內容..." style="width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;resize:vertical;outline:none"></textarea></div>
@@ -2264,16 +2269,21 @@ function renderCodeTab(key){
   const tbId=key==='payCode'?'paycodeBody':'fwdcodeBody';
   const tb=document.getElementById(tbId);if(!tb)return;
   const codes=opts[key]||[];
-  if(!codes.length){tb.innerHTML=`<tr><td colspan="3"><div class="empty">尚無資料，請新增</div></td></tr>`;return;}
+  if(!codes.length){tb.innerHTML=`<tr><td colspan="6"><div class="empty">尚無資料，請新增</div></td></tr>`;return;}
   // Issue1: column order = 代號 | 訂金% | 交機% | 驗收% | 簡要備註
   tb.innerHTML=codes.map((c,i)=>{
     let rawCd=codeDesc[key]&&codeDesc[key][c];
     if(typeof rawCd==='string'){try{rawCd=JSON.parse(rawCd);}catch(e){rawCd={desc:rawCd};}}
     const cd=(rawCd&&typeof rawCd==='object')?rawCd:{desc:'',pctD:0,pctM:0,pctA:0};
     const shortTxt=safe(codeDesc[key+'Short']&&codeDesc[key+'Short'][c]||'');
-    const pctCols=key==='payCode'
-      ?`<td style="text-align:center;color:var(--tx2)">${cd.pctD??0}%</td><td style="text-align:center;color:var(--tx2)">${cd.pctM??0}%</td><td style="text-align:center;color:var(--tx2)">${cd.pctA??0}%</td>`
-      :'<td></td><td></td><td></td>';
+    let pctCols;
+    if(key==='payCode'){
+      pctCols=`<td style="text-align:center;color:var(--tx2)">${cd.pctD??0}%</td><td style="text-align:center;color:var(--tx2)">${cd.pctM??0}%</td><td style="text-align:center;color:var(--tx2)">${cd.pctA??0}%</td>`;
+    }else{
+      // fwdCode: show shipMode in first column, empty for others
+      const sm=cd&&typeof cd==='object'&&cd.shipMode?safe(cd.shipMode):'';
+      pctCols=`<td style="color:var(--tx2)">${sm}</td><td></td><td></td>`;
+    }
     return`<tr style="cursor:pointer" onclick="openCodeDet('${key}',${i})">
     <td style="font-weight:700;font-family:monospace">${safe(String(c))}</td>
     ${pctCols}
@@ -2294,7 +2304,13 @@ function openNewCodeDet(key){
   document.getElementById('codeDetShort').value='';
   document.getElementById('codeDetDesc').value='';
   const pctRow=document.getElementById('payPctRow');
+  const fwdRow2=document.getElementById('fwdShipRow');
   if(pctRow)pctRow.style.display=key==='payCode'?'block':'none';
+  if(fwdRow2)fwdRow2.style.display=key==='fwdCode'?'block':'none';
+  if(key==='fwdCode'){
+    const smEl=document.getElementById('codeDetShipMode');
+    if(smEl){smEl.innerHTML='<option value="">—</option>'+(opts.shipMode||DO.shipMode||[]).map(s=>`<option>${safe(s)}</option>`).join('');}
+  }
   const pctD=document.getElementById('codeDetPctD');
   const pctM=document.getElementById('codeDetPctM');
   const pctA=document.getElementById('codeDetPctA');
@@ -2338,7 +2354,9 @@ function openCodeDet(key,i){
   if(!cd||typeof cd!=='object')cd={desc:'',pctD:0,pctM:0,pctA:0};
   document.getElementById('codeDetDesc').value=cd.desc||'';
   const pctRow=document.getElementById('payPctRow');
+  const fwdRow=document.getElementById('fwdShipRow');
   if(pctRow)pctRow.style.display=key==='payCode'?'block':'none';
+  if(fwdRow)fwdRow.style.display=key==='fwdCode'?'block':'none';
   const elD=document.getElementById('codeDetPctD');
   const elM=document.getElementById('codeDetPctM');
   const elA=document.getElementById('codeDetPctA');
@@ -2347,6 +2365,13 @@ function openCodeDet(key,i){
     if(elM)elM.value=Number(cd.pctM)||0;
     if(elA)elA.value=Number(cd.pctA)||0;
   }else{if(elD)elD.value=0;if(elM)elM.value=0;if(elA)elA.value=0;}
+  // fwdCode: populate shipMode select and set value
+  if(key==='fwdCode'){
+    const smEl=document.getElementById('codeDetShipMode');
+    if(smEl){
+      smEl.innerHTML='<option value="">—</option>'+(opts.shipMode||DO.shipMode||[]).map(s=>`<option${s===cd.shipMode?' selected':''}>${safe(s)}</option>`).join('');
+    }
+  }
   document.getElementById('codeDetOv').classList.add('open');
 }
 function closeCodeDet(){document.getElementById('codeDetOv').classList.remove('open');}
@@ -2373,7 +2398,11 @@ async function saveCodeDet(){
     const pctM=Number(document.getElementById('codeDetPctM')?.value||0);
     const pctA=Number(document.getElementById('codeDetPctA')?.value||0);
     codeDesc[codeDetKey][codeStr]={desc:descVal,pctD,pctM,pctA};
-  }else{codeDesc[codeDetKey][codeStr]=descVal;}
+  }else{
+    // fwdCode: store {desc, shipMode} as object
+    const shipModeVal=document.getElementById('codeDetShipMode')?.value||'';
+    codeDesc[codeDetKey][codeStr]=shipModeVal?{desc:descVal,shipMode:shipModeVal}:descVal;
+  }
   codeDesc[sk][codeStr]=shortVal;
   showLoading(true);await saveO();showLoading(false);
   refreshSels();closeCodeDet();renderCodeTab(codeDetKey);ntf('✓ 已儲存');
