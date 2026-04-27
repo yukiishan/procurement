@@ -2280,9 +2280,9 @@ function renderCodeTab(key){
     if(key==='payCode'){
       pctCols=`<td style="text-align:center;color:var(--tx2)">${cd.pctD??0}%</td><td style="text-align:center;color:var(--tx2)">${cd.pctM??0}%</td><td style="text-align:center;color:var(--tx2)">${cd.pctA??0}%</td>`;
     }else{
-      // fwdCode: show shipMode in first column, empty for others
+      // fwdCode: show shipMode only (no extra empty cols)
       const sm=cd&&typeof cd==='object'&&cd.shipMode?safe(cd.shipMode):'';
-      pctCols=`<td style="color:var(--tx2)">${sm}</td><td></td><td></td>`;
+      pctCols=`<td style="color:var(--tx2)">${sm}</td>`;
     }
     return`<tr style="cursor:pointer" onclick="openCodeDet('${key}',${i})">
     <td style="font-weight:700;font-family:monospace">${safe(String(c))}</td>

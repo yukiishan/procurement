@@ -602,58 +602,83 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
     <button class="det-nav-save" onclick="saveVendorEdit()">儲存</button>
   </div>
   <div class="det-scroll" style="padding:14px">
+    <!-- 基本資料 -->
     <div class="form-section">
       <div class="form-section-title">廠商基本資料</div>
-      <div class="form-row"><div class="form-label">廠商代號</div><div class="form-input-box"><input id="ve-vendorCode" class="form-input" placeholder="如 YAM（英數4碼）" maxlength="4" style="text-transform:uppercase;font-family:monospace;font-size:18px;letter-spacing:3px" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');checkVendorCodeDup(this.value)">
-        <div id="veCodeDupWarn" style="color:#B87070;font-size:11px;margin-top:4px;min-height:14px"></div></div></div>
-      <div class="form-row row-2">
-        <div><div class="form-label">廠商名稱</div><div class="form-input-box"><input id="ve-vendor" class="form-input" placeholder="廠商全名"></div></div>
-        <div><div class="form-label">代理商</div><div class="form-input-box"><input id="ve-agent" class="form-input" placeholder="代理商"></div></div>
-      </div>
-      <div class="form-row row-2">
-        <div>
-            <div class="form-label">國家</div>
-            <div class="form-input-box" style="display:flex;gap:6px;align-items:center">
-              <input id="ve-country" class="form-input" placeholder="國家" style="flex:1">
-              <button onclick="openOptPickerMob('ve-country','選擇國家',opts.country||DO.country)" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;font-family:inherit" type="button">選擇</button>
-            </div>
-          </div>
+      <div class="form-row">
+        <div class="form-label">廠商代號</div>
+        <div class="form-input-box">
+          <input id="ve-vendorCode" class="form-input" placeholder="英數 4 碼" maxlength="4"
+            style="text-transform:uppercase;font-family:monospace;font-size:18px;letter-spacing:3px"
+            oninput="const s=this.selectionStart;this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');this.setSelectionRange(s,s);checkVendorCodeDup(this.value)">
+          <div id="veCodeDupWarn" style="color:var(--red);font-size:11px;margin-top:4px;min-height:14px"></div>
         </div>
-        <div><div class="form-label">運送方式</div><div class="form-input-box"><select id="ve-shipMode" class="form-select"></select></div></div>
       </div>
-      <div class="form-row row-2">
-        <div><div class="form-label">付款代號</div><div class="form-input-box"><input id="ve-payment" class="form-input" placeholder="如 J04" style="text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)"></div></div>
-        <div><div class="form-label">貨代代號</div><div class="form-input-box"><input id="ve-forwarder" class="form-input" placeholder="如 I32" style="text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)"></div></div>
+      <div class="form-row">
+        <div class="form-label">廠商名稱</div>
+        <div class="form-input-box"><input id="ve-vendor" class="form-input" placeholder="廠商全名"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">代理商</div>
+        <div class="form-input-box"><input id="ve-agent" class="form-input" placeholder="代理商"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">國家</div>
+        <div class="form-input-box" style="display:flex;gap:6px;align-items:center">
+          <input id="ve-country" class="form-input" placeholder="國家" style="flex:1">
+          <button onclick="openOptPickerMob('ve-country','選擇國家',opts.country||DO.country)"
+            style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;font-family:inherit" type="button">選擇</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">運送方式</div>
+        <div class="form-input-box"><select id="ve-shipMode" class="form-select"></select></div>
       </div>
     </div>
+    <!-- 代號 -->
+    <div class="form-section">
+      <div class="form-section-title">代號設定</div>
+      <div class="form-row">
+        <div class="form-label">付款代號</div>
+        <div class="form-input-box"><input id="ve-payment" class="form-input" placeholder="如 J04"
+          style="text-transform:uppercase"
+          oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">貨代代號</div>
+        <div class="form-input-box"><input id="ve-forwarder" class="form-input" placeholder="如 I32"
+          style="text-transform:uppercase"
+          oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)"></div>
+      </div>
+    </div>
+    <!-- 聯絡資訊 -->
     <div class="form-section">
       <div class="form-section-title">聯絡資訊</div>
-      <div class="form-row row-2">
-        <div><div class="form-label">公司電話</div><div class="form-input-box"><input id="ve-tel" class="form-input" type="tel" placeholder="公司電話"></div></div>
-        <div><div class="form-label">行動電話</div><div class="form-input-box"><input id="ve-mobile" class="form-input" type="tel" placeholder="行動電話"></div></div>
-      </div>
-      <div class="form-row"><div class="form-label">聯絡人</div><div class="form-input-box"><input id="ve-contact" class="form-input" placeholder="聯絡人姓名"></div></div>
       <div class="form-row">
-        <div class="form-label">E-mail <span style="font-size:10px;color:var(--tx3);font-weight:400">多個 mail 用逗號或 Tab 分隔</span></div>
-        <div class="form-input-box"><textarea id="ve-email" class="form-textarea" rows="5" placeholder="mail1@example.com, mail2@example.com"></textarea></div>
+        <div class="form-label">電話</div>
+        <div class="form-input-box"><input id="ve-tel" class="form-input" type="tel" placeholder="公司電話"></div>
       </div>
-      <div class="form-row"><div class="form-label">備註</div><div class="form-input-box"><textarea id="ve-remark" class="form-textarea" rows="4" placeholder="備註..."></textarea></div></div>
+      <div class="form-row">
+        <div class="form-label">行動電話</div>
+        <div class="form-input-box"><input id="ve-mobile" class="form-input" type="tel" placeholder="行動電話"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">聯絡人</div>
+        <div class="form-input-box"><input id="ve-contact" class="form-input" placeholder="聯絡人姓名"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">E-mail<span style="font-size:10px;color:var(--tx3);font-weight:400;margin-left:4px">多個以逗號分隔</span></div>
+        <div class="form-input-box"><textarea id="ve-email" class="form-textarea" rows="4" placeholder="mail1@example.com, mail2@example.com"></textarea></div>
+      </div>
+      <div class="form-row">
+        <div class="form-label">備註</div>
+        <div class="form-input-box"><textarea id="ve-remark" class="form-textarea" rows="4" placeholder="備註..."></textarea></div>
+      </div>
     </div>
-    <button id="vendorDelBtn" onclick="deleteVendorEdit()" style="width:100%;margin-top:6px;padding:14px;background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:var(--rl);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">刪除此廠商</button>
-  </div>
-</div>
-
-<!-- Model Maintenance Page -->
-<div class="det-page" id="modelMaintPage">
-  <div class="det-nav">
-    <button class="det-nav-back" onclick="document.getElementById('modelMaintPage').classList.remove('open')">
-      <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
+    <button id="vendorDelBtn" onclick="deleteVendorEdit()"
+      style="display:none;width:100%;margin-top:6px;padding:14px;background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
+      刪除廠商
     </button>
-    <h2>設備型號維護</h2>
-    <button class="det-nav-save" onclick="addModelNew()">＋ 新增</button>
-  </div>
-  <div class="det-scroll" style="padding:14px">
-    <div id="modelList"></div>
   </div>
 </div>
 
@@ -821,7 +846,16 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
     <div class="form-section">
       <div class="form-section-title">付款條件</div>
       <div class="form-row row-2">
-        <div><div class="form-label">付款代號</div><div class="form-input-box"><input id="f-payment" class="form-input" placeholder="如 J94" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)" style="text-transform:uppercase"></div></div>
+        <div>
+          <div class="form-label">付款代號</div>
+          <div class="form-input-box" style="display:flex;gap:6px;align-items:center">
+            <input id="f-payment" class="form-input" placeholder="如 J04"
+              style="flex:1;text-transform:uppercase"
+              oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s);autoFillPayCodeMob(this.value)">
+            <button onclick="openPayCodePickerMob()"
+              style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;font-family:inherit" type="button">選擇</button>
+          </div>
+        </div>
         <div><div class="form-label">貨代</div><div class="form-input-box"><input id="f-forwarder" class="form-input" placeholder="如 I32" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)" style="text-transform:uppercase"></div></div>
       </div>
       <div class="form-row row-2">
@@ -970,6 +1004,7 @@ function lr(k){try{const s=localStorage.getItem('pv6_'+k);return s?JSON.parse(s)
 function loadFromCache(){
   const d=lr('data');if(d){data=d.records||[];nid=d.nextId||data.length+1;}
   const o=lr('opts');if(o){opts={...DO,...(o.opts||{})};modelNames=o.modelNames||{...DN_DEF};}else{opts={...DO};modelNames={...DN_DEF};}
+  ['payCode','fwdCode'].forEach(k=>{if(opts[k])opts[k]=opts[k].map(c=>String(c));});
   const r=lr('rates');rates=r?{...DR,...r}:{...DR};
   const h=lr('hols');hols=h||[...DH];
   const vv=lr('vendors');vendors=vv||[];
@@ -1002,6 +1037,8 @@ async function fetchFromAPI(){
   }
   data=(dr&&dr.records)||[];nid=(dr&&dr.nextId)||data.length+1;
   opts={...DO,...(or||{})};Object.keys(DO).forEach(k=>{if(!opts[k]||!opts[k].length)opts[k]=[...DO[k]];});
+  // Force payCode/fwdCode values as String to preserve leading zeros like "08"
+  ['payCode','fwdCode'].forEach(k=>{if(opts[k])opts[k]=opts[k].map(c=>String(c));});
   modelNames={...DN_DEF};
   rates={...DR,...(rr||{})};Object.keys(DR).forEach(k=>{if(rates[k]==null)rates[k]=DR[k];});
   hols=hr||[...DH];
