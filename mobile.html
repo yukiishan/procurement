@@ -55,10 +55,10 @@
 }
 
 /* ── BASE ── */
-html,body{height:100%;height:100dvh;margin:0;padding:0;box-sizing:border-box;background:var(--sf);color:var(--tx);font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;font-size:15px;-webkit-text-size-adjust:100%;overflow:hidden}
+html,body{margin:0;padding:0;box-sizing:border-box;background:var(--sf);color:var(--tx);font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;font-size:15px;-webkit-text-size-adjust:100%;overflow:hidden}
 
 /* ── APP SHELL ── */
-#app{display:flex;flex-direction:column;height:100vh;height:100dvh;min-height:100vh;min-height:100dvh;max-width:480px;margin:0 auto;background:var(--sf);position:relative;box-shadow:0 0 40px rgba(0,0,0,.15);overflow:hidden}
+#app{display:flex;flex-direction:column;position:fixed;top:0;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:var(--sf);box-shadow:0 0 40px rgba(0,0,0,.15);overflow:hidden}
 
 /* ── STATUS BAR SPACER ── */
 #statusBar{height:var(--safe-top);background:var(--accent, #9A7A78);flex-shrink:0}
@@ -75,7 +75,7 @@ html,body{height:100%;height:100dvh;margin:0;padding:0;box-sizing:border-box;bac
 .page.active{display:block}
 
 /* ── BOTTOM TAB BAR ── */
-#tabBar{display:flex;background:var(--sf);border-top:1px solid var(--bd);height:calc(var(--tab-h) + var(--safe-bot));padding-bottom:var(--safe-bot);flex-shrink:0;box-shadow:0 -2px 12px rgba(0,0,0,.07);position:relative;z-index:10}
+#tabBar{display:flex;background:var(--sf);border-top:1px solid var(--bd);height:var(--tab-h);padding-bottom:0;padding-bottom:env(safe-area-inset-bottom);height:calc(var(--tab-h) + env(safe-area-inset-bottom));flex-shrink:0;box-shadow:0 -2px 12px rgba(0,0,0,.07);position:relative;z-index:10}
 .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;color:var(--tx3);font-size:10px;font-weight:500;cursor:pointer;padding:6px 0;transition:color .2s;font-family:inherit}
 .tab-btn .tab-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;transition:background .2s}
 .tab-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
