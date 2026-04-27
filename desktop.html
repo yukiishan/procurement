@@ -60,7 +60,7 @@ body{font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;background:var(-
 .btn.warn{background:var(--abg);color:var(--atx);border-color:#d4a74e}
 .btn.sm{padding:3px 8px;font-size:11px}
 .btn.xs{padding:2px 6px;font-size:10px}
-.toolbar{background:var(--sf);border-bottom:1px solid var(--bd);padding:7px 14px;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.toolbar{background:var(--sf);border-bottom:1px solid var(--bd);padding:7px 14px;display:flex;gap:5px;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:20}
 .toolbar input,.toolbar select{font-size:11px;padding:3px 6px;border-radius:var(--r);border:1px solid var(--bd);background:var(--sf2);color:var(--tx);height:26px;font-family:inherit}
 .toolbar input{min-width:160px}
 .toolbar input:focus,.toolbar select:focus{outline:none;border-color:var(--rose)}
@@ -89,7 +89,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .detov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80;overflow-y:auto}
 .detov.open{display:block}
 .detpanel{background:var(--sf);min-height:100vh;max-width:920px;margin:0 auto}
-.dethd{display:flex;align-items:center;gap:8px;padding:9px 14px;position:sticky;top:0;z-index:10;background:var(--sf);background:var(--bg);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.dethd{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:10;background:var(--sf);box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .dethd h2{font-size:14px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .detback{cursor:pointer;font-size:21px;color:var(--tx2);background:none;border:none;line-height:1;padding:0 3px}
 .detbody{padding:11px 14px;padding-bottom:50px}
@@ -709,12 +709,12 @@ tbody td{padding:8px 7px;vertical-align:middle}
     <div class="spacer"></div><span style="font-size:11px;color:var(--tx3)" id="rc"></span>
   </div>
   <div class="content">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div class="sg" id="sg" style="flex:1"></div>
-      <button class="btn primary" onclick="openDet('new')" style="margin-left:12px;white-space:nowrap">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <button class="btn primary" onclick="openDet('new')" style="white-space:nowrap">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-right:4px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>新增採購
       </button>
     </div>
+    <div class="sg" id="sg" style="margin-bottom:8px"></div>
     <div class="twrap"><table>
       <thead><tr>
         <th>廠區</th><th>部門</th><th>PO號</th><th>廠商</th><th>代理商</th><th>設備型號</th><th>設備名稱</th>
@@ -757,7 +757,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
       <button class="btn primary sm" onclick="addCodeRow('payCode')">＋ 新增</button>
     </div>
     <div class="twrap"><table>
-      <thead><tr><th>付款代號</th><th>簡要備註</th><th>操作</th></tr></thead>
+      <thead><tr><th>付款代號</th><th style="text-align:center;width:60px">訂金%</th><th style="text-align:center;width:60px">交機%</th><th style="text-align:center;width:60px">驗收%</th><th>簡要備註</th><th>操作</th></tr></thead>
       <tbody id="paycodeBody"></tbody>
     </table></div>
   </div>
@@ -1015,15 +1015,20 @@ tbody td{padding:8px 7px;vertical-align:middle}
         <div class="fg"><label>國家</label><div style="display:flex;gap:4px"><input id="f-country" placeholder="如 日本" style="flex:1"><button class="btn xs" type="button" onclick="openOptPicker('f-country','選擇國家',opts.country||DO.country)">選擇</button></div></div>
         <div class="fg"><label>產地（城市）</label><div style="display:flex;gap:4px"><input id="f-city" placeholder="如 東京" style="flex:1"><button class="btn xs" type="button" onclick="openOptPicker('f-city','選擇城市',opts.city||DO.city)">選擇</button></div></div>
         <!-- Row 7: 付款 貨代 運送方式 吊掛 -->
-        <div class="fg"><label>付款</label><input id="f-payment" placeholder="如 J94" oninput="setValPreserveCursor(this,this.value.toUpperCase()" style="text-transform:uppercase"></div>
+        <div class="fg"><label>付款代號</label>
+          <div style="display:flex;gap:4px">
+            <input id="f-payment" placeholder="如 J04" style="flex:1;text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s);autoFillPayCodeDesk(this.value)">
+            <button class="btn xs" type="button" onclick="openPayCodePickerDesk()">選擇</button>
+          </div>
+        </div>
         <div class="fg"><label>貨代</label><input id="f-forwarder" placeholder="如 I32" oninput="setValPreserveCursor(this,this.value.toUpperCase()" style="text-transform:uppercase"></div>
         <div class="fg"><label>運送方式</label><select id="f-shipMode"></select></div>
         <div class="fg"><label>吊掛</label><select id="f-rigging"><option value="">—</option><option>是</option><option>否</option><option>-</option></select></div>
         <!-- Row 8: 無產證 訂金款 交機款 驗收款 -->
         <div class="fg"><label>無產證</label><select id="f-noCert"><option value="">—</option><option>否</option><option>是</option></select></div>
-        <div class="fg"><label>訂金款 %</label><input id="f-pctD" type="number" placeholder="30" min="0" max="100" oninput="recalcAll()"></div>
-        <div class="fg"><label>交機款 %</label><input id="f-pctM" type="number" placeholder="60" min="0" max="100" oninput="recalcAll()"></div>
-        <div class="fg"><label>驗收款 %</label><input id="f-pctA" type="number" placeholder="10" min="0" max="100" oninput="recalcAll()"></div>
+        <div class="fg"><label>訂金款 %</label><input id="f-pctD" type="number" min="0" max="100" oninput="recalcAll()"></div>
+        <div class="fg"><label>交機款 %</label><input id="f-pctM" type="number" min="0" max="100" oninput="recalcAll()"></div>
+        <div class="fg"><label>驗收款 %</label><input id="f-pctA" type="number" min="0" max="100" oninput="recalcAll()"></div>
       </div>
     </div>
     <div class="sec">
@@ -1035,7 +1040,8 @@ tbody td{padding:8px 7px;vertical-align:middle}
     </div>
     <div class="sec">
       <div class="sechd">備註 / 交涉記錄</div>
-      <div class="fg"><textarea id="f-remark" rows="6" placeholder="交涉記錄、議價過程..."></textarea></div>
+      <div class="fg"><label>備註</label><textarea id="f-remark" rows="4" placeholder="交涉記錄、議價過程..."></textarea></div>
+      <div class="fg"><label>會簽紀錄</label><textarea id="f-signNote" rows="4" placeholder="會簽紀錄..." style="resize:vertical"></textarea></div>
     </div>
   </div>
 </div>
@@ -1281,7 +1287,7 @@ async function saveH(){
   catch(err){console.error('儲存假日失敗:',err);ntf('❌ 儲存失敗');}
 }
 
-const fN=n=>(n||n===0)?Number(n).toLocaleString():'—';
+const fN=n=>{const v=typeof n==='string'?Number(n.replace(/,/g,'')):Number(n);return(v||v===0)?v.toLocaleString():'—';};
 const fNTD=n=>n?'NT$'+Number(n).toLocaleString():'—';
 const fD=d=>{if(!d)return'';if(d instanceof Date)return d.toLocaleDateString('zh-TW');return String(d).replace(/-/g,'/')};
 const safe=s=>{const str=s===null||s===undefined?'':String(s);return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')};
@@ -1292,7 +1298,7 @@ function sBdg(s){const m={'處理中':'b-p1','待交貨':'b-p3','已交貨':'b-p
 function ntf(m){const el=document.getElementById('ntf');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200);}
 function showLoading(on){const el=document.getElementById('loadingOverlay');if(el)el.style.display=on?'flex':'none';}
 function getRate(c){return rates[c]||1;}
-function calcNTDv(a,c){return Math.round((a||0)*getRate(c));}
+function calcNTDv(a,c){const n=typeof a==='string'?Number(a.replace(/,/g,'')):Number(a);return Math.round((n||0)*getRate(c));}
 
 function bSel(id,k,blank=false,src=null){
   const el=document.getElementById(id);if(!el)return;
@@ -1324,7 +1330,7 @@ function autoFillModelDesk(){
   const m=document.getElementById('f-model').value;
   if(!m)return;
   // Search in models array first
-  const md=models.find(x=>x.model===m);
+  const md=models.find(x=>x.model!=null&&String(x.model).toUpperCase()===String(m).toUpperCase());
   if(md){
     // Auto-fill text fields
     const fld={name:'f-name',rigging:'f-rigging',noCert:'f-noCert'};
@@ -1345,7 +1351,7 @@ function autoFillModelDesk(){
 
 function autoFillVendorDesk(code){
   if(!code||code.length<1)return;
-  const v=vendors.find(x=>x.vendorCode&&x.vendorCode.toLowerCase()===code.toLowerCase());
+  const v=vendors.find(x=>x.vendorCode!=null&&String(x.vendorCode).toUpperCase()===String(code).toUpperCase());
   if(!v)return;
   const fields={vendor:'f-vendor',agent:'f-agent',shipMode:'f-shipMode',forwarder:'f-forwarder',payment:'f-payment'};
   Object.entries(fields).forEach(([k,id])=>{
@@ -1932,6 +1938,8 @@ function openDet(idOrNew){
   document.getElementById('f-pctD').value=r.pctD||'';
   document.getElementById('f-pctM').value=r.pctM||'';
   document.getElementById('f-pctA').value=r.pctA||'';
+  // Sync pct from payment code if available
+  if(r.payment)setTimeout(()=>autoFillPayCodeDesk(r.payment),50);
 
   // Load deliveries into state array (deep copy)
   const todayDet=new Date().toISOString().slice(0,10);
@@ -2028,7 +2036,7 @@ function renderPayRow(ci,pi){
     }
   }"></div>
     <div class="pf"><label>期別名稱</label><select class="st-sel" onchange="onStCh(${ci},${pi},this.value)">${stageOpts}</select></div>
-    <div class="pf"><label>比例%</label><input type="number" class="pct-inp" value="${p.pct||''}" placeholder="30" oninput="detDeliveries[${ci}].payments[${pi}].pct=this.value;recalcPayRow(${ci},${pi})"></div>
+    <div class="pf"><label>比例%</label><input type="number" class="pct-inp" value="${p.pct||''}" oninput="detDeliveries[${ci}].payments[${pi}].pct=this.value;recalcPayRow(${ci},${pi})"></div>
     <div class="pf"><label>付款金額(原幣)</label><input class="pa-inp" value="${p.payAmt||''}" placeholder="自動計算" oninput="detDeliveries[${ci}].payments[${pi}].payAmt=this.value"></div>
     <div class="pf" style="justify-content:flex-end;align-items:flex-end"><button class="btn xs danger" onclick="removePayRow(${ci},${pi})">✕</button></div>
     <div class="pf"><label>請款方式</label><select class="ct-sel" onchange="detDeliveries[${ci}].payments[${pi}].claimType=this.value"><option value="">—</option>${ctOpts}</select></div>
@@ -2257,15 +2265,18 @@ function renderCodeTab(key){
   const tb=document.getElementById(tbId);if(!tb)return;
   const codes=opts[key]||[];
   if(!codes.length){tb.innerHTML=`<tr><td colspan="3"><div class="empty">尚無資料，請新增</div></td></tr>`;return;}
+  // Issue1: column order = 代號 | 訂金% | 交機% | 驗收% | 簡要備註
   tb.innerHTML=codes.map((c,i)=>{
-    const cd=codeDesc[key]&&codeDesc[key][c];
-    let shortTxt=safe(codeDesc[key+'Short']&&codeDesc[key+'Short'][c]||'');
-    // Append pct info for payCode
-    if(key==='payCode'&&cd&&typeof cd==='object'&&(cd.pctD||cd.pctM||cd.pctA)){
-      shortTxt+=` <span style="color:var(--tx3);font-size:10px">(${cd.pctD||0}%/${cd.pctM||0}%/${cd.pctA||0}%)</span>`;
-    }
+    let rawCd=codeDesc[key]&&codeDesc[key][c];
+    if(typeof rawCd==='string'){try{rawCd=JSON.parse(rawCd);}catch(e){rawCd={desc:rawCd};}}
+    const cd=(rawCd&&typeof rawCd==='object')?rawCd:{desc:'',pctD:0,pctM:0,pctA:0};
+    const shortTxt=safe(codeDesc[key+'Short']&&codeDesc[key+'Short'][c]||'');
+    const pctCols=key==='payCode'
+      ?`<td style="text-align:center;color:var(--tx2)">${cd.pctD??0}%</td><td style="text-align:center;color:var(--tx2)">${cd.pctM??0}%</td><td style="text-align:center;color:var(--tx2)">${cd.pctA??0}%</td>`
+      :'<td></td><td></td><td></td>';
     return`<tr style="cursor:pointer" onclick="openCodeDet('${key}',${i})">
     <td style="font-weight:700;font-family:monospace">${safe(String(c))}</td>
+    ${pctCols}
     <td>${shortTxt}</td>
     <td onclick="event.stopPropagation()"><div class="ac">
       <button class="btn xs" onclick="openCodeDet('${key}',${i})">編輯</button>
@@ -2313,15 +2324,29 @@ function delCode(key,i){
 }
 let codeDetKey='',codeDetIdx=-1;
 function openCodeDet(key,i){
-  codeDetKey=key;codeDetIdx=i;
-  const code=opts[key][i]||'';
+  codeDetKey=key; codeDetIdx=i;
+  const code=String(opts[key][i]||'');
   const lbl=key==='payCode'?'付款代號':'貨代代號';
   document.getElementById('codeDetTitle').textContent=`編輯${lbl}`;
   document.getElementById('codeDetCodeLbl').textContent=lbl;
   document.getElementById('codeDetCode').value=code;
   const shortKey=key+'Short';
   document.getElementById('codeDetShort').value=(codeDesc[shortKey]&&codeDesc[shortKey][code])||'';
-  document.getElementById('codeDetDesc').value=(codeDesc[key]&&codeDesc[key][code])||'';
+  // Parse desc: may be {desc,pctD,pctM,pctA} object, JSON string, or plain string
+  let cd=codeDesc[key]&&codeDesc[key][code];
+  if(typeof cd==='string'){try{cd=JSON.parse(cd);}catch(e){cd={desc:cd,pctD:0,pctM:0,pctA:0};}}
+  if(!cd||typeof cd!=='object')cd={desc:'',pctD:0,pctM:0,pctA:0};
+  document.getElementById('codeDetDesc').value=cd.desc||'';
+  const pctRow=document.getElementById('payPctRow');
+  if(pctRow)pctRow.style.display=key==='payCode'?'block':'none';
+  const elD=document.getElementById('codeDetPctD');
+  const elM=document.getElementById('codeDetPctM');
+  const elA=document.getElementById('codeDetPctA');
+  if(key==='payCode'){
+    if(elD)elD.value=Number(cd.pctD)||0;
+    if(elM)elM.value=Number(cd.pctM)||0;
+    if(elA)elA.value=Number(cd.pctA)||0;
+  }else{if(elD)elD.value=0;if(elM)elM.value=0;if(elA)elA.value=0;}
   document.getElementById('codeDetOv').classList.add('open');
 }
 function closeCodeDet(){document.getElementById('codeDetOv').classList.remove('open');}
@@ -2329,32 +2354,26 @@ async function saveCodeDet(){
   const newCode=document.getElementById('codeDetCode').value.trim().toUpperCase();
   const shortVal=document.getElementById('codeDetShort').value.trim();
   const descVal=document.getElementById('codeDetDesc').value.trim();
-  if(!newCode){alert('代號不能為空');return;}
-  // Preserve as string (prevent leading-zero loss)
+  if(!newCode){ntf('⚠ 代號不能為空');return;}
   const codeStr=String(newCode);
-  // Handle new vs edit
-  if(codeDetIdx===-1){
-    if(!opts[codeDetKey])opts[codeDetKey]=[];
-    if(opts[codeDetKey].includes(codeStr)){ntf('⚠ 代號已存在');return;}
-    opts[codeDetKey].push(codeStr);
-  } else {
-    const oldCode=String(opts[codeDetKey][codeDetIdx]||'');
-    opts[codeDetKey][codeDetIdx]=codeStr;
-    const sk=codeDetKey+'Short';
-    if(!codeDesc[sk])codeDesc[sk]={};
-    if(oldCode&&oldCode!==codeStr){delete codeDesc[codeDetKey][oldCode];delete codeDesc[sk][oldCode];}
-  }
+  if(!opts[codeDetKey])opts[codeDetKey]=[];
+  if(!codeDesc[codeDetKey])codeDesc[codeDetKey]={};
   const sk=codeDetKey+'Short';
   if(!codeDesc[sk])codeDesc[sk]={};
-  // For payCode: store pct values in desc object
-  if(codeDetKey==='payCode'){
-    const pctD=Number(document.getElementById('codeDetPctD')?.value)||0;
-    const pctM=Number(document.getElementById('codeDetPctM')?.value)||0;
-    const pctA=Number(document.getElementById('codeDetPctA')?.value)||0;
-    codeDesc[codeDetKey][codeStr]={desc:descVal,pctD,pctM,pctA};
-  } else {
-    codeDesc[codeDetKey][codeStr]=descVal;
+  if(codeDetIdx===-1){
+    if(opts[codeDetKey].map(c=>String(c)).includes(codeStr)){ntf('⚠ 代號已存在');return;}
+    opts[codeDetKey].push(codeStr);
+  }else{
+    const oldCode=String(opts[codeDetKey][codeDetIdx]||'');
+    opts[codeDetKey][codeDetIdx]=codeStr;
+    if(oldCode&&oldCode!==codeStr){delete codeDesc[codeDetKey][oldCode];delete codeDesc[sk][oldCode];}
   }
+  if(codeDetKey==='payCode'){
+    const pctD=Number(document.getElementById('codeDetPctD')?.value||0);
+    const pctM=Number(document.getElementById('codeDetPctM')?.value||0);
+    const pctA=Number(document.getElementById('codeDetPctA')?.value||0);
+    codeDesc[codeDetKey][codeStr]={desc:descVal,pctD,pctM,pctA};
+  }else{codeDesc[codeDetKey][codeStr]=descVal;}
   codeDesc[sk][codeStr]=shortVal;
   showLoading(true);await saveO();showLoading(false);
   refreshSels();closeCodeDet();renderCodeTab(codeDetKey);ntf('✓ 已儲存');
@@ -3109,6 +3128,74 @@ function setValPreserveCursor(el, val){
   const start=el.selectionStart, end=el.selectionEnd;
   el.value=val;
   try{el.setSelectionRange(start,end);}catch(e){}
+}
+
+
+function autoFillPayCodeDesk(code){
+  if(!code)return;
+  const cd=getPayCodeData(code);
+  if(!cd)return;
+  const elD=document.getElementById('f-pctD');
+  const elM=document.getElementById('f-pctM');
+  const elA=document.getElementById('f-pctA');
+  if(elD)elD.value=cd.pctD!==undefined?cd.pctD:elD.value;
+  if(elM)elM.value=cd.pctM!==undefined?cd.pctM:elM.value;
+  if(elA)elA.value=cd.pctA!==undefined?cd.pctA:elA.value;
+  recalcAll();
+}
+
+function getPayCodeData(code){
+  if(!code)return null;
+  const codeStr=String(code).toUpperCase();
+  // Exact match first
+  let raw=codeDesc.payCode&&codeDesc.payCode[codeStr];
+  if(!raw){
+    // Fuzzy: find any key containing or contained by input
+    const key=Object.keys(codeDesc.payCode||{}).find(k=>
+      String(k).toUpperCase().includes(codeStr)||codeStr.includes(String(k).toUpperCase())
+    );
+    raw=key?codeDesc.payCode[key]:null;
+  }
+  if(!raw)return null;
+  if(typeof raw==='string'){try{raw=JSON.parse(raw);}catch(e){return null;}}
+  return typeof raw==='object'?raw:null;
+}
+
+function openPayCodePickerDesk(){
+  const codes=opts.payCode||[];
+  if(!codes.length){ntf('尚無付款代號，請先在付款代號維護中新增');return;}
+  const existing=document.getElementById('payPickerOv');if(existing)existing.remove();
+  const ov=document.createElement('div');
+  ov.id='payPickerOv';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML=`<div style="background:var(--sf);border-radius:var(--rl);padding:16px;width:400px;max-width:90vw;max-height:75vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--tx)">選擇付款代號</div>
+    <input id="payPickerSrch" placeholder="🔍 搜尋付款代號 / 備註..." style="padding:7px 10px;border:1px solid var(--bd);border-radius:8px;font-size:12px;margin-bottom:8px;font-family:inherit;background:var(--sf2);color:var(--tx);outline:none">
+    <div id="payPickerList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:4px"></div>
+    <button onclick="document.getElementById('payPickerOv').remove()" style="width:100%;margin-top:10px;padding:7px;border-radius:8px;background:var(--sf2);border:1px solid var(--bd);font-size:12px;cursor:pointer;font-family:inherit;color:var(--tx2)">取消</button>
+  </div>`;
+  document.body.appendChild(ov);
+  function renderPayList(){
+    const q=(document.getElementById('payPickerSrch')?.value||'').toLowerCase();
+    const el=document.getElementById('payPickerList');if(!el)return;
+    el.innerHTML=codes.filter(c=>{
+      if(!q)return true;
+      const cd=getPayCodeData(c);
+      const short=(codeDesc.payCodeShort&&codeDesc.payCodeShort[c])||'';
+      return String(c).toLowerCase().includes(q)||short.toLowerCase().includes(q)||(cd&&cd.desc&&cd.desc.toLowerCase().includes(q));
+    }).map(c=>{
+      const cd=getPayCodeData(c)||{};
+      const short=(codeDesc.payCodeShort&&codeDesc.payCodeShort[c])||'';
+      const pct=(cd.pctD||cd.pctM||cd.pctA)?` (${cd.pctD||0}/${cd.pctM||0}/${cd.pctA||0}%)` :'';
+      return`<div onclick="document.getElementById('f-payment').value='${safe(c)}';autoFillPayCodeDesk('${safe(c)}');document.getElementById('payPickerOv').remove()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--bd);cursor:pointer;background:var(--sf)" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background='var(--sf)'">
+        <div style="font-size:12px;font-weight:700;font-family:monospace;color:var(--tx)">${safe(String(c))}${pct}</div>
+        <div style="font-size:11px;color:var(--tx3)">${safe(short)}</div>
+      </div>`;
+    }).join('');
+  }
+  renderPayList();
+  const srch=document.getElementById('payPickerSrch');
+  if(srch){srch.addEventListener('input',renderPayList);srch.addEventListener('keyup',renderPayList);setTimeout(()=>srch.focus(),100);}
 }
 
 // 自動檢查是否已登入

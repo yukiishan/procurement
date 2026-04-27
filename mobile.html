@@ -621,8 +621,8 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
         <div><div class="form-label">運送方式</div><div class="form-input-box"><select id="ve-shipMode" class="form-select"></select></div></div>
       </div>
       <div class="form-row row-2">
-        <div><div class="form-label">付款代號</div><div class="form-input-box"><input id="ve-payment" class="form-input" placeholder="如 J04" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div></div>
-        <div><div class="form-label">貨代代號</div><div class="form-input-box"><input id="ve-forwarder" class="form-input" placeholder="如 I32" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div></div>
+        <div><div class="form-label">付款代號</div><div class="form-input-box"><input id="ve-payment" class="form-input" placeholder="如 J04" style="text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)"></div></div>
+        <div><div class="form-label">貨代代號</div><div class="form-input-box"><input id="ve-forwarder" class="form-input" placeholder="如 I32" style="text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)"></div></div>
       </div>
     </div>
     <div class="form-section">
@@ -743,7 +743,7 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
         <div><div class="form-label">部門</div><div class="form-input-box"><select id="f-dept" class="form-select"></select></div></div>
       </div>
       <div class="form-row row-2">
-        <div><div class="form-label">PO號碼</div><div class="form-input-box"><input id="f-pr" class="form-input" placeholder="PO號碼" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div></div>
+        <div><div class="form-label">PO號碼</div><div class="form-input-box"><input id="f-pr" class="form-input" placeholder="PO號碼" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)" style="text-transform:uppercase"></div></div>
         <div><div class="form-label">狀態</div><div class="form-input-box"><select id="f-status" class="form-select"><option>處理中</option><option>待交貨</option><option>已交貨</option></select></div></div>
       </div>
       <!-- Row2: 廠商代號 廠商 代理商 設備型號 -->
@@ -780,11 +780,11 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
       <div class="form-section-title">規格 &amp; 金額</div>
       <div class="form-row row-2">
         <div><div class="form-label">PO日期</div><div class="form-input-box"><input id="f-podate" class="form-input" type="date"></div></div>
-        <div><div class="form-label">CEA</div><div class="form-input-box"><input id="f-cea" class="form-input" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div></div>
+        <div><div class="form-label">CEA</div><div class="form-input-box"><input id="f-cea" class="form-input" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)" style="text-transform:uppercase"></div></div>
       </div>
       <div class="form-row row-2">
-        <div><div class="form-label">LT</div><div class="form-input-box"><input id="f-lt" class="form-input" placeholder="90D/24W" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div></div>
-        <div><div class="form-label">TT</div><div class="form-input-box"><input id="f-tt" class="form-input" placeholder="Transit Time" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div></div>
+        <div><div class="form-label">LT</div><div class="form-input-box"><input id="f-lt" class="form-input" placeholder="90D/24W" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)" style="text-transform:uppercase"></div></div>
+        <div><div class="form-label">TT</div><div class="form-input-box"><input id="f-tt" class="form-input" placeholder="Transit Time" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)" style="text-transform:uppercase"></div></div>
       </div>
       <div class="form-row row-2">
         <div><div class="form-label">幣別</div><div class="form-input-box"><select id="f-currency" class="form-select" onchange="calcNTD()"><option>JPY</option><option>USD</option><option>NTD</option><option>EUR</option></select></div></div>
@@ -795,7 +795,7 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
         <div><div class="form-label">成交金額（台幣）</div><div class="form-input-box"><input id="f-amountNTD" class="form-input" type="number" readonly placeholder="自動計算"></div></div>
       </div>
       <div class="form-row row-2">
-        <div><div class="form-label">料號</div><div class="form-input-box"><input id="f-partno" class="form-input" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div></div>
+        <div><div class="form-label">料號</div><div class="form-input-box"><input id="f-partno" class="form-input" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)" style="text-transform:uppercase"></div></div>
         <div><div class="form-label">Line</div><div class="form-input-box"><input id="f-line" class="form-input" placeholder="#1..."></div></div>
       </div>
       <div class="form-row row-2">
@@ -820,8 +820,8 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
     <div class="form-section">
       <div class="form-section-title">付款條件</div>
       <div class="form-row row-2">
-        <div><div class="form-label">付款代號</div><div class="form-input-box"><input id="f-payment" class="form-input" placeholder="如 J94" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div></div>
-        <div><div class="form-label">貨代</div><div class="form-input-box"><input id="f-forwarder" class="form-input" placeholder="如 I32" oninput="this.value=this.value.toUpperCase()" style="text-transform:uppercase"></div></div>
+        <div><div class="form-label">付款代號</div><div class="form-input-box"><input id="f-payment" class="form-input" placeholder="如 J94" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)" style="text-transform:uppercase"></div></div>
+        <div><div class="form-label">貨代</div><div class="form-input-box"><input id="f-forwarder" class="form-input" placeholder="如 I32" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)" style="text-transform:uppercase"></div></div>
       </div>
       <div class="form-row row-2">
         <div><div class="form-label">運送方式</div><div class="form-input-box"><select id="f-shipMode" class="form-select"></select></div></div>
@@ -831,9 +831,9 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
         <div><div class="form-label">無產證</div><div class="form-input-box"><select id="f-noCert" class="form-select"><option value="">—</option><option>否</option><option>是</option></select></div></div>
       </div>
       <div class="form-row row-3">
-        <div><div class="form-label">訂金款%</div><div class="form-input-box"><input id="f-pctD" class="form-input" type="number" placeholder="30" oninput="recalcAll()"></div></div>
-        <div><div class="form-label">交機款%</div><div class="form-input-box"><input id="f-pctM" class="form-input" type="number" placeholder="60" oninput="recalcAll()"></div></div>
-        <div><div class="form-label">驗收款%</div><div class="form-input-box"><input id="f-pctA" class="form-input" type="number" placeholder="10" oninput="recalcAll()"></div></div>
+        <div><div class="form-label">訂金款%</div><div class="form-input-box"><input id="f-pctD" class="form-input" type="number" oninput="recalcAll()"></div></div>
+        <div><div class="form-label">交機款%</div><div class="form-input-box"><input id="f-pctM" class="form-input" type="number" oninput="recalcAll()"></div></div>
+        <div><div class="form-label">驗收款%</div><div class="form-input-box"><input id="f-pctA" class="form-input" type="number" oninput="recalcAll()"></div></div>
       </div>
     </div>
 
@@ -850,7 +850,12 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Noto San
     <div class="form-section">
       <div class="form-section-title">備註 / 交涉記錄</div>
       <div class="form-row">
+        <div class="form-label">備註</div>
         <textarea id="f-remark" class="form-textarea" placeholder="交涉記錄、議價過程..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-label">會簽紀錄</div>
+        <textarea id="f-signNote" class="form-textarea" placeholder="會簽紀錄..."></textarea>
       </div>
     </div>
 
@@ -1042,11 +1047,11 @@ async function saveR(){try{await apiPost('saveRates',rates);lc('rates',rates);}c
 async function saveH(){try{await apiPost('saveHols',hols);lc('hols',hols);}catch(e){console.error(e);}}
 
 // Utils
-const fN=n=>(n||n===0)?Number(n).toLocaleString():'—';
+const fN=n=>{const v=typeof n==='string'?Number(n.replace(/,/g,'')):Number(n);return(v||v===0)?v.toLocaleString():'—';};
 const fD=d=>{if(!d)return'';if(d instanceof Date)return d.toLocaleDateString('zh-TW');return String(d).replace(/-/g,'/')};
 const safe=s=>{const str=s===null||s===undefined?'':String(s);return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')};
 function getRate(c){return rates[c]||1;}
-function calcNTDv(a,c){return Math.round((a||0)*getRate(c));}
+function calcNTDv(a,c){const n=typeof a==='string'?Number(a.replace(/,/g,'')):Number(a);return Math.round((n||0)*getRate(c));}
 
 function showLoading(on){const el=document.getElementById('loadingOverlay');el.className=on?'show':'';}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2400);}
@@ -1200,6 +1205,73 @@ function openOptPickerMob(fieldId, title, optList){
     srch.addEventListener('keyup',renderOptListMob);
     setTimeout(()=>srch.focus(),100);
   }
+}
+
+
+function getPayCodeData(code){
+  if(!code)return null;
+  const codeStr=String(code).toUpperCase();
+  let raw=codeDesc.payCode&&codeDesc.payCode[codeStr];
+  if(!raw){
+    const key=Object.keys(codeDesc.payCode||{}).find(k=>
+      String(k).toUpperCase().includes(codeStr)||codeStr.includes(String(k).toUpperCase())
+    );
+    raw=key?codeDesc.payCode[key]:null;
+  }
+  if(!raw)return null;
+  if(typeof raw==='string'){try{raw=JSON.parse(raw);}catch(e){return null;}}
+  return typeof raw==='object'?raw:null;
+}
+
+function autoFillPayCodeMob(code){
+  if(!code)return;
+  const cd=getPayCodeData(code);
+  if(!cd)return;
+  const elD=document.getElementById('f-pctD');
+  const elM=document.getElementById('f-pctM');
+  const elA=document.getElementById('f-pctA');
+  if(elD&&cd.pctD!==undefined)elD.value=cd.pctD;
+  if(elM&&cd.pctM!==undefined)elM.value=cd.pctM;
+  if(elA&&cd.pctA!==undefined)elA.value=cd.pctA;
+  if(typeof recalcAll==='function')recalcAll();
+}
+
+function openPayCodePickerMob(){
+  const codes=opts.payCode||[];
+  if(!codes.length){toast('尚無付款代號，請先在設定中新增');return;}
+  const existing=document.getElementById('payPickerMobOv');if(existing)existing.remove();
+  const ov=document.createElement('div');
+  ov.id='payPickerMobOv';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:flex-end';
+  ov.innerHTML=`<div style="background:var(--sf);border-radius:16px 16px 0 0;width:100%;max-height:80vh;display:flex;flex-direction:column;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom))">
+    <div style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:10px">選擇付款代號</div>
+    <input id="payPickerMobSrch" placeholder="🔍 搜尋付款代號 / 備註..." style="padding:9px 12px;border:1px solid var(--bd);border-radius:10px;font-size:14px;margin-bottom:10px;font-family:inherit;background:var(--sf2);color:var(--tx);outline:none;width:100%;box-sizing:border-box">
+    <div id="payPickerMobList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px"></div>
+    <button onclick="document.getElementById('payPickerMobOv').remove()" style="width:100%;margin-top:10px;padding:12px;border-radius:10px;background:var(--sf2);border:1px solid var(--bd);font-size:14px;cursor:pointer;font-family:inherit;color:var(--tx2)">取消</button>
+  </div>`;
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);
+  function renderPayListMob(){
+    const q=(document.getElementById('payPickerMobSrch')?.value||'').toLowerCase();
+    const el=document.getElementById('payPickerMobList');if(!el)return;
+    el.innerHTML=codes.filter(c=>{
+      if(!q)return true;
+      const cd=getPayCodeData(c);
+      const short=(codeDesc.payCodeShort&&codeDesc.payCodeShort[c])||'';
+      return String(c).toLowerCase().includes(q)||short.toLowerCase().includes(q)||(cd&&cd.desc&&cd.desc.toLowerCase().includes(q));
+    }).map(c=>{
+      const cd=getPayCodeData(c)||{};
+      const short=(codeDesc.payCodeShort&&codeDesc.payCodeShort[c])||'';
+      const pct=(cd.pctD||cd.pctM||cd.pctA)?` ${cd.pctD||0}/${cd.pctM||0}/${cd.pctA||0}%`:'';
+      return`<div onclick="document.getElementById('f-payment').value='${safe(c)}';autoFillPayCodeMob('${safe(c)}');document.getElementById('payPickerMobOv').remove()" style="padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--sf)">
+        <div style="font-size:14px;font-weight:700;font-family:monospace;color:var(--tx)">${safe(String(c))}<span style="font-weight:400;font-family:inherit;font-size:12px;color:var(--tx3)">${pct}</span></div>
+        <div style="font-size:12px;color:var(--tx3);margin-top:2px">${safe(short)}</div>
+      </div>`;
+    }).join('');
+  }
+  renderPayListMob();
+  const srch=document.getElementById('payPickerMobSrch');
+  if(srch){srch.addEventListener('input',renderPayListMob);srch.addEventListener('keyup',renderPayListMob);setTimeout(()=>srch.focus(),100);}
 }
 
 async function startApp(){
@@ -1519,7 +1591,7 @@ function autoFillModel(){
   // Find model in models array
   const md=models.find(x=>x.model===m);
   if(md){
-    const fields={name:'f-name',country:'f-country',city:'f-city',rigging:'f-rigging',noCert:'f-noCert'};
+    const fields={name:'f-name',country:'f-country',city:'f-city',rigging:'f-rigging',noCert:'f-noCert',currency:'f-currency'};
     Object.entries(fields).forEach(([k,id])=>{
       const el=document.getElementById(id);
       if(el&&md[k]!==undefined&&md[k]!=='')el.value=md[k];
@@ -1649,10 +1721,12 @@ function openDet(idOrNew){
   document.getElementById('detDelBtn').style.display=eid?'block':'none';
   refreshModelSelect(r.model||'');  // pass model value so it's pre-selected correctly
   refreshSels();
-  ['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','status'].forEach(f=>{
+  ['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'].forEach(f=>{
     const el=document.getElementById('f-'+f);if(el)el.value=r[f]||'';
   });
   document.getElementById('f-qty').value=r.qty||1;
+  // Auto-fill pct from saved payment code
+  setTimeout(()=>{if(r.payment)autoFillPayCodeMob(r.payment);},50);
   document.getElementById('f-quote').value=r.quote||'';
   document.getElementById('f-amount').value=r.amount||'';
   document.getElementById('f-amountNTD').value=r.amountNTD||calcNTDv(r.amount,r.currency)||'';
@@ -1732,7 +1806,7 @@ function renderPayRowM(ci,pi){
     </div>
     <div class="pay-grid-m">
       <div class="pay-field-m"><label>期別名稱</label><select data-st onchange="onStChM(${ci},${pi},this.value)">${stOpts}</select></div>
-      <div class="pay-field-m"><label>比例%</label><input type="number" data-pct value="${p.pct||''}" placeholder="30" oninput="detDeliveries[${ci}].payments[${pi}].pct=this.value;recalcPayRow(${ci},${pi})"></div>
+      <div class="pay-field-m"><label>比例%</label><input type="number" data-pct value="${p.pct||''}" oninput="detDeliveries[${ci}].payments[${pi}].pct=this.value;recalcPayRow(${ci},${pi})"></div>
       <div class="pay-field-m"><label>付款金額(原幣)</label><input data-pa value="${p.payAmt||''}" placeholder="自動計算" oninput="detDeliveries[${ci}].payments[${pi}].payAmt=this.value"></div>
       <div class="pay-field-m"><label>發票日期</label><input type="date" value="${p.invoiceDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].invoiceDate=this.value"></div>
       <div class="pay-field-m"><label>發票號碼</label><input value="${safe(p.invoice||'')}" oninput="detDeliveries[${ci}].payments[${pi}].invoice=this.value.toUpperCase()" style="text-transform:uppercase"></div>
@@ -2107,7 +2181,7 @@ function renderCodesEdit(body){
         </div>`).join('')}
     </div>
     <div class="add-item-row" style="margin-top:10px">
-      <input id="newCodeVal" placeholder="新代號（如 J94）" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+      <input id="newCodeVal" placeholder="新代號（如 J94）" style="text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)">
       <button class="add-item-btn" onclick="addCode()">新增</button>
     </div>`;
 }
@@ -2130,26 +2204,38 @@ function addCode(){
 // Code detail edit page
 function openCodeEdit(type, code){
   codeEditType=type; codeEditKey=code;
-  const shortKey = type+'Short';
-  const short = (codeDesc[shortKey]&&codeDesc[shortKey][code])||'';
-  const desc = (codeDesc[type]&&codeDesc[type][code])||'';
-  const lbl = type==='payCode'?'付款代號':'貨代代號';
-  document.getElementById('setModalTitle').textContent = `編輯${lbl}`;
+  const shortKey=type+'Short';
+  const short=(codeDesc[shortKey]&&codeDesc[shortKey][code])||'';
+  let rawCd=codeDesc[type]&&codeDesc[type][code];
+  if(typeof rawCd==='string'){try{rawCd=JSON.parse(rawCd);}catch(e){rawCd={desc:rawCd};}}
+  const cd=(rawCd&&typeof rawCd==='object')?rawCd:{desc:'',pctD:0,pctM:0,pctA:0};
+  const descVal=cd.desc||'';
+  const lbl=type==='payCode'?'付款代號':'貨代代號';
+  const codeStr=String(code||'');
+  document.getElementById('setModalTitle').textContent=`編輯${lbl}`;
   document.getElementById('setModalSaveBtn').style.display='block';
-  document.getElementById('setModalSaveBtn').onclick = saveCodeEdit;
-  document.getElementById('setModalBody').innerHTML = `
+  document.getElementById('setModalSaveBtn').onclick=saveCodeEdit;
+  const pctBlock=type==='payCode'?`
+    <div style="font-size:11px;color:var(--tx3);font-weight:600;padding:8px 0 4px">付款比例 (%)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+      <div><div class="form-label" style="font-size:10px">訂金款</div><div class="form-input-box"><input id="cePctD" class="form-input" type="number" min="0" max="100" value="${cd.pctD||0}" style="font-size:16px"></div></div>
+      <div><div class="form-label" style="font-size:10px">交機款</div><div class="form-input-box"><input id="cePctM" class="form-input" type="number" min="0" max="100" value="${cd.pctM||0}" style="font-size:16px"></div></div>
+      <div><div class="form-label" style="font-size:10px">驗收款</div><div class="form-input-box"><input id="cePctA" class="form-input" type="number" min="0" max="100" value="${cd.pctA||0}" style="font-size:16px"></div></div>
+    </div>`:'';
+  document.getElementById('setModalBody').innerHTML=`
     <div class="form-section">
       <div class="form-row">
-        <div class="form-label">${lbl}</div>
-        <div class="form-input-box"><input id="ceCode" class="form-input" value="${safe(code)}" placeholder="代號" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="form-label">${lbl}（3碼）</div>
+        <div class="form-input-box"><input id="ceCode" class="form-input" value="${safe(codeStr)}" placeholder="如 J04" maxlength="3" style="text-transform:uppercase;font-family:monospace;letter-spacing:3px" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');this.setSelectionRange(s,s)"></div>
       </div>
       <div class="form-row">
         <div class="form-label">簡要備註</div>
         <div class="form-input-box"><input id="ceShort" class="form-input" value="${safe(short)}" placeholder="簡短說明（顯示於列表）"></div>
       </div>
+      ${pctBlock}
       <div class="form-row">
         <div class="form-label">備註</div>
-        <textarea id="ceDesc" class="form-textarea" placeholder="詳細備註...">${safe(desc)}</textarea>
+        <textarea id="ceDesc" class="form-textarea" placeholder="詳細備註...">${safe(descVal)}</textarea>
       </div>
       <div class="form-row">
         <button onclick="delCodeItem()" style="width:100%;padding:11px;background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">刪除此代號</button>
@@ -2173,7 +2259,15 @@ async function saveCodeEdit(){
     delete codeDesc[codeEditType][codeEditKey];
     delete codeDesc[shortKey][codeEditKey];
   }
-  codeDesc[codeEditType][newCode]=desc;
+  // Save pct+desc as object for payCode, plain string for fwdCode
+  if(codeEditType==='payCode'){
+    const pctD=Number(document.getElementById('cePctD')?.value||0);
+    const pctM=Number(document.getElementById('cePctM')?.value||0);
+    const pctA=Number(document.getElementById('cePctA')?.value||0);
+    codeDesc[codeEditType][newCode]={desc,pctD,pctM,pctA};
+  }else{
+    codeDesc[codeEditType][newCode]=desc;
+  }
   codeDesc[shortKey][newCode]=short;
   showLoading(true);
   await saveO();
