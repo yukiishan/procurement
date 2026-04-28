@@ -188,7 +188,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .fab svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
 /* ── DETAIL PAGE ── */
-.det-page{position:fixed;inset:0;background:var(--bg);z-index:150;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94)}
+.det-page{position:fixed;top:0;left:0;right:0;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));background:var(--bg);z-index:150;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94)}
 .det-page.open{transform:translateX(0)}
 .det-nav{background:var(--sf);border-bottom:1px solid var(--bd);padding:12px 14px;display:flex;align-items:center;gap:10px;padding-top:calc(var(--safe-top) + 12px);flex-shrink:0}
 .det-nav-back{background:none;border:none;color:#3A5480;font-size:16px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;padding:4px 0;font-family:inherit}
@@ -196,7 +196,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .det-nav h2{flex:1;font-size:16px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .det-nav-save{background:#93939B;color:#fff;border:none;padding:8px 16px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
 .det-nav-save:active{opacity:.85}
-.det-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px)}
+.det-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 24px}
 
 /* ── FORM SECTIONS ── */
 .form-section{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);margin-bottom:12px;overflow:hidden}
@@ -1487,7 +1487,7 @@ async function startApp(){
 let curTab='list';
 function switchTab(t){
   // Close all overlay pages before switching tabs
-  ['vendorMaintPage','vendorEditPage','modelMaintPage','modelEditPage','detPage','payDetPage'].forEach(id=>{
+  ['vendorMaintPage','vendorEditPage','modelMaintPage','modelEditPage','detPage','payDetPage','setModal'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.classList.remove('open');
   });
