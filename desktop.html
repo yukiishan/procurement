@@ -65,7 +65,7 @@ body{font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;background:var(-
 .toolbar input{min-width:160px}
 .toolbar input:focus,.toolbar select:focus{outline:none;border-color:var(--rose)}
 .spacer{flex:1}
-/* .content moved to tab layout */
+.content{flex:1;overflow-y:auto;padding:11px 14px}
 .sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-bottom:11px}
 .metric{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rl);padding:9px 12px}
 .mlbl{font-size:9px;color:var(--tx3);margin-bottom:2px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
@@ -517,8 +517,8 @@ tbody td{padding:8px 7px;vertical-align:middle}
 
 
 /* ── Sticky tab headers ── */
-[id^="tab-"]{display:none;flex-direction:column;height:calc(100vh - 44px)}
-[id^="tab-"].active{display:flex}
+[id^="tab-"]{display:none;flex-direction:column}
+[id^="tab-"].active{display:flex;flex-direction:column;height:100%}
 .content{flex:1;overflow-y:auto;padding:11px 14px}
 .twrap{overflow:auto;flex:1}
 table{border-collapse:collapse;width:100%;min-width:900px}
@@ -2133,7 +2133,7 @@ async function saveRec(){
   const total=Number(document.getElementById('f-qty').value)||0;
   const used=getUsedQty();
   if(total>0&&used>total){if(!confirm(`批次數量合計(${used})超過總數(${total})，確定儲存？`))return;}
-  const sf=['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','status'];
+  const sf=['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'];
   const rec={};
   sf.forEach(f=>{const el=document.getElementById('f-'+f);if(el)rec[f]=el.value;});
   rec.qty=Number(document.getElementById('f-qty').value)||1;
@@ -2806,7 +2806,7 @@ async function startApp(){
     if(IS_MOB()){
       initMob();
     } else {
-      renderList();
+      sw('list');  // Initialize tab display + render
     }
   }catch(err){
     console.error('startApp error:', err);
