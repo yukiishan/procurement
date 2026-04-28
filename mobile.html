@@ -55,13 +55,75 @@
 }
 
 /* ── BASE ── */
-html{height:100%;background:#9A7A78}body{margin:0;padding:0;height:100%;background:#9A7A78;color:var(--tx);font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;font-size:15px;-webkit-text-size-adjust:100%;overflow:hidden}
+html{background:#9A7A78}
+body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 
-/* ── APP SHELL ── */
-#app{display:flex;flex-direction:column;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--sf);overflow:hidden}
+/* ── APP SHELL: flex column, fills entire screen ── */
+#app{
+  display:flex;
+  flex-direction:column;
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+  background:var(--sf);
+  overflow:hidden
+}
 
-/* ── STATUS BAR SPACER ── */
-#statusBar{height:env(safe-area-inset-top,0px);background:var(--accent,#9A7A78);flex-shrink:0}
+/* ── STATUS BAR SPACER (top safe area) ── */
+#statusBar{
+  height:env(safe-area-inset-top,0px);
+  background:var(--accent,#9A7A78);
+  flex-shrink:0
+}
+
+/* ── PAGE CONTAINER: grows to fill between header and tabBar ── */
+#pageContainer{
+  flex:1;
+  overflow:hidden;
+  position:relative;
+  /* No padding-bottom here - tabBar is fixed and .page handles it */
+}
+.page{
+  position:absolute;
+  top:0;left:0;right:0;bottom:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  background:var(--bg);
+  display:none;
+  /* Pad content so it's not hidden behind fixed tabBar */
+  padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 8px)
+}
+.page.active{display:block}
+
+/* ── TAB BAR: fixed at bottom, bg extends into safe area via padding ── */
+#tabBar{
+  position:fixed;
+  bottom:0;
+  left:0;right:0;
+  height:var(--tab-h);           /* icon area = 62px */
+  padding-bottom:env(safe-area-inset-bottom,0px); /* extend bg into home indicator */
+  /* total rendered height = 62px + safe-area-inset-bottom */
+  background:var(--sf);
+  border-top:1px solid var(--bd);
+  display:flex;
+  align-items:flex-start;        /* icons at top of box, above home indicator */
+  z-index:200;
+  box-shadow:0 -2px 12px rgba(0,0,0,.07);
+  max-width:480px;
+  margin:0 auto
+}
+
+/* ── LOGIN SCREEN ── */
+#loginScreen{
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+  background:#9A7A78;           /* same as html/body - fills entire screen */
+  z-index:999;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:env(safe-area-inset-top,0px) 24px env(safe-area-inset-bottom,0px)
+}
 
 /* ── HEADER ── */
 .app-header{background:var(--accent, #9A7A78);color:#fff;padding:14px 16px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0}
@@ -69,32 +131,11 @@ html{height:100%;background:#9A7A78}body{margin:0;padding:0;height:100%;backgrou
 .app-header .hdr-btn{background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 10px;border-radius:10px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit;min-height:36px}
 .app-header .hdr-btn:active{background:rgba(255,255,255,.35)}
 
-/* ── PAGE CONTAINER ── */
-#pageContainer{flex:1;overflow:hidden;position:relative}
-.page{position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);display:none;padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 8px)}
-.page.active{display:block}
 
-/* ── BOTTOM TAB BAR ── */
-#tabBar{display:flex;background:var(--sf);border-top:1px solid var(--bd);height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;z-index:200;box-shadow:0 -2px 12px rgba(0,0,0,.07)}
-.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;color:var(--tx3);font-size:10px;font-weight:500;cursor:pointer;padding:6px 0;transition:color .2s;font-family:inherit}
-.tab-btn .tab-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;transition:background .2s}
-.tab-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
-.tab-btn.active{color:#93939B}
-.tab-btn.active .tab-icon{background:#EEECEC}
-.tab-btn.active svg{stroke:#93939B}
 
-/* ── LOGIN SCREEN ── */
-#loginScreen{position:fixed;top:0;left:0;right:0;bottom:0;background:#9A7A78;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0px) 24px env(safe-area-inset-bottom,0px)}
-.login-logo{width:80px;height:80px;background:rgba(255,255,255,.15);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:24px}
-.login-logo svg{width:44px;height:44px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-#loginScreen h1{color:#fff;font-size:22px;font-weight:700;margin-bottom:6px;text-align:center}
-#loginScreen p{color:rgba(255,255,255,.7);font-size:13px;margin-bottom:32px;text-align:center}
-.login-input{width:100%;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:14px;padding:14px 16px;color:#fff;font-size:22px;text-align:center;letter-spacing:8px;font-family:monospace;margin-bottom:14px;-webkit-appearance:none;outline:none;transition:border-color .2s}
-.login-input::placeholder{color:rgba(255,255,255,.4);letter-spacing:3px;font-size:16px}
-.login-input:focus{border-color:rgba(255,255,255,.8)}
-.login-btn{width:100%;background:#fff;color:var(--blue);border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s}
-.login-btn:active{opacity:.85}
-.login-err{color:rgba(255,200,200,1);font-size:13px;text-align:center;margin-top:8px;min-height:18px}
+
+
+
 
 /* ── SEARCH BAR ── */
 .search-bar{padding:10px 14px 6px;background:var(--sf);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--bd)}
@@ -253,7 +294,7 @@ html{height:100%;background:#9A7A78}body{margin:0;padding:0;height:100%;backgrou
 .dc-sub{font-size:11px;color:var(--tx3);margin-top:3px}
 
 /* ── SETTINGS ── */
-.set-section{padding:14px 14px calc(var(--tab-h)+var(--safe-bot)+20px)}
+.set-section{padding:14px 14px calc(var(--tab-h)+env(safe-area-inset-bottom,0px)+20px)}
 .set-group-title{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;padding:0 4px;margin-bottom:7px;margin-top:16px}
 .set-group-title:first-child{margin-top:0}
 .set-card{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);overflow:hidden;margin-bottom:4px}
@@ -317,8 +358,7 @@ html{height:100%;background:#9A7A78}body{margin:0;padding:0;height:100%;backgrou
 }
 
 
-/* safe area handled by tabBar padding and html/body bg */
-</style>
+></style>
 </head>
 <body>
 
