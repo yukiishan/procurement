@@ -116,13 +116,17 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 #loginScreen{
   position:fixed;
   top:0;left:0;right:0;bottom:0;
-  background:#9A7A78;           /* same as html/body - fills entire screen */
+  background:#9A7A78;
   z-index:999;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  padding:env(safe-area-inset-top,0px) 24px env(safe-area-inset-bottom,0px)
+  padding:env(safe-area-inset-top,0px) 32px env(safe-area-inset-bottom,0px);
+  width:100%
+}
+#loginScreen h1,#loginScreen p,#loginScreen .login-input,#loginScreen .login-btn,#loginScreen .login-err{
+  width:100%;max-width:360px
 }
 
 /* ── HEADER ── */
@@ -358,7 +362,87 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 }
 
 
-></style>
+>
+/* ── LOGIN COMPONENTS ── */
+.login-logo{
+  width:80px;height:80px;
+  background:rgba(255,255,255,.15);
+  border-radius:20px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:24px
+}
+.login-logo svg{
+  width:44px;height:44px;
+  stroke:#fff;fill:none;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round
+}
+#loginScreen h1{
+  color:#fff;font-size:22px;font-weight:700;
+  margin-bottom:6px;text-align:center
+}
+#loginScreen p{
+  color:rgba(255,255,255,.7);font-size:13px;
+  margin-bottom:32px;text-align:center
+}
+.login-input{
+  width:100%;
+  background:rgba(255,255,255,.15);
+  border:1.5px solid rgba(255,255,255,.3);
+  border-radius:14px;
+  padding:14px 16px;
+  color:#fff;font-size:22px;text-align:center;
+  letter-spacing:8px;font-family:monospace;
+  margin-bottom:14px;
+  -webkit-appearance:none;outline:none;
+  transition:border-color .2s
+}
+.login-input::placeholder{
+  color:rgba(255,255,255,.4);
+  letter-spacing:3px;font-size:16px
+}
+.login-input:focus{border-color:rgba(255,255,255,.8)}
+.login-btn{
+  width:100%;background:#fff;
+  color:var(--blue);border:none;
+  border-radius:14px;padding:15px;
+  font-size:16px;font-weight:700;
+  cursor:pointer;font-family:inherit;
+  transition:opacity .2s
+}
+.login-btn:active{opacity:.85}
+.login-err{
+  color:rgba(255,200,200,1);font-size:13px;
+  text-align:center;margin-top:8px;min-height:18px
+}
+
+
+/* ── TAB BAR BUTTONS ── */
+.tab-btn{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:2px;border:none;background:none;
+  color:var(--tx3);font-size:10px;font-weight:500;
+  cursor:pointer;padding:8px 0 0;
+  height:var(--tab-h);
+  transition:color .2s;font-family:inherit
+}
+.tab-icon{
+  width:40px;height:40px;
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .2s
+}
+.tab-btn svg{
+  width:26px;height:26px;       /* larger icons */
+  stroke:currentColor;fill:none;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+  transition:stroke .2s
+}
+.tab-btn.active{color:var(--accent)}
+.tab-btn.active .tab-icon{background:rgba(154,122,120,.12)}
+.tab-btn.active svg{stroke:var(--accent)}
+
+</style>
 </head>
 <body>
 
