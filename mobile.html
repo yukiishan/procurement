@@ -55,13 +55,13 @@
 }
 
 /* ── BASE ── */
-html,body{margin:0;padding:0;box-sizing:border-box;background:var(--sf);color:var(--tx);font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;font-size:15px;-webkit-text-size-adjust:100%;overflow:hidden}
+html{height:100%;height:-webkit-fill-available}body{margin:0;padding:0;box-sizing:border-box;min-height:100vh;min-height:-webkit-fill-available;background:var(--sf);color:var(--tx);font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;font-size:15px;-webkit-text-size-adjust:100%;overflow:hidden}
 
 /* ── APP SHELL ── */
-#app{display:flex;flex-direction:column;position:fixed;top:0;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:var(--sf);box-shadow:0 0 40px rgba(0,0,0,.15);overflow:hidden}
+#app{display:flex;flex-direction:column;width:100%;max-width:480px;margin:0 auto;height:100vh;height:100dvh;min-height:-webkit-fill-available;background:var(--sf);box-shadow:0 0 40px rgba(0,0,0,.15);overflow:hidden;position:relative}
 
 /* ── STATUS BAR SPACER ── */
-#statusBar{height:var(--safe-top);background:var(--accent, #9A7A78);flex-shrink:0}
+#statusBar{height:env(safe-area-inset-top,0px);background:var(--accent,#9A7A78);flex-shrink:0}
 
 /* ── HEADER ── */
 .app-header{background:var(--accent, #9A7A78);color:#fff;padding:14px 16px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0}
@@ -71,11 +71,11 @@ html,body{margin:0;padding:0;box-sizing:border-box;background:var(--sf);color:va
 
 /* ── PAGE CONTAINER ── */
 #pageContainer{flex:1;overflow:hidden;position:relative}
-.page{position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);display:none;padding-bottom:16px}
+.page{position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);display:none;padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px))}
 .page.active{display:block}
 
 /* ── BOTTOM TAB BAR ── */
-#tabBar{display:flex;background:var(--sf);border-top:1px solid var(--bd);height:var(--tab-h);padding-bottom:0;padding-bottom:env(safe-area-inset-bottom);height:calc(var(--tab-h) + env(safe-area-inset-bottom));flex-shrink:0;box-shadow:0 -2px 12px rgba(0,0,0,.07);position:relative;z-index:10}
+#tabBar{display:flex;background:var(--sf);border-top:1px solid var(--bd);height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;z-index:100;box-shadow:0 -2px 12px rgba(0,0,0,.07)}
 .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;color:var(--tx3);font-size:10px;font-weight:500;cursor:pointer;padding:6px 0;transition:color .2s;font-family:inherit}
 .tab-btn .tab-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;transition:background .2s}
 .tab-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
@@ -138,7 +138,7 @@ html,body{margin:0;padding:0;box-sizing:border-box;background:var(--sf);color:va
 .empty-state p{font-size:14px;color:var(--tx3);text-align:center}
 
 /* ── FAB (Floating Action Button) ── */
-.fab{position:fixed;bottom:calc(var(--tab-h) + var(--safe-bot) + 16px);right:20px;width:54px;height:54px;background:#3A5480;border-radius:27px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(58,84,128,.35);z-index:40;transition:transform .15s}
+.fab{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);right:20px;width:54px;height:54px;background:#3A5480;border-radius:27px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(58,84,128,.35);z-index:40;transition:transform .15s}
 .fab:active{transform:scale(.93)}
 .fab svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
@@ -227,7 +227,7 @@ html,body{margin:0;padding:0;box-sizing:border-box;background:var(--sf);color:va
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── TOAST ── */
-#toast{position:fixed;bottom:calc(var(--tab-h) + var(--safe-bot) + 12px);left:50%;transform:translateX(-50%) translateY(10px);background:rgba(13,27,42,.9);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:500;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none}
+#toast{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 12px);left:50%;transform:translateX(-50%) translateY(10px);background:rgba(13,27,42,.9);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:500;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ── PAY PAGE CARDS ── */
@@ -683,6 +683,20 @@ html,body{margin:0;padding:0;box-sizing:border-box;background:var(--sf);color:va
   </div>
 </div>
 
+<!-- Model Maintenance Page (slide in) -->
+<div class="det-page" id="modelMaintPage">
+  <div class="det-nav">
+    <button class="det-nav-back" onclick="document.getElementById('modelMaintPage').classList.remove('open')">
+      <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
+    </button>
+    <h2>設備型號維護</h2>
+    <button class="det-nav-save" onclick="addModelNew()">＋ 新增</button>
+  </div>
+  <div class="det-scroll" style="padding:14px;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;height:0">
+    <div id="modelList"></div>
+  </div>
+</div>
+
 <!-- Model Edit Page -->
 <div class="det-page" id="modelEditPage">
   <div class="det-nav">
@@ -1043,7 +1057,12 @@ async function fetchFromAPI(){
   modelNames={...DN_DEF};
   rates={...DR,...(rr||{})};Object.keys(DR).forEach(k=>{if(rates[k]==null)rates[k]=DR[k];});
   hols=hr||[...DH];
-  codeDesc.payCode=(cr&&cr.payCode)||{};codeDesc.fwdCode=(cr&&cr.fwdCode)||{};
+  // Normalize ALL codeDesc keys to String (prevent 08→8, 7E02→700 etc)
+  const normCD=(obj)=>{const r={};Object.entries(obj||{}).forEach(([k,v])=>r[String(k)]=v);return r;};
+  codeDesc.payCode=normCD(cr&&cr.payCode);
+  codeDesc.fwdCode=normCD(cr&&cr.fwdCode);
+  codeDesc.payCodeShort=normCD(cr&&cr.payCodeShort);
+  codeDesc.fwdCodeShort=normCD(cr&&cr.fwdCodeShort);
   vendors=Array.isArray(vr)?vr:[];
   models=Array.isArray(mr)?mr:[];
   console.log('[fetchFromAPI] done - models:', models.length, 'vendors:', vendors.length);
@@ -2301,6 +2320,11 @@ async function saveCodeEdit(){
   const short = document.getElementById('ceShort').value.trim();
   const desc = document.getElementById('ceDesc').value.trim();
   if(!newCode){toast('代號不能為空');return;}
+  // Duplicate check: if editing existing code, skip if code unchanged
+  const isNewEntry=!codeEditKey||(String(codeEditKey).toUpperCase()!==newCode);
+  if(isNewEntry&&opts[codeEditType]&&opts[codeEditType].map(c=>String(c).toUpperCase()).includes(newCode)){
+    toast('⚠ 代號「'+newCode+'」已存在，請勿重複新增');return;
+  }
   const shortKey = codeEditType+'Short';
   // Update opts array
   const idx = opts[codeEditType].indexOf(codeEditKey);
@@ -2512,7 +2536,7 @@ function closeModelEdit(){
 
 async function saveModelEdit(){
   const textFields=['model','name','remark'];
-  const selFields=['country','city','rigging','noCert'];
+  const selFields=['country','city','rigging','noCert','currency'];
   const rec={};
   textFields.forEach(f=>{const el=document.getElementById('me-'+f);if(el)rec[f]=el.value||'';});
   selFields.forEach(f=>{const el=document.getElementById('me-'+f);if(el)rec[f]=el.value||'';});
