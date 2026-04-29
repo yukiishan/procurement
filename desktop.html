@@ -1537,7 +1537,7 @@ function renderList(){
       <td>${sBdg(r.status)}</td>
       <td style="font-size:10px">${r.lt||'—'}</td>
       <td>${r.noCert?bdg(r.noCert,r.noCert==='是'?'b-y':'b-n'):'—'}</td>
-      <td style="font-size:10px" title="${(()=>{const _rk=String(r.payment||'');const _keys=[_rk,_rk.length<=2?_rk.padStart(2,'0'):_rk];let _c=null,_s='';for(const _k of _keys){if(codeDesc.payCode&&codeDesc.payCode[_k]){_c=codeDesc.payCode[_k];_s=codeDesc.payCodeShort&&codeDesc.payCodeShort[_k]||'';break;}}return _s||(_c&&typeof _c==='object'?(_c.desc||''):String(_c||''));})()}">${r.payment||'—'}</td>
+      <td style="font-size:10px" title="${(()=>{const _cd=getPayCodeData(r.payment);const _rk=String(r.payment||'');const _keys=[_rk,'/'+_rk,'/' +_rk.padStart(2,'0')];let _s='';for(const _k of _keys){if(codeDesc.payCodeShort&&codeDesc.payCodeShort[_k]){_s=codeDesc.payCodeShort[_k];break;}}return _s||(_cd&&typeof _cd==='object'?(_cd.desc||''):String(_cd||''));})()}">${displayCode(r.payment)||'—'}</td>
       <td style="font-size:10px" title="${(()=>{const _f=codeDesc.fwdCode[r.forwarder];const _fs=codeDesc.fwdCodeShort&&codeDesc.fwdCodeShort[r.forwarder]||'';return _fs||(_f&&typeof _f==='object'?(_f.desc||''): String(_f||''));})()}">${r.forwarder||'—'}</td>
       <td style="font-size:10px">${r.country||'—'}</td>
       <td style="font-size:10px">${r.city||'—'}</td>
@@ -3241,23 +3241,38 @@ function autoFillPayCodeDesk(code){
 
 function getPayCodeData(code){
   if(!code)return null;
-  const codeStr=String(code);
-  // Try: exact → zero-padded → uppercase → fuzzy
-  const tryKeys=[codeStr, codeStr.length<=2?codeStr.padStart(2,'0'):codeStr, codeStr.toUpperCase()];
+  const codeStr=String(code).trim();
+  // Build try-keys: exact, slash-prefixed, zero-padded, slash+zero-padded
+  const padded=codeStr.replace(/^\//,'').padStart(2,'0');
+  const tryKeys=[
+    codeStr,                    // "8" or "/08" or "J04"
+    '/'+codeStr,                // "/8"
+    '/'+padded,                 // "/08" ← catches when r.payment="8"
+    padded,                     // "08"
+    codeStr.toUpperCase(),
+    '/'+codeStr.toUpperCase()
+  ];
   let raw=null;
   for(const k of tryKeys){
     if(codeDesc.payCode&&codeDesc.payCode[k]){raw=codeDesc.payCode[k];break;}
   }
   if(!raw){
-    // Fuzzy fallback
+    // Last resort: find key whose numeric part matches
+    const numPart=codeStr.replace(/^[^0-9A-Za-z]*/,'');
     const key=Object.keys(codeDesc.payCode||{}).find(k=>
-      String(k).toLowerCase()===codeStr.toLowerCase()
+      k.replace(/^[^0-9A-Za-z]*/,'')===numPart
     );
     raw=key?codeDesc.payCode[key]:null;
   }
   if(!raw)return null;
   if(typeof raw==='string'){try{raw=JSON.parse(raw);}catch(e){return null;}}
   return typeof raw==='object'?raw:null;
+}
+
+// Strip slash prefix for display (e.g. "/08" → "08")
+function displayCode(code){
+  if(!code)return '';
+  return String(code).replace(/^\//,'');
 }
 
 function openPayCodePickerDesk(){
