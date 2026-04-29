@@ -42,7 +42,7 @@
   --rose:#C4A09E;--rose-bg:#F0E4E3;--rose-tx:#6B3E3C;
   --r:8px;--rl:12px;
 }
-body{font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--tx);font-size:13px;-webkit-text-size-adjust:100%;padding-bottom:env(safe-area-inset-bottom)}
+html{height:100%}body{font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--tx);font-size:13px;-webkit-text-size-adjust:100%;height:100vh;overflow:hidden}
 .topbar{background:var(--sf);border-bottom:1px solid var(--bd);padding:0 14px;display:flex;align-items:center;height:50px;position:sticky;top:0;z-index:60;box-shadow:0 1px 3px rgba(0,0,0,.06);gap:0;padding-top:env(safe-area-inset-top)}
 .brand{font-size:13px;font-weight:700;padding-right:14px;border-right:1px solid var(--bd);margin-right:8px;white-space:nowrap}
 .brand small{font-size:10px;background:var(--bbg);color:var(--btx);padding:2px 6px;border-radius:20px;margin-left:5px;font-weight:500;opacity:.85}
@@ -70,7 +70,7 @@ body{font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;background:var(-
 .metric{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rl);padding:9px 12px}
 .mlbl{font-size:9px;color:var(--tx3);margin-bottom:2px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 .mval{font-size:17px;font-weight:700}.msub{font-size:10px;color:var(--tx3);margin-top:2px}
-.twrap{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rl);overflow:auto}
+.twrap{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rl);overflow:auto;height:100%;box-sizing:border-box}
 table{width:100%;border-collapse:collapse;font-size:11px}
 thead th{padding:6px 7px;text-align:left;font-size:10px;font-weight:700;color:var(--tx2);background:var(--sf2);border-bottom:1px solid var(--bd);white-space:nowrap;position:sticky;top:0;z-index:2;letter-spacing:.03em}
 tbody tr{border-bottom:1px solid var(--bd)}
@@ -518,9 +518,8 @@ tbody td{padding:8px 7px;vertical-align:middle}
 
 /* ── Sticky tab headers ── */
 [id^="tab-"]{display:none;flex-direction:column;overflow:hidden}
-[id^="tab-"].active{display:flex;flex-direction:column;height:100%;overflow:hidden}
-.content{flex:1;overflow-y:auto;padding:11px 14px;min-height:0}
-.twrap{overflow:auto;flex:1}
+[id^="tab-"].active{display:flex;flex-direction:column;height:calc(100vh - 50px);overflow:hidden}
+.content{flex:1;overflow:hidden;padding:11px 14px;min-height:0}
 table{border-collapse:collapse;width:100%;min-width:900px}
 thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;border-bottom:2px solid var(--bd);white-space:nowrap;padding:8px 10px}
 
@@ -535,7 +534,6 @@ thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;bor
 
 /* Mobile popup: ensure proper spacing between items */
 
-.twrap{overflow:auto;height:100%}
 .twrap table{border-collapse:collapse;width:100%}
 .twrap table thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;border-bottom:2px solid var(--bd);white-space:nowrap;padding:8px 10px}
 </style>
@@ -731,14 +729,16 @@ thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;bor
   </div>
     <div class="spacer"></div><span style="font-size:11px;color:var(--tx3)" id="rc"></span>
   </div>
-  <div class="content">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      <button class="btn primary" onclick="openDet('new')" style="white-space:nowrap;flex-shrink:0">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-right:4px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>新增採購
-      </button>
-      <div class="sg" id="sg" style="flex:1"></div>
-    </div>
-    <div class="twrap"><table>
+  <!-- Stats bar (fixed, does not scroll) -->
+  <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--sf);border-bottom:1px solid var(--bd);flex-shrink:0">
+    <button class="btn primary" onclick="openDet('new')" style="white-space:nowrap;flex-shrink:0">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin-right:4px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>新增採購
+    </button>
+    <div class="sg" id="sg" style="flex:1"></div>
+  </div>
+  <!-- Table area (flex:1 scrollable) -->
+  <div class="content" style="padding:0">
+    <div class="twrap" style="border-radius:0;border-left:0;border-right:0;border-bottom:0"><table>
       <thead><tr>
         <th>廠區</th><th>部門</th><th>PO號</th><th>廠商</th><th>代理商</th><th>設備型號</th><th>設備名稱</th>
         <th>幣別</th><th>報價(原幣)</th><th>成交金額(原幣)</th>
@@ -779,8 +779,8 @@ thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;bor
     <input type="text" id="paycodeSrch" placeholder="🔍 搜尋代號 / 備註..." oninput="renderCodeTab('payCode')" style="min-width:200px">
     <div class="spacer"></div>
   </div>
-  <div class="content">
-    <div class="twrap"><table>
+  <div class="content" style="padding:0">
+    <div class="twrap" style="height:100%;border-radius:0;border-left:0;border-right:0;border-bottom:0"><table>
       <thead><tr><th>付款代號</th><th style="text-align:center;width:60px">訂金%</th><th style="text-align:center;width:60px">交機%</th><th style="text-align:center;width:60px">驗收%</th><th>簡要備註</th><th>操作</th></tr></thead>
       <tbody id="paycodeBody"></tbody>
     </table></div>
@@ -792,8 +792,8 @@ thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;bor
     <input type="text" id="fwdcodeSrch" placeholder="🔍 搜尋代號 / 備註..." oninput="renderCodeTab('fwdCode')" style="min-width:200px">
     <div class="spacer"></div>
   </div>
-  <div class="content">
-    <div class="twrap"><table>
+  <div class="content" style="padding:0">
+    <div class="twrap" style="height:100%;border-radius:0;border-left:0;border-right:0;border-bottom:0"><table>
       <thead><tr><th>貨代代號</th><th>運送方式</th><th>簡要備註</th><th>操作</th></tr></thead>
       <tbody id="fwdcodeBody"></tbody>
     </table></div>
@@ -847,8 +847,8 @@ thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;bor
     <input type="text" id="vendorSrch" placeholder="🔍 搜尋廠商代號 / 廠商名稱..." oninput="renderVendorTab()" style="min-width:220px">
     <div class="spacer"></div>
   </div>
-  <div class="content">
-    <div class="twrap"><table>
+  <div class="content" style="padding:0">
+    <div class="twrap" style="height:100%;border-radius:0;border-left:0;border-right:0;border-bottom:0"><table>
       <thead><tr><th>廠商代號</th><th>廠商名稱</th><th>代理商</th><th>國家</th><th>運送方式</th><th>付款</th><th>貨代</th><th>聯絡人</th><th>電話</th><th>操作</th></tr></thead>
       <tbody id="vendorTb"></tbody>
     </table></div>
@@ -861,8 +861,8 @@ thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;bor
     <input type="text" id="modelSrch" placeholder="🔍 搜尋型號 / 設備名稱..." oninput="renderModelTab()" style="min-width:220px">
     <div class="spacer"></div>
   </div>
-  <div class="content">
-    <div class="twrap"><table>
+  <div class="content" style="padding:0">
+    <div class="twrap" style="height:100%;border-radius:0;border-left:0;border-right:0;border-bottom:0"><table>
       <thead><tr><th>設備型號</th><th>設備名稱</th><th>國家</th><th>產地城市</th><th>吊掛</th><th>無產證</th><th>備註</th><th>操作</th></tr></thead>
       <tbody id="modelTb"></tbody>
     </table></div>
