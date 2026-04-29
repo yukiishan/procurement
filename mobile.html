@@ -1483,14 +1483,10 @@ function openPayCodePickerMob(){
 // Lookup payment code with leading-zero fallback (handles "8" → "08" etc.)
 function getPayCodeEntry(code){
   if(!code)return null;
-  const c=String(code);
-  let cd=codeDesc.payCode&&codeDesc.payCode[c];
-  if(!cd){
-    const padded2=c.padStart(2,'0'),padded3=c.padStart(3,'0');
-    cd=codeDesc.payCode[padded2]||codeDesc.payCode[padded3]||null;
-  }
-  return cd;
+  // Exact string match - /08, J04, T1 etc.
+  return codeDesc.payCode&&codeDesc.payCode[String(code)]||null;
 }
+
 function getPayCodeShort(code){
   if(!code)return '';
   const c=String(code);
@@ -1664,7 +1660,7 @@ function renderPayCards(){
       <div class="pay-card-meta">
         <span>${r.currency} ${fN(r.amount)}</span>
         <span>NT$ ${fN(ntd)}</span>
-        ${r.payment?`<span>付款: ${safe(displayCode(r.payment))}${(()=>{const _cd=getPayCodeEntry(r.payment);if(_cd&&typeof _cd==='object'){const d=Number(_cd.pctD)||0,m2=Number(_cd.pctM)||0,a=Number(_cd.pctA)||0;return ' ('+d+'/'+m2+'/'+a+')';}return '';})()}</span>`:''}
+        ${r.payment?`<span>付款: ${safe(displayCode(r.payment))}${(()=>{const _cd=getPayCodeEntry(r.payment);if(_cd&&typeof _cd==='object'){const d=Number(_cd.pctD)||0,m2=Number(_cd.pctM)||0,a=Number(_cd.pctA)||0;return ` (${d}/${m2}/${a}%)`;}return '';})()}</span>`:''}
         ${nextPay&&nextPay.voucherDate?`<span>憑證: ${fD(nextPay.voucherDate)}</span>`:''}
         ${nextPay&&nextPay.payDate?`<span>下次: ${fD(nextPay.payDate)}</span>`:''}
       </div>

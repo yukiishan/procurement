@@ -1537,7 +1537,7 @@ function renderList(){
       <td>${sBdg(r.status)}</td>
       <td style="font-size:10px">${r.lt||'—'}</td>
       <td>${r.noCert?bdg(r.noCert,r.noCert==='是'?'b-y':'b-n'):'—'}</td>
-      <td style="font-size:10px" title="${(()=>{const _cd=getPayCodeEntry(r.payment);if(_cd&&typeof _cd==='object'){const d=Number(_cd.pctD)||0,m=Number(_cd.pctM)||0,a=Number(_cd.pctA)||0;return ' ('+d+'/'+m+'/'+a+')';}return '';})()}">${displayCode(r.payment)||'—'}</td>
+      <td style="font-size:10px" title="${(()=>{const _cd=getPayCodeEntry(r.payment);if(_cd&&typeof _cd==='object'){const d=Number(_cd.pctD)||0,m=Number(_cd.pctM)||0,a=Number(_cd.pctA)||0;return ` (${d}/${m}/${a}%)`;}return '';})()}">${displayCode(r.payment)||'—'}</td>
       <td style="font-size:10px" title="${(()=>{const _f=codeDesc.fwdCode[r.forwarder];const _fs=codeDesc.fwdCodeShort&&codeDesc.fwdCodeShort[r.forwarder]||'';return _fs||(_f&&typeof _f==='object'?(_f.desc||''): String(_f||''));})()}">${r.forwarder||'—'}</td>
       <td style="font-size:10px">${r.country||'—'}</td>
       <td style="font-size:10px">${r.city||'—'}</td>
@@ -1633,7 +1633,7 @@ function renderPay(){
           <td style="font-size:10px;white-space:nowrap">${first?r.model:''}</td>
           <td>${first?cBdg(r.currency):''}</td>
           <td class="ar" style="font-weight:600">${first?fN(r.amount):''}</td>
-          <td style="font-size:10px">${first?((()=>{if(!r.payment)return '—';const _cd=getPayCodeEntry(r.payment);const _pct=_cd&&typeof _cd==='object'?' ('+[_cd.pctD||0,_cd.pctM||0,_cd.pctA||0].join('/')+')'  :'';return r.payment+_pct;})()):''}</td>
+          <td style="font-size:10px">${first?((()=>{if(!r.payment)return '—';const _cd=getPayCodeEntry(r.payment);const _pct=_cd&&typeof _cd==='object'?` (${Number(_cd.pctD)||0}/${Number(_cd.pctM)||0}/${Number(_cd.pctA)||0}%)`:'';return r.payment+_pct;})()):''}</td>
           <td style="font-size:10px">${fD(p.invoiceDate)}</td>
           <td style="font-size:10px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.invoice||'—'}</td>
           <td style="font-size:10px">${fD(p.arrivalDate)}</td>
