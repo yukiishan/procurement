@@ -1500,6 +1500,11 @@ function getPayCodeShort(code){
   return (codeDesc.payCodeShort&&(codeDesc.payCodeShort[p2]||codeDesc.payCodeShort[p3]))||'';
 }
 
+
+function displayCode(code){
+  if(!code)return '';
+  return String(code);
+}
 async function startApp(){
   initCalY();
   const hasCache=!!lr('data')&&!!lr('models');
