@@ -341,7 +341,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 
 /* Calendar Day Popup */
 .cal-day-popup-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center}
-.cal-day-popup{background:var(--sf);border-radius:var(--rl);width:min(400px,90vw);max-height:70vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.cal-day-popup{background:var(--sf);border-radius:var(--rl);width:min(90vw,440px);max-height:75vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2);overflow:hidden}
 .cal-day-popup-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--sf)}
 .cal-day-popup-title{font-size:15px;font-weight:700;color:var(--tx)}
 .cal-day-popup-
@@ -443,6 +443,16 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .tab-btn.active .tab-icon{background:rgba(154,122,120,.12)}
 .tab-btn.active svg{stroke:var(--accent)}
 
+
+/* Calendar payment events */
+.cal-ev-pay{background:#fef9c3;border-color:#fde68a}
+.evetaO{background:#ede9fe;border-color:#c4b5fd}  /* Other ETA */
+.evpay{background:#fef9c3}
+
+/* Day popup - scrollable body */
+.cal-day-popup-body{padding:14px 18px;overflow-y:auto;max-height:calc(70vh - 60px)}
+
+/* Mobile popup: ensure proper spacing between items */
 </style>
 </head>
 <body>
@@ -1327,28 +1337,26 @@ function showDayPopup(ds, evList, holName){
     if(!holName) body+='<div class="cal-no-ev">當天無排程</div>';
   } else {
     evList.forEach(ev=>{
+      if(ev.cls==='evpay'){
+        const raw=ev.lbl.replace(/^\(PAY\)/,'');
+        const pts=raw.split('/');
+        const pr=pts[0]||'';const stg=pts[1]||'';const vendor=pts[2]||'';const model=pts[3]||'';const inv=pts[4]||'';const amt=pts[5]||'';
+        body+=`<div class="cal-ev-item cal-ev-pay">
+          <div class="cal-ev-title">💰 付款</div>
+          <div class="cal-ev-detail">PO：${safe(pr)}　期別：${safe(stg)}<br>廠商：${safe(vendor)}<br>型號：${safe(model)}${inv?`<br>發票：${safe(inv)}`:''}${amt?`<br>金額：${safe(String(amt))}`:''}
+          </div>
+        </div>`;
+        return;
+      }
       const isEtd=ev.cls==='evetd';
       const cls=isEtd?'cal-ev-etd':'cal-ev-eta';
       const type=isEtd?'ETD 確認交期':'ETA 預計到廠';
-      // Parse label: (ETD)PR-1/vendor/model/qty or (ETA)...
       const raw=ev.lbl.replace(/^\(ET[DA]\)/,'');
       const parts=raw.split('/');
-      const pr=parts[0]||'';
-      const vendor=parts[1]||'';
-      const model=parts[2]||'';
-      const qty=parts[3]||'';
-      // Find the record for more details
-      const r=data.find(x=>{
-        const batchNum=pr.split('-').pop();
-        return x.pr===pr.split('-').slice(0,-1).join('-') || pr.startsWith(x.pr+'-');
-      });
+      const pr=parts[0]||'';const vendor=parts[1]||'';const model=parts[2]||'';const qty=Number(parts[3])||'';
       body+=`<div class="cal-ev-item ${cls}">
         <div class="cal-ev-title">${isEtd?'📦':'✈️'} ${safe(type)}</div>
-        <div class="cal-ev-detail">
-          PO：${safe(pr)}<br>
-          廠商：${safe(vendor)}<br>
-          型號：${safe(model)}<br>
-          數量：${safe(qty)} 台
+        <div class="cal-ev-detail">PO：${safe(pr)}<br>廠商：${safe(vendor)}<br>型號：${safe(model)}<br>數量：${safe(String(qty))} 台
         </div>
       </div>`;
     });
@@ -1358,11 +1366,11 @@ function showDayPopup(ds, evList, holName){
   ov.className='cal-day-popup-ov';
   ov.innerHTML=`
     <div class="cal-day-popup">
-      <div class="cal-day-popup-hd">
-        <div class="cal-day-popup-title">${title}</div>
-        <button onclick="this.closest('.cal-day-popup-ov').remove()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--tx3)">✕</button>
+      <div class="cal-day-popup-hd" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--bd);flex-shrink:0">
+        <div class="cal-day-popup-title" style="font-size:15px;font-weight:700;color:var(--tx)">${title}</div>
+        <button onclick="this.closest('.cal-day-popup-ov').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--tx3);padding:0;line-height:1">✕</button>
       </div>
-      <div class="cal-day-popup-body">${body}</div>
+      <div class="cal-day-popup-body" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px;flex:1">${body}</div>
     </div>`;
   ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
   document.body.appendChild(ov);
@@ -1653,10 +1661,20 @@ function renderCal(){
   data.forEach(r=>{
     (r.deliveries||[]).forEach((d,di)=>{
       const fc=(r.pr||'').charAt(0).toUpperCase();
-      const qty=d.qty||r.qty||1;
+      const qty=Number(d.qty)||Number(r.qty)||1;
       const lbl=`${r.pr}-${di+1}/${r.vendor}/${r.model}/${qty}`;
       if(d.etd){if(!evs[d.etd])evs[d.etd]=[];evs[d.etd].push({cls:'evetd',lbl:`(ETD)${lbl}`});}
-      if(d.eta){if(!evs[d.eta])evs[d.eta]=[];const c=fc==='L'?'evetaL':fc==='F'?'evetaF':'evetaO';evs[d.eta].push({cls:c,lbl:`(ETA)${lbl}`});}
+      if(d.eta){if(!evs[d.eta])evs[d.eta]=[];const c=fc==='L'?'evetaL':fc==='F'?'evetaF':'evetaO';evs[d.eta].push({cls:c,lbl:`(ETA)${lbl}`});
+      // Payment events
+      (d.payments||[]).forEach((p,pi)=>{
+        if(!p.payDate)return;
+        const stg=p.stageLabel||`P${pi+1}`;
+        const amt=p.payAmt||'';
+        const inv=p.invoice||'';
+        const payLbl=`(PAY)${r.pr}-${di+1}/${stg}/${r.vendor}/${r.model}/${inv}/${amt}`;
+        if(!evs[p.payDate])evs[p.payDate]=[];
+        evs[p.payDate].push({cls:'evpay',lbl:payLbl});
+      });}
     });
   });
   const fd=new Date(y,m-1,1),ld=new Date(y,m,0);
