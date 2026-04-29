@@ -1643,7 +1643,7 @@ function renderPayCards(){
       <div class="pay-card-meta">
         <span>${r.currency} ${fN(r.amount)}</span>
         <span>NT$ ${fN(ntd)}</span>
-        ${r.payment?`<span>付款: ${safe(r.payment)}</span>`:''}
+        ${r.payment?`<span>付款: ${safe(r.payment)}${(()=>{const _cd=codeDesc.payCode[r.payment];if(_cd&&typeof _cd==='object'){const d=Number(_cd.pctD)||0,m2=Number(_cd.pctM)||0,a=Number(_cd.pctA)||0;return ' ('+d+'/'+m2+'/'+a+')';}return '';})()}</span>`:''}
         ${nextPay&&nextPay.voucherDate?`<span>憑證: ${fD(nextPay.voucherDate)}</span>`:''}
         ${nextPay&&nextPay.payDate?`<span>下次: ${fD(nextPay.payDate)}</span>`:''}
       </div>
