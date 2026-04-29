@@ -348,6 +348,13 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .cal-ev-item{padding:10px 12px;border-radius:10px;margin-bottom:8px;border:1px solid var(--bd)}
 .cal-ev-etd{background:#dcfce7;border-color:#bbf7d0}
 .cal-ev-eta{background:#dbeafe;border-color:#bfdbfe}
+.cal-ev-evetaL{background:#dbeafe;border-color:#bfdbfe}
+.cal-ev-evetaF{background:#fce7f3;border-color:#fbcfe8}
+.cal-ev-evetaO{background:#ede9fe;border-color:#c4b5fd}
+.evetaL{background:#dbeafe}
+.evetaF{background:#fce7f3}
+.evetaO{background:#ede9fe}
+.cal-ev-eta{background:#dbeafe;border-color:#bfdbfe}
 .cal-ev-hol{background:#fee2e2;border-color:#fecaca}
 .cal-ev-title{font-size:12px;font-weight:700;margin-bottom:4px}
 .cal-ev-detail{font-size:11px;color:var(--tx2);line-height:1.6}
@@ -1340,10 +1347,13 @@ function showDayPopup(ds, evList, holName){
       if(ev.cls==='evpay'){
         const raw=ev.lbl.replace(/^\(PAY\)/,'');
         const pts=raw.split('/');
-        const pr=pts[0]||'';const stg=pts[1]||'';const vendor=pts[2]||'';const model=pts[3]||'';const inv=pts[4]||'';const amt=pts[5]||'';
+        const pr=pts[0]||'';const stg=pts[1]||'';const pct=pts[2]||'';const cur=pts[3]||'NTD';const vendor=pts[4]||'';const model=pts[5]||'';const inv=pts[6]||'';const amtRaw=pts[7]||'';
+        const amtNum=Number(String(amtRaw).replace(/,/g,''));
+        const amtStr=amtNum?`${cur} ${amtNum.toLocaleString()}`:'';
+        const stgStr=stg+(pct?` ${pct}%`:'');
         body+=`<div class="cal-ev-item cal-ev-pay">
           <div class="cal-ev-title">💰 付款</div>
-          <div class="cal-ev-detail">PO：${safe(pr)}　期別：${safe(stg)}<br>廠商：${safe(vendor)}<br>型號：${safe(model)}${inv?`<br>發票：${safe(inv)}`:''}${amt?`<br>金額：${safe(String(amt))}`:''}
+          <div class="cal-ev-detail">PO：${safe(pr)}　期別：${safe(stgStr)}<br>廠商：${safe(vendor)}<br>型號：${safe(model)}${inv?`<br>發票：${safe(inv)}`:''}${amtStr?`<br>金額：${safe(amtStr)}`:''}
           </div>
         </div>`;
         return;
@@ -1669,9 +1679,11 @@ function renderCal(){
       (d.payments||[]).forEach((p,pi)=>{
         if(!p.payDate)return;
         const stg=p.stageLabel||`P${pi+1}`;
+        const pctVal=p.pct||'';
+        const cur=r.currency||'NTD';
         const amt=p.payAmt||'';
         const inv=p.invoice||'';
-        const payLbl=`(PAY)${r.pr}-${di+1}/${stg}/${r.vendor}/${r.model}/${inv}/${amt}`;
+        const payLbl=`(PAY)${r.pr}-${di+1}/${stg}/${pctVal}/${cur}/${r.vendor}/${r.model}/${inv}/${amt}`;
         if(!evs[p.payDate])evs[p.payDate]=[];
         evs[p.payDate].push({cls:'evpay',lbl:payLbl});
       });}

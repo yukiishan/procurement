@@ -60,7 +60,7 @@ body{font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;background:var(-
 .btn.warn{background:var(--abg);color:var(--atx);border-color:#d4a74e}
 .btn.sm{padding:3px 8px;font-size:11px}
 .btn.xs{padding:2px 6px;font-size:10px}
-.toolbar{background:var(--sf);border-bottom:1px solid var(--bd);padding:7px 14px;display:flex;gap:5px;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+.toolbar{background:var(--sf);border-bottom:1px solid var(--bd);padding:7px 14px;display:flex;gap:5px;align-items:center;flex-wrap:wrap;flex-shrink:0}
 .toolbar input,.toolbar select{font-size:11px;padding:3px 6px;border-radius:var(--r);border:1px solid var(--bd);background:var(--sf2);color:var(--tx);height:26px;font-family:inherit}
 .toolbar input{min-width:160px}
 .toolbar input:focus,.toolbar select:focus{outline:none;border-color:var(--rose)}
@@ -517,12 +517,12 @@ tbody td{padding:8px 7px;vertical-align:middle}
 
 
 /* ── Sticky tab headers ── */
-[id^="tab-"]{display:none;flex-direction:column}
-[id^="tab-"].active{display:flex;flex-direction:column;height:100%}
-.content{flex:1;overflow-y:auto;padding:11px 14px}
+[id^="tab-"]{display:none;flex-direction:column;overflow:hidden}
+[id^="tab-"].active{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.content{flex:1;overflow-y:auto;padding:11px 14px;min-height:0}
 .twrap{overflow:auto;flex:1}
 table{border-collapse:collapse;width:100%;min-width:900px}
-thead tr th{position:sticky;top:0;z-index:20;background:var(--sf) !important;border-bottom:2px solid var(--bd2);white-space:nowrap}
+thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;border-bottom:2px solid var(--bd);white-space:nowrap;padding:8px 10px}
 
 
 /* Calendar payment events */
@@ -534,6 +534,10 @@ thead tr th{position:sticky;top:0;z-index:20;background:var(--sf) !important;bor
 .cal-day-popup-body{padding:14px 18px;overflow-y:auto;max-height:calc(70vh - 60px)}
 
 /* Mobile popup: ensure proper spacing between items */
+
+.twrap{overflow:auto;height:100%}
+.twrap table{border-collapse:collapse;width:100%}
+.twrap table thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;border-bottom:2px solid var(--bd);white-space:nowrap;padding:8px 10px}
 </style>
 </head>
 <body>
@@ -757,7 +761,7 @@ thead tr th{position:sticky;top:0;z-index:20;background:var(--sf) !important;bor
     </div>
     <div class="spacer"></div>
   </div>
-  <div class="content"><div class="twrap"><table>
+  <div class="content" style="padding:0"><div class="twrap" style="height:100%;border-radius:0;border-left:0;border-right:0;border-bottom:0"><table>
     <thead><tr>
       <th>PO號</th><th>廠商</th><th>設備型號</th>
       <th>幣別</th><th>成交金額(原幣)</th><th>付款</th>
@@ -1677,10 +1681,11 @@ function renderCal(){
       (d.payments||[]).forEach((p,pi)=>{
         if(!p.payDate)return;
         const stg=p.stageLabel||`P${pi+1}`;
-        const pct=p.pctManual?p.pct:(p.pct||'');
+        const pctVal=p.pct||'';
+        const cur=r.currency||'NTD';
         const amt=p.payAmt||p.payAmtManual||'';
         const inv=p.invoice||'';
-        const lbl=`(PAY)${batchLabel}/${stg}/${r.vendor}/${r.model}/${inv}/${amt}`;
+        const lbl=`(PAY)${batchLabel}/${stg}/${pctVal}/${cur}/${r.vendor}/${r.model}/${inv}/${amt}`;
         if(!evs[p.payDate])evs[p.payDate]=[];
         evs[p.payDate].push({cls:'evpay',lbl});
       });
@@ -2875,7 +2880,7 @@ function renderVendorTab(){
     <td style="font-size:11px">${safe(v.payment||'')}</td>
     <td style="font-size:11px">${safe(v.forwarder||'')}</td>
     <td style="font-size:11px">${safe(v.contact||'')}</td>
-    <td style="font-size:11px">${safe(v.tel||'')}</td>
+    <td style="font-size:11px">${safe(v.mobile||v.tel||'')}</td>
     <td onclick="event.stopPropagation()"><div class="ac">
       <button class="btn xs" onclick="openVendorEdit(${ri})">編輯</button>
       <button class="btn xs danger" onclick="deleteVendorByIdx(${ri})">刪</button>
@@ -3086,10 +3091,13 @@ function showDayPopup(ds, evList, holName){
         // Payment event: (PAY)batchLabel/stageLabel/vendor/model/invoice/amount
         const raw=ev.lbl.replace(/^\(PAY\)/,'');
         const pts=raw.split('/');
-        const pr=pts[0]||'';const stg=pts[1]||'';const vendor=pts[2]||'';const model=pts[3]||'';const inv=pts[4]||'';const amt=pts[5]||'';
+        const pr=pts[0]||'';const stg=pts[1]||'';const pct=pts[2]||'';const cur=pts[3]||'NTD';const vendor=pts[4]||'';const model=pts[5]||'';const inv=pts[6]||'';const amtRaw=pts[7]||'';
+        const amtNum=Number(String(amtRaw).replace(/,/g,''));
+        const amtStr=amtNum?`${cur} ${amtNum.toLocaleString()}`:'';
+        const stgStr=stg+(pct?` ${pct}%`:'');
         body+=`<div class="cal-ev-item cal-ev-pay">
           <div class="cal-ev-title">💰 付款</div>
-          <div class="cal-ev-detail">PO：${safe(pr)}　期別：${safe(stg)}<br>廠商：${safe(vendor)}<br>型號：${safe(model)}${inv?`<br>發票：${safe(inv)}`:''}${amt?`<br>金額：${safe(String(amt))}`:''}
+          <div class="cal-ev-detail">PO：${safe(pr)}　期別：${safe(stgStr)}<br>廠商：${safe(vendor)}<br>型號：${safe(model)}${inv?`<br>發票：${safe(inv)}`:''}${amtStr?`<br>金額：${safe(amtStr)}`:''}
           </div>
         </div>`;
         return;
@@ -3102,7 +3110,7 @@ function showDayPopup(ds, evList, holName){
       const pr=parts[0]||'';const vendor=parts[1]||'';const model=parts[2]||'';const qty=Number(parts[3])||'';
       body+=`<div class="cal-ev-item ${cls}">
         <div class="cal-ev-title">${isEtd?'📦':'✈️'} ${safe(type)}</div>
-        <div class="cal-ev-detail">PO：${safe(pr)}<br>廠商：${safe(vendor)}<br>型號：${safe(model)}<br>數量：${safe(String(qty))} 台</div>
+        <div class="cal-ev-detail">PO：${safe(pr)}<br>廠商：${safe(vendor)}<br>型號：${safe(model)}<br>數量：${qty?safe(String(qty))+' 台':'—'}</div>
       </div>`;
     });
   }
