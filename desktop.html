@@ -1537,7 +1537,7 @@ function renderList(){
       <td>${sBdg(r.status)}</td>
       <td style="font-size:10px">${r.lt||'—'}</td>
       <td>${r.noCert?bdg(r.noCert,r.noCert==='是'?'b-y':'b-n'):'—'}</td>
-      <td style="font-size:10px" title="${(()=>{const _cd=getPayCodeData(r.payment);const _rk=String(r.payment||'');const _keys=[_rk,'/'+_rk,'/' +_rk.padStart(2,'0')];let _s='';for(const _k of _keys){if(codeDesc.payCodeShort&&codeDesc.payCodeShort[_k]){_s=codeDesc.payCodeShort[_k];break;}}return _s||(_cd&&typeof _cd==='object'?(_cd.desc||''):String(_cd||''));})()}">${displayCode(r.payment)||'—'}</td>
+      <td style="font-size:10px" title="${(()=>{const _cd=codeDesc.payCode&&codeDesc.payCode[String(r.payment||'')];if(_cd&&typeof _cd==='object'){const d=Number(_cd.pctD)||0,m=Number(_cd.pctM)||0,a=Number(_cd.pctA)||0;return ' ('+d+'/'+m+'/'+a+')';}return '';})()}">${displayCode(r.payment)||'—'}</td>
       <td style="font-size:10px" title="${(()=>{const _f=codeDesc.fwdCode[r.forwarder];const _fs=codeDesc.fwdCodeShort&&codeDesc.fwdCodeShort[r.forwarder]||'';return _fs||(_f&&typeof _f==='object'?(_f.desc||''): String(_f||''));})()}">${r.forwarder||'—'}</td>
       <td style="font-size:10px">${r.country||'—'}</td>
       <td style="font-size:10px">${r.city||'—'}</td>
@@ -3241,29 +3241,9 @@ function autoFillPayCodeDesk(code){
 
 function getPayCodeData(code){
   if(!code)return null;
-  const codeStr=String(code).trim();
-  // Build try-keys: exact, slash-prefixed, zero-padded, slash+zero-padded
-  const padded=codeStr.replace(/^\//,'').padStart(2,'0');
-  const tryKeys=[
-    codeStr,                    // "8" or "/08" or "J04"
-    '/'+codeStr,                // "/8"
-    '/'+padded,                 // "/08" ← catches when r.payment="8"
-    padded,                     // "08"
-    codeStr.toUpperCase(),
-    '/'+codeStr.toUpperCase()
-  ];
-  let raw=null;
-  for(const k of tryKeys){
-    if(codeDesc.payCode&&codeDesc.payCode[k]){raw=codeDesc.payCode[k];break;}
-  }
-  if(!raw){
-    // Last resort: find key whose numeric part matches
-    const numPart=codeStr.replace(/^[^0-9A-Za-z]*/,'');
-    const key=Object.keys(codeDesc.payCode||{}).find(k=>
-      k.replace(/^[^0-9A-Za-z]*/,'')===numPart
-    );
-    raw=key?codeDesc.payCode[key]:null;
-  }
+  // Exact match - /08, J04, T1 etc. used as-is
+  const codeStr=String(code);
+  let raw=codeDesc.payCode&&codeDesc.payCode[codeStr];
   if(!raw)return null;
   if(typeof raw==='string'){try{raw=JSON.parse(raw);}catch(e){return null;}}
   return typeof raw==='object'?raw:null;
@@ -3316,23 +3296,13 @@ function openPayCodePickerDesk(){
 // Lookup payment code with leading-zero fallback (handles "8" → "08" etc.)
 function getPayCodeEntry(code){
   if(!code)return null;
-  const c=String(code);
-  // Try exact match first
-  let cd=codeDesc.payCode&&codeDesc.payCode[c];
-  if(!cd){
-    // Try zero-padded versions (2-digit, 3-digit)
-    const padded2=c.padStart(2,'0'),padded3=c.padStart(3,'0');
-    cd=codeDesc.payCode[padded2]||codeDesc.payCode[padded3]||null;
-  }
-  return cd;
+  // Exact string match - /08, J04, T1 etc.
+  return codeDesc.payCode&&codeDesc.payCode[String(code)]||null;
 }
-function getPayCodeShort(code){
-  if(!code)return '';
-  const c=String(code);
-  const s=(codeDesc.payCodeShort&&codeDesc.payCodeShort[c])||'';
-  if(s)return s;
-  const p2=c.padStart(2,'0'),p3=c.padStart(3,'0');
-  return (codeDesc.payCodeShort&&(codeDesc.payCodeShort[p2]||codeDesc.payCodeShort[p3]))||'';
+function getPayCodeShort(c){
+  if(!c)return'';
+  const s=codeDesc.payCodeShort&&codeDesc.payCodeShort[String(c)]||'';
+  return s;
 }
 
 // 自動檢查是否已登入

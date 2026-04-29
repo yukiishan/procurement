@@ -1420,14 +1420,9 @@ function openOptPickerMob(fieldId, title, optList){
 
 function getPayCodeData(code){
   if(!code)return null;
-  const codeStr=String(code).toUpperCase();
+  // Exact match - /08, J04, T1 etc. used as-is
+  const codeStr=String(code);
   let raw=codeDesc.payCode&&codeDesc.payCode[codeStr];
-  if(!raw){
-    const key=Object.keys(codeDesc.payCode||{}).find(k=>
-      String(k).toUpperCase().includes(codeStr)||codeStr.includes(String(k).toUpperCase())
-    );
-    raw=key?codeDesc.payCode[key]:null;
-  }
   if(!raw)return null;
   if(typeof raw==='string'){try{raw=JSON.parse(raw);}catch(e){return null;}}
   return typeof raw==='object'?raw:null;
