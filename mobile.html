@@ -1484,6 +1484,27 @@ function openPayCodePickerMob(){
   if(srch){srch.addEventListener('input',renderPayListMob);srch.addEventListener('keyup',renderPayListMob);setTimeout(()=>srch.focus(),100);}
 }
 
+
+// Lookup payment code with leading-zero fallback (handles "8" → "08" etc.)
+function getPayCodeEntry(code){
+  if(!code)return null;
+  const c=String(code);
+  let cd=codeDesc.payCode&&codeDesc.payCode[c];
+  if(!cd){
+    const padded2=c.padStart(2,'0'),padded3=c.padStart(3,'0');
+    cd=codeDesc.payCode[padded2]||codeDesc.payCode[padded3]||null;
+  }
+  return cd;
+}
+function getPayCodeShort(code){
+  if(!code)return '';
+  const c=String(code);
+  const s=(codeDesc.payCodeShort&&codeDesc.payCodeShort[c])||'';
+  if(s)return s;
+  const p2=c.padStart(2,'0'),p3=c.padStart(3,'0');
+  return (codeDesc.payCodeShort&&(codeDesc.payCodeShort[p2]||codeDesc.payCodeShort[p3]))||'';
+}
+
 async function startApp(){
   initCalY();
   const hasCache=!!lr('data')&&!!lr('models');
@@ -1643,7 +1664,7 @@ function renderPayCards(){
       <div class="pay-card-meta">
         <span>${r.currency} ${fN(r.amount)}</span>
         <span>NT$ ${fN(ntd)}</span>
-        ${r.payment?`<span>付款: ${safe(r.payment)}${(()=>{const _cd=codeDesc.payCode[r.payment];if(_cd&&typeof _cd==='object'){const d=Number(_cd.pctD)||0,m2=Number(_cd.pctM)||0,a=Number(_cd.pctA)||0;return ' ('+d+'/'+m2+'/'+a+')';}return '';})()}</span>`:''}
+        ${r.payment?`<span>付款: ${safe(r.payment)}${(()=>{const _cd=getPayCodeEntry(r.payment);if(_cd&&typeof _cd==='object'){const d=Number(_cd.pctD)||0,m2=Number(_cd.pctM)||0,a=Number(_cd.pctA)||0;return ' ('+d+'/'+m2+'/'+a+')';}return '';})()}</span>`:''}
         ${nextPay&&nextPay.voucherDate?`<span>憑證: ${fD(nextPay.voucherDate)}</span>`:''}
         ${nextPay&&nextPay.payDate?`<span>下次: ${fD(nextPay.payDate)}</span>`:''}
       </div>

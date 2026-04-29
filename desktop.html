@@ -1633,7 +1633,7 @@ function renderPay(){
           <td style="font-size:10px;white-space:nowrap">${first?r.model:''}</td>
           <td>${first?cBdg(r.currency):''}</td>
           <td class="ar" style="font-weight:600">${first?fN(r.amount):''}</td>
-          <td style="font-size:10px">${first?(r.payment?(r.payment+(codeDesc.payCode[r.payment]?' '+(()=>{const _cd=codeDesc.payCode[r.payment];if(_cd&&typeof _cd==='object'){const d=Number(_cd.pctD)||0,m=Number(_cd.pctM)||0,a=Number(_cd.pctA)||0;return '('+d+'/'+m+'/'+a+')';}return '';;})():'')):'—'):''}</td>
+          <td style="font-size:10px">${first?(r.payment?(r.payment+(codeDesc.payCode[r.payment]?' '+(()=>{const _cd=getPayCodeEntry(r.payment);if(_cd&&typeof _cd==='object'){const d=Number(_cd.pctD)||0,m=Number(_cd.pctM)||0,a=Number(_cd.pctA)||0;return ' ('+d+'/'+m+'/'+a+')';}return '';})():'')):'—'):''}</td>
           <td style="font-size:10px">${fD(p.invoiceDate)}</td>
           <td style="font-size:10px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.invoice||'—'}</td>
           <td style="font-size:10px">${fD(p.arrivalDate)}</td>
@@ -3291,6 +3291,29 @@ function openPayCodePickerDesk(){
   renderPayList();
   const srch=document.getElementById('payPickerSrch');
   if(srch){srch.addEventListener('input',renderPayList);srch.addEventListener('keyup',renderPayList);setTimeout(()=>srch.focus(),100);}
+}
+
+
+// Lookup payment code with leading-zero fallback (handles "8" → "08" etc.)
+function getPayCodeEntry(code){
+  if(!code)return null;
+  const c=String(code);
+  // Try exact match first
+  let cd=codeDesc.payCode&&codeDesc.payCode[c];
+  if(!cd){
+    // Try zero-padded versions (2-digit, 3-digit)
+    const padded2=c.padStart(2,'0'),padded3=c.padStart(3,'0');
+    cd=codeDesc.payCode[padded2]||codeDesc.payCode[padded3]||null;
+  }
+  return cd;
+}
+function getPayCodeShort(code){
+  if(!code)return '';
+  const c=String(code);
+  const s=(codeDesc.payCodeShort&&codeDesc.payCodeShort[c])||'';
+  if(s)return s;
+  const p2=c.padStart(2,'0'),p3=c.padStart(3,'0');
+  return (codeDesc.payCodeShort&&(codeDesc.payCodeShort[p2]||codeDesc.payCodeShort[p3]))||'';
 }
 
 // 自動檢查是否已登入
