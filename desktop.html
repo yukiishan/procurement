@@ -1268,6 +1268,11 @@ async function load(){
     codeDesc.fwdCode=normCD(codesRes&&codesRes.fwdCode);
     codeDesc.payCodeShort=normCD(codesRes&&codesRes.payCodeShort);
     codeDesc.fwdCodeShort=normCD(codesRes&&codesRes.fwdCodeShort);
+    // Normalize payment/forwarder codes in data to match codeDesc keys
+    data.forEach(r=>{
+      if(r.payment)r.payment=normalizePaymentCode(r.payment);
+      if(r.forwarder)r.forwarder=normalizePaymentCode(r.forwarder);
+    });
     // 本地快取
     vendors=vendorsRes||[];models=modelsRes||[];
     localCache('data',{records:data,nextId:nid});
@@ -3303,6 +3308,29 @@ function getPayCodeEntry(code){
 function getPayCodeShort(c){
   if(!c)return'';
   const s=codeDesc.payCodeShort&&codeDesc.payCodeShort[String(c)]||'';
+  return s;
+}
+
+
+function normalizePaymentCode(code) {
+  if (!code) return code;
+  const s = String(code).trim();
+  const pc = codeDesc.payCode || {};
+  // 1. Exact match
+  if (pc[s]) return s;
+  // 2. Strip leading non-alphanumeric (e.g. "08" matches "/08")
+  const stripped = s.replace(/^[^A-Za-z0-9]+/, '');
+  const keys = Object.keys(pc);
+  let match = keys.find(k => k.replace(/^[^A-Za-z0-9]+/, '') === stripped);
+  if (match) return match;
+  // 3. Numeric padding: "8" → try matching "08", "008" etc.
+  if (/^\d+$/.test(stripped)) {
+    match = keys.find(k => {
+      const ks = k.replace(/^[^A-Za-z0-9]+/, '');
+      return /^\d+$/.test(ks) && parseInt(ks, 10) === parseInt(stripped, 10);
+    });
+    if (match) return match;
+  }
   return s;
 }
 

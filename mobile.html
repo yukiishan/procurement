@@ -1214,6 +1214,11 @@ async function fetchFromAPI(){
   codeDesc.fwdCode=normCD(cr&&cr.fwdCode);
   codeDesc.payCodeShort=normCD(cr&&cr.payCodeShort);
   codeDesc.fwdCodeShort=normCD(cr&&cr.fwdCodeShort);
+  // Normalize payment/forwarder codes to match codeDesc keys (e.g. '8' → '/08')
+  data.forEach(r=>{
+    if(r.payment)r.payment=normalizePaymentCode(r.payment);
+    if(r.forwarder)r.forwarder=normalizePaymentCode(r.forwarder);
+  });
   vendors=Array.isArray(vr)?vr:[];
   models=Array.isArray(mr)?mr:[];
   console.log('[fetchFromAPI] done - models:', models.length, 'vendors:', vendors.length);
@@ -1500,6 +1505,28 @@ function getPayCodeShort(code){
 function displayCode(code){
   if(!code)return '';
   return String(code);
+}
+
+function normalizePaymentCode(code) {
+  if (!code) return code;
+  const s = String(code).trim();
+  const pc = codeDesc.payCode || {};
+  // 1. Exact match
+  if (pc[s]) return s;
+  // 2. Strip leading non-alphanumeric (e.g. "08" matches "/08")
+  const stripped = s.replace(/^[^A-Za-z0-9]+/, '');
+  const keys = Object.keys(pc);
+  let match = keys.find(k => k.replace(/^[^A-Za-z0-9]+/, '') === stripped);
+  if (match) return match;
+  // 3. Numeric padding: "8" → try matching "08", "008" etc.
+  if (/^\d+$/.test(stripped)) {
+    match = keys.find(k => {
+      const ks = k.replace(/^[^A-Za-z0-9]+/, '');
+      return /^\d+$/.test(ks) && parseInt(ks, 10) === parseInt(stripped, 10);
+    });
+    if (match) return match;
+  }
+  return s;
 }
 async function startApp(){
   initCalY();
