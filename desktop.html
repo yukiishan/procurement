@@ -1537,8 +1537,8 @@ function renderList(){
       <td>${sBdg(r.status)}</td>
       <td style="font-size:10px">${r.lt||'—'}</td>
       <td>${r.noCert?bdg(r.noCert,r.noCert==='是'?'b-y':'b-n'):'—'}</td>
-      <td style="font-size:10px" title="${codeDesc.payCode[r.payment]||''}">${r.payment||'—'}</td>
-      <td style="font-size:10px" title="${codeDesc.fwdCode[r.forwarder]||''}">${r.forwarder||'—'}</td>
+      <td style="font-size:10px" title="${(()=>{const _c=codeDesc.payCode[r.payment];const _s=codeDesc.payCodeShort&&codeDesc.payCodeShort[r.payment]||'';return _s||(_c&&typeof _c==='object'?(_c.desc||''): String(_c||''));})()}">${r.payment||'—'}</td>
+      <td style="font-size:10px" title="${(()=>{const _f=codeDesc.fwdCode[r.forwarder];const _fs=codeDesc.fwdCodeShort&&codeDesc.fwdCodeShort[r.forwarder]||'';return _fs||(_f&&typeof _f==='object'?(_f.desc||''): String(_f||''));})()}">${r.forwarder||'—'}</td>
       <td style="font-size:10px">${r.country||'—'}</td>
       <td style="font-size:10px">${r.city||'—'}</td>
       <td onclick="event.stopPropagation()"><div class="ac">
@@ -1633,7 +1633,7 @@ function renderPay(){
           <td style="font-size:10px;white-space:nowrap">${first?r.model:''}</td>
           <td>${first?cBdg(r.currency):''}</td>
           <td class="ar" style="font-weight:600">${first?fN(r.amount):''}</td>
-          <td style="font-size:10px">${first?(r.payment?(r.payment+(codeDesc.payCode[r.payment]?' '+codeDesc.payCode[r.payment]:'')):'—'):''}</td>
+          <td style="font-size:10px">${first?(r.payment?(r.payment+(codeDesc.payCode[r.payment]?' '+(()=>{const _cd=codeDesc.payCode[r.payment];const _cs=codeDesc.payCodeShort&&codeDesc.payCodeShort[r.payment]||'';return _cs||(_cd&&typeof _cd==='object'?(_cd.desc||''):(_cd||''));})():'')):'—'):''}</td>
           <td style="font-size:10px">${fD(p.invoiceDate)}</td>
           <td style="font-size:10px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.invoice||'—'}</td>
           <td style="font-size:10px">${fD(p.arrivalDate)}</td>
