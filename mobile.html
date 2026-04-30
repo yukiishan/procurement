@@ -2482,9 +2482,10 @@ function renderCodesEdit(body){
         </div>`).join('')}
     </div>
     <div class="add-item-row" style="margin-top:10px">
-      <input id="newCodeVal" placeholder="新代號（如 J94）" style="text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)">
+      <input id="newCodeVal" placeholder="新代號（如 J94）" style="text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s);checkCodeDupMob(this.value)">
       <button class="add-item-btn" onclick="addCode()">新增</button>
-    </div>`;
+    </div>
+    <div id="newCodeDupWarn" style="color:var(--red,#B87070);font-size:11px;margin-top:4px;min-height:14px;font-weight:600"></div>`;
 }
 
 function swCodeType(t){
@@ -2532,7 +2533,8 @@ function openCodeEdit(type, code){
     <div class="form-section">
       <div class="form-row">
         <div class="form-label">${lbl}（3碼）</div>
-        <div class="form-input-box"><input id="ceCode" class="form-input" value="${safe(codeStr)}" placeholder="如 J04" maxlength="3" style="text-transform:uppercase;font-family:monospace;letter-spacing:3px" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');this.setSelectionRange(s,s)"></div>
+        <div class="form-input-box"><input id="ceCode" class="form-input" value="${safe(codeStr)}" placeholder="如 J04" maxlength="3" style="text-transform:uppercase;font-family:monospace;letter-spacing:3px" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');this.setSelectionRange(s,s);checkCodeDupMob(this.value)"></div>
+        <div id="ceCodeDupWarn" style="color:var(--red,#B87070);font-size:11px;margin-top:4px;min-height:14px;font-weight:600"></div>
       </div>
       <div class="form-row">
         <div class="form-label">簡要備註</div>
@@ -2837,6 +2839,32 @@ function checkModelDup(model){
   const mv=String(model).toLowerCase();
   const isDup=models.some((m,i)=>m.model!=null&&String(m.model).toLowerCase()===mv&&i!==modelEditIdx);
   warn.textContent=isDup?'⚠ 此型號已存在':'';
+}
+
+function checkCodeDupMob(code){
+  if(!code){
+    const wN=document.getElementById('newCodeDupWarn');
+    const wE=document.getElementById('ceCodeDupWarn');
+    if(wN)wN.textContent='';
+    if(wE)wE.textContent='';
+    return;
+  }
+  const cv=String(code).toUpperCase();
+  // Quick-add panel uses curCodeType; edit panel uses codeEditType
+  const isEditPanel=!!document.getElementById('ceCode');
+  const type=isEditPanel?codeEditType:curCodeType;
+  // When editing, skip the code we are currently editing (same original value)
+  const selfKey=isEditPanel?String(codeEditKey||'').toUpperCase():'';
+  const isDup=(opts[type]||[]).some(c=>{
+    const cu=String(c).toUpperCase();
+    return cu===cv&&cu!==selfKey;
+  });
+  const lbl=type==='payCode'?'付款代號':'貨代代號';
+  const msg=isDup?`⚠ 此${lbl}已存在`:'';
+  const warnNew=document.getElementById('newCodeDupWarn');
+  const warnEdit=document.getElementById('ceCodeDupWarn');
+  if(warnNew)warnNew.textContent=msg;
+  if(warnEdit)warnEdit.textContent=msg;
 }
 
 // ══════════════════════════════════════════════════

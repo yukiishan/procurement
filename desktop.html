@@ -814,7 +814,8 @@ tbody tr{will-change:auto;contain:layout style}
         <!-- Row1: 代號(3碼) + 簡要備註(填滿) -->
         <div class="fg">
           <label id="codeDetCodeLbl">付款代號</label>
-          <input id="codeDetCode" placeholder="如 J94" maxlength="3" style="text-transform:uppercase;font-family:monospace;letter-spacing:2px;font-size:15px" oninput="setValPreserveCursor(this,this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+          <input id="codeDetCode" placeholder="如 J94" maxlength="3" style="text-transform:uppercase;font-family:monospace;letter-spacing:2px;font-size:15px" oninput="setValPreserveCursor(this,this.value.toUpperCase().replace(/[^A-Z0-9]/g,''));checkCodeDupDesk(this.value)">
+          <div id="codeDetDupWarn" style="color:var(--red,#c0392b);font-size:10px;margin-top:2px;min-height:12px;font-weight:600"></div>
         </div>
         <div class="fg">
           <label>簡要備註</label>
@@ -2368,6 +2369,7 @@ function openNewCodeDet(key){
   document.getElementById('codeDetCode').value='';
   document.getElementById('codeDetShort').value='';
   document.getElementById('codeDetDesc').value='';
+  const dw=document.getElementById('codeDetDupWarn');if(dw)dw.textContent='';
   const pctRow=document.getElementById('payPctRow');
   const fwdRow2=document.getElementById('fwdShipRow');
   if(pctRow)pctRow.style.display=key==='payCode'?'block':'none';
@@ -2438,6 +2440,7 @@ function openCodeDet(key,i){
     }
   }
   document.getElementById('codeDetOv').classList.add('open');
+  const dw=document.getElementById('codeDetDupWarn');if(dw)dw.textContent='';
 }
 function closeCodeDet(){document.getElementById('codeDetOv').classList.remove('open');}
 async function saveCodeDet(){
@@ -3073,6 +3076,19 @@ function checkModelDupDesk(model){
     m.model!=null&&String(m.model).toLowerCase()===mv&&i!==modelDetIdx
   );
   warn.textContent=isDup?'⚠ 此型號已存在':'';
+}
+
+function checkCodeDupDesk(code){
+  const warn=document.getElementById('codeDetDupWarn');
+  if(!warn)return;
+  if(!code){warn.textContent='';return;}
+  const cv=String(code).toUpperCase();
+  // When editing (codeDetIdx>=0), skip same position
+  const isDup=(opts[codeDetKey]||[]).some((c,i)=>
+    String(c).toUpperCase()===cv && i!==codeDetIdx
+  );
+  const lbl=codeDetKey==='payCode'?'付款代號':'貨代代號';
+  warn.textContent=isDup?`⚠ 此${lbl}已存在`:'';
 }
 
 
