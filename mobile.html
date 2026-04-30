@@ -93,18 +93,25 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 }
 .page.active{display:block}
 
-/* ── TAB BAR: fixed at bottom, bg extends into safe area via padding ── */
+/* ── TAB BAR: fixed at bottom, always visible above all panels ── */
 #tabBar{
   background:var(--sf);
   border-top:1px solid var(--bd);
   display:flex;
   align-items:center;
   justify-content:space-around;
+  position:fixed;
+  left:0;right:0;bottom:0;
   height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));
   padding-bottom:env(safe-area-inset-bottom,0px);
   flex-shrink:0;
-  z-index:200;
+  z-index:300;
   box-shadow:0 -2px 12px rgba(0,0,0,.07)
+}
+/* Reserve space for fixed tabBar inside flex #app */
+#tabBarSpacer{
+  height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));
+  flex-shrink:0
 }
 
 /* ── LOGIN SCREEN ── */
@@ -185,6 +192,8 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 /* ── DETAIL PAGE ── */
 .det-page{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:150;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94)}
 .det-page.open{transform:translateX(0)}
+/* Settings sub-pages: leave tab bar visible at bottom */
+.det-page-settings{bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px))}
 .det-nav{background:var(--sf);border-bottom:1px solid var(--bd);padding:12px 14px;display:flex;align-items:center;gap:10px;padding-top:calc(var(--safe-top) + 12px);flex-shrink:0}
 .det-nav-back{background:none;border:none;color:#3A5480;font-size:16px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;padding:4px 0;font-family:inherit}
 .det-nav-back svg{width:20px;height:20px;stroke:#3A5480;fill:none;stroke-width:2;stroke-linecap:round}
@@ -261,7 +270,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .more-chevron{color:var(--tx3);font-size:16px}
 
 /* ── LOADING ── */
-#loadingOverlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:300;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+#loadingOverlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:400;align-items:center;justify-content:center;flex-direction:column;gap:10px}
 #loadingOverlay.show{display:flex}
 .spinner{width:32px;height:32px;border:3px solid var(--bd);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -720,9 +729,10 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
       設定
     </button>
   </div>
+  <div id="tabBarSpacer"></div>
 </div><!-- /app -->
 <!-- Vendor Maintenance Page (slide in) -->
-<div class="det-page" id="vendorMaintPage">
+<div class="det-page det-page-settings" id="vendorMaintPage">
   <div class="det-nav">
     <button class="det-nav-back" onclick="document.getElementById('vendorMaintPage').classList.remove('open')">
       <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
@@ -736,7 +746,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 </div>
 
 <!-- Vendor Edit Page -->
-<div class="det-page" id="vendorEditPage">
+<div class="det-page det-page-settings" id="vendorEditPage">
   <div class="det-nav">
     <button class="det-nav-back" onclick="closeVendorEdit()">
       <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
@@ -826,7 +836,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 </div>
 
 <!-- Model Maintenance Page (slide in) -->
-<div class="det-page" id="modelMaintPage">
+<div class="det-page det-page-settings" id="modelMaintPage">
   <div class="det-nav">
     <button class="det-nav-back" onclick="document.getElementById('modelMaintPage').classList.remove('open')">
       <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
@@ -840,7 +850,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 </div>
 
 <!-- Model Edit Page -->
-<div class="det-page" id="modelEditPage">
+<div class="det-page det-page-settings" id="modelEditPage">
   <div class="det-nav">
     <button class="det-nav-back" onclick="closeModelEdit()">
       <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
@@ -895,7 +905,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 </div>
 
 <!-- Settings Modals (slide in from right, same as det-page) -->
-<div class="det-page" id="setModal">
+<div class="det-page det-page-settings" id="setModal">
   <div class="det-nav">
     <button class="det-nav-back" onclick="closeSetModal()">
       <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
