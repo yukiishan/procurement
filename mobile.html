@@ -89,27 +89,22 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
   -webkit-overflow-scrolling:touch;
   background:var(--bg);
   display:none;
-  /* Pad content so it's not hidden behind fixed tabBar */
-  padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 8px)
+  padding-bottom:8px
 }
 .page.active{display:block}
 
 /* ── TAB BAR: fixed at bottom, bg extends into safe area via padding ── */
 #tabBar{
-  position:fixed;
-  bottom:0;
-  left:0;right:0;
-  height:var(--tab-h);           /* icon area = 62px */
-  padding-bottom:env(safe-area-inset-bottom,0px); /* extend bg into home indicator */
-  /* total rendered height = 62px + safe-area-inset-bottom */
   background:var(--sf);
   border-top:1px solid var(--bd);
   display:flex;
-  align-items:flex-start;        /* icons at top of box, above home indicator */
+  align-items:center;
+  justify-content:space-around;
+  height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  flex-shrink:0;
   z-index:200;
-  box-shadow:0 -2px 12px rgba(0,0,0,.07);
-  max-width:480px;
-  margin:0 auto
+  box-shadow:0 -2px 12px rgba(0,0,0,.07)
 }
 
 /* ── LOGIN SCREEN ── */
@@ -196,7 +191,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .det-nav h2{flex:1;font-size:16px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .det-nav-save{background:#93939B;color:#fff;border:none;padding:8px 16px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
 .det-nav-save:active{opacity:.85}
-.det-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px)}
+.det-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 24px}
 
 /* ── FORM SECTIONS ── */
 .form-section{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);margin-bottom:12px;overflow:hidden}
@@ -366,7 +361,6 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 
 @media(min-width:480px){
   #app{left:50%;right:auto;transform:translateX(-50%);width:480px}
-  #tabBar{left:50%;right:auto;transform:translateX(-50%);width:480px}
 }
 
 
@@ -692,7 +686,6 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 
   </div><!-- /pageContainer -->
 
-</div><!-- /app -->
 
 <!-- Bottom Tab Bar -->
   <div id="tabBar">
@@ -727,9 +720,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
       設定
     </button>
   </div>
-
-
-
+</div><!-- /app -->
 <!-- Vendor Maintenance Page (slide in) -->
 <div class="det-page" id="vendorMaintPage">
   <div class="det-nav">
