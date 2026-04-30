@@ -70,7 +70,7 @@ html{height:100%}body{font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif
 .metric{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rl);padding:9px 12px}
 .mlbl{font-size:9px;color:var(--tx3);margin-bottom:2px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 .mval{font-size:17px;font-weight:700}.msub{font-size:10px;color:var(--tx3);margin-top:2px}
-.twrap{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rl);overflow:auto;height:100%;box-sizing:border-box}
+.twrap{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rl);overflow:auto;height:100%;box-sizing:border-box;contain:strict}
 table{width:100%;border-collapse:collapse;font-size:11px}
 thead th{padding:6px 7px;text-align:left;font-size:10px;font-weight:700;color:var(--tx2);background:var(--sf2);border-bottom:1px solid var(--bd);white-space:nowrap;position:sticky;top:0;z-index:2;letter-spacing:.03em}
 tbody tr{border-bottom:1px solid var(--bd)}
@@ -521,7 +521,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
 [id^="tab-"].active{display:flex;flex-direction:column;height:calc(100vh - 50px);overflow:hidden}
 .content{flex:1;overflow:hidden;padding:11px 14px;min-height:0}
 table{border-collapse:collapse;width:100%;min-width:900px}
-thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;white-space:nowrap;padding:8px 10px;box-shadow:0 2px 0 var(--bd)}
+thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;white-space:nowrap;padding:8px 10px;box-shadow:0 2px 0 var(--bd);will-change:transform}
 
 
 /* Calendar payment events */
@@ -535,10 +535,9 @@ thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;whi
 /* Mobile popup: ensure proper spacing between items */
 
 .twrap table{border-collapse:collapse;width:100%}
-.twrap table thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;white-space:nowrap;padding:8px 10px;box-shadow:0 2px 0 var(--bd)}
-/* Row-by-row scroll snap */
-.twrap{scroll-snap-type:y proximity}
-.twrap tbody tr{scroll-snap-align:start}
+.twrap table thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;white-space:nowrap;padding:8px 10px;box-shadow:0 2px 0 var(--bd);will-change:transform}
+
+tbody tr{will-change:auto;contain:layout style}
 </style>
 </head>
 <body>
@@ -1613,6 +1612,10 @@ function renderPay(){
   const ps=(document.getElementById('pfSt')||{value:''}).value;
   const tb=document.getElementById('ptb');if(!tb)return;
   const today=new Date().toISOString().slice(0,10);
+  // Pre-build payCode Map for O(1) lookup (no per-row regex)
+  const _payMap=new Map(Object.entries(codeDesc.payCode||{}));
+  const _payShortMap=new Map(Object.entries(codeDesc.payCodeShort||{}));
+  function _getPayEntry(code){return _payMap.get(String(code||''))||null;}
   const rows=[];
 
   function payStatus(p){
@@ -1648,7 +1651,7 @@ function renderPay(){
           <td style="font-size:10px;white-space:nowrap">${first?r.model:''}</td>
           <td>${first?cBdg(r.currency):''}</td>
           <td class="ar" style="font-weight:600">${first?fN(r.amount):''}</td>
-          <td style="font-size:10px">${first?((()=>{if(!r.payment)return '—';const _cd=getPayCodeEntry(r.payment);const _pct=_cd&&typeof _cd==='object'?` (${Number(_cd.pctD)||0}/${Number(_cd.pctM)||0}/${Number(_cd.pctA)||0}%)`:'';return r.payment+_pct;})()):''}</td>
+          <td style="font-size:10px">${first?((()=>{if(!r.payment)return '—';const _cd=_getPayEntry(r.payment);const _pct=_cd&&typeof _cd==='object'?` (${Number(_cd.pctD)||0}/${Number(_cd.pctM)||0}/${Number(_cd.pctA)||0}%)`:'';return r.payment+_pct;})()):''}</td>
           <td style="font-size:10px">${fD(p.invoiceDate)}</td>
           <td style="font-size:10px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.invoice||'—'}</td>
           <td style="font-size:10px">${fD(p.arrivalDate)}</td>
@@ -3305,7 +3308,7 @@ function openPayCodePickerDesk(){
   }
   renderPayList();
   const srch=document.getElementById('payPickerSrch');
-  if(srch){srch.addEventListener('input',renderPayList);srch.addEventListener('keyup',renderPayList);setTimeout(()=>srch.focus(),100);}
+  if(srch){const debouncedPayList=debounce(renderPayList,200);srch.addEventListener('input',debouncedPayList);srch.addEventListener('keyup',debouncedPayList);setTimeout(()=>srch.focus(),100);}
 }
 
 
