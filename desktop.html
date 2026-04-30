@@ -814,7 +814,7 @@ tbody tr{will-change:auto;contain:layout style}
         <!-- Row1: 代號(3碼) + 簡要備註(填滿) -->
         <div class="fg">
           <label id="codeDetCodeLbl">付款代號</label>
-          <input id="codeDetCode" placeholder="如 J94" maxlength="3" style="text-transform:uppercase;font-family:monospace;letter-spacing:2px;font-size:15px" oninput="setValPreserveCursor(this,this.value.toUpperCase().replace(/[^A-Z0-9]/g,''));checkCodeDupDesk(this.value)">
+          <input id="codeDetCode" placeholder="如 J94" style="text-transform:uppercase;font-family:monospace;letter-spacing:2px;font-size:15px" oninput="setValPreserveCursor(this,this.value.toUpperCase());checkCodeDupDesk(this.value)">
           <div id="codeDetDupWarn" style="color:var(--red,#c0392b);font-size:10px;margin-top:2px;min-height:12px;font-weight:600"></div>
         </div>
         <div class="fg">

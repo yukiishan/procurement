@@ -2533,7 +2533,7 @@ function openCodeEdit(type, code){
     <div class="form-section">
       <div class="form-row">
         <div class="form-label">${lbl}（3碼）</div>
-        <div class="form-input-box"><input id="ceCode" class="form-input" value="${safe(codeStr)}" placeholder="如 J04" maxlength="3" style="text-transform:uppercase;font-family:monospace;letter-spacing:3px" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');this.setSelectionRange(s,s);checkCodeDupMob(this.value)"></div>
+        <div class="form-input-box"><input id="ceCode" class="form-input" value="${safe(codeStr)}" placeholder="如 J04" style="text-transform:uppercase;font-family:monospace;letter-spacing:3px" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s);checkCodeDupMob(this.value)"></div>
         <div id="ceCodeDupWarn" style="color:var(--red,#B87070);font-size:11px;margin-top:4px;min-height:14px;font-weight:600"></div>
       </div>
       <div class="form-row">
