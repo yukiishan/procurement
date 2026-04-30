@@ -1528,6 +1528,14 @@ function normalizePaymentCode(code) {
   }
   return s;
 }
+
+function debounce(fn, delay){
+  let t;
+  return function(...args){clearTimeout(t);t=setTimeout(()=>fn.apply(this,args),delay);};
+}
+
+
+const debouncedRenderList = debounce(renderList, 300);
 async function startApp(){
   initCalY();
   const hasCache=!!lr('data')&&!!lr('models');

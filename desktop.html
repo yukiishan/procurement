@@ -521,7 +521,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
 [id^="tab-"].active{display:flex;flex-direction:column;height:calc(100vh - 50px);overflow:hidden}
 .content{flex:1;overflow:hidden;padding:11px 14px;min-height:0}
 table{border-collapse:collapse;width:100%;min-width:900px}
-thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;border-bottom:2px solid var(--bd);white-space:nowrap;padding:8px 10px}
+thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;white-space:nowrap;padding:8px 10px;box-shadow:0 2px 0 var(--bd)}
 
 
 /* Calendar payment events */
@@ -535,9 +535,13 @@ thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;bor
 /* Mobile popup: ensure proper spacing between items */
 
 .twrap table{border-collapse:collapse;width:100%}
-.twrap table thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;border-bottom:2px solid var(--bd);white-space:nowrap;padding:8px 10px}
+.twrap table thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;white-space:nowrap;padding:8px 10px;box-shadow:0 2px 0 var(--bd)}
 </style>
-</head>
+<
+/* Row-by-row scroll snap */
+.twrap{scroll-snap-type:y proximity}
+.twrap tbody tr{scroll-snap-align:start}
+/head>
 <body>
 <div class="ls" id="ls">
   <div class="lb">
@@ -717,7 +721,7 @@ thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;bor
 
 <div id="tab-list">
   <div class="toolbar">
-    <input type="text" id="srch" placeholder="🔍 搜尋 PO / 廠商 / 設備..." oninput="renderList()">
+    <input type="text" id="srch" placeholder="🔍 搜尋 PO / 廠商 / 設備..." oninput="debouncedRenderList()">
     <select id="fDept" onchange="renderList()"><option value="">所有部門</option></select>
     <select id="fCur" onchange="renderList()"><option value="">所有幣別</option><option>JPY</option><option>USD</option><option>NTD</option><option>EUR</option></select>
     <div style="display:flex;gap:4px;align-items:center">
@@ -751,7 +755,7 @@ thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;bor
 
 <div id="tab-payment" style="display:none">
   <div class="toolbar">
-    <input type="text" id="psrch" placeholder="🔍 搜尋 PO / 廠商..." oninput="renderPay()">
+    <input type="text" id="psrch" placeholder="🔍 搜尋 PO / 廠商..." oninput="debouncedRenderPay()">
     <div style="display:flex;gap:4px;align-items:center">
       <button class="btn sm pfst-btn active" data-st="" onclick="setPFSt('',this)">全部</button>
       <button class="btn sm pfst-btn" data-st="未付" onclick="setPFSt('未付',this)">未付</button>
@@ -776,7 +780,7 @@ thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;bor
 <div id="tab-paycode" style="display:none">
   <div class="toolbar">
     <button class="btn primary" onclick="addCodeRow('payCode')">＋ 新增付款代號</button>
-    <input type="text" id="paycodeSrch" placeholder="🔍 搜尋代號 / 備註..." oninput="renderCodeTab('payCode')" style="min-width:200px">
+    <input type="text" id="paycodeSrch" placeholder="🔍 搜尋代號 / 備註..." oninput="debounce(()=>renderCodeTab('payCode'),300)()" style="min-width:200px">
     <div class="spacer"></div>
   </div>
   <div class="content" style="padding:0">
@@ -789,7 +793,7 @@ thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;bor
 <div id="tab-fwdcode" style="display:none">
   <div class="toolbar">
     <button class="btn primary" onclick="addCodeRow('fwdCode')">＋ 新增貨代代號</button>
-    <input type="text" id="fwdcodeSrch" placeholder="🔍 搜尋代號 / 備註..." oninput="renderCodeTab('fwdCode')" style="min-width:200px">
+    <input type="text" id="fwdcodeSrch" placeholder="🔍 搜尋代號 / 備註..." oninput="debounce(()=>renderCodeTab('fwdCode'),300)()" style="min-width:200px">
     <div class="spacer"></div>
   </div>
   <div class="content" style="padding:0">
@@ -844,7 +848,7 @@ thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;bor
 <div id="tab-vendors" style="display:none">
   <div class="toolbar">
     <button class="btn primary" onclick="openVendorEdit('new')">＋ 新增廠商</button>
-    <input type="text" id="vendorSrch" placeholder="🔍 搜尋廠商代號 / 廠商名稱..." oninput="renderVendorTab()" style="min-width:220px">
+    <input type="text" id="vendorSrch" placeholder="🔍 搜尋廠商代號 / 廠商名稱..." oninput="debounce(renderVendorTab,300)()" style="min-width:220px">
     <div class="spacer"></div>
   </div>
   <div class="content" style="padding:0">
@@ -858,7 +862,7 @@ thead tr th{position:sticky;top:0;z-index:10;background:var(--sf) !important;bor
 <div id="tab-models" style="display:none">
   <div class="toolbar">
     <button class="btn primary" onclick="openModelEdit('new')">＋ 新增型號</button>
-    <input type="text" id="modelSrch" placeholder="🔍 搜尋型號 / 設備名稱..." oninput="renderModelTab()" style="min-width:220px">
+    <input type="text" id="modelSrch" placeholder="🔍 搜尋型號 / 設備名稱..." oninput="debounce(renderModelTab,300)()" style="min-width:220px">
     <div class="spacer"></div>
   </div>
   <div class="content" style="padding:0">
@@ -1523,6 +1527,13 @@ function renderList(){
   document.getElementById('rc').textContent=`顯示${f.length}/${data.length}筆`;
   const tb=document.getElementById('tb');if(!tb)return;
   if(!f.length){tb.innerHTML=`<tr><td colspan="20"><div class="empty">無符合條件資料</div></td></tr>`;return;}
+  // ── 效能優化：預建 payCode / fwdCode 查找 Map，避免每列重複查找 ──
+  const payMap=new Map(Object.entries(codeDesc.payCode||{}));
+  const payShortMap=new Map(Object.entries(codeDesc.payCodeShort||{}));
+  const fwdMap=new Map(Object.entries(codeDesc.fwdCode||{}));
+  const fwdShortMap=new Map(Object.entries(codeDesc.fwdCodeShort||{}));
+  const getPayPct=(code)=>{const cd=payMap.get(String(code||''));return cd&&typeof cd==='object'?` (${Number(cd.pctD)||0}/${Number(cd.pctM)||0}/${Number(cd.pctA)||0}%)`:''};
+  const getFwdDesc=(code)=>{const f=fwdMap.get(String(code||''));const s=fwdShortMap.get(String(code||''))||'';return s||(f&&typeof f==='object'?f.desc||'':String(f||''));};
   tb.innerHTML=f.map(r=>{
     const ntd=r.amountNTD||calcNTDv(r.amount,r.currency);
     const etd=r.deliveries&&r.deliveries[0]?r.deliveries[0].etd:'';
@@ -1542,8 +1553,8 @@ function renderList(){
       <td>${sBdg(r.status)}</td>
       <td style="font-size:10px">${r.lt||'—'}</td>
       <td>${r.noCert?bdg(r.noCert,r.noCert==='是'?'b-y':'b-n'):'—'}</td>
-      <td style="font-size:10px" title="${(()=>{const _cd=getPayCodeEntry(r.payment);if(_cd&&typeof _cd==='object'){const d=Number(_cd.pctD)||0,m=Number(_cd.pctM)||0,a=Number(_cd.pctA)||0;return ` (${d}/${m}/${a}%)`;}return '';})()}">${displayCode(r.payment)||'—'}</td>
-      <td style="font-size:10px" title="${(()=>{const _f=codeDesc.fwdCode[r.forwarder];const _fs=codeDesc.fwdCodeShort&&codeDesc.fwdCodeShort[r.forwarder]||'';return _fs||(_f&&typeof _f==='object'?(_f.desc||''): String(_f||''));})()}">${r.forwarder||'—'}</td>
+      <td style="font-size:10px" title="${getPayPct(r.payment)}">${displayCode(r.payment)||'—'}</td>
+      <td style="font-size:10px" title="${getFwdDesc(r.forwarder)}">${r.forwarder||'—'}</td>
       <td style="font-size:10px">${r.country||'—'}</td>
       <td style="font-size:10px">${r.city||'—'}</td>
       <td onclick="event.stopPropagation()"><div class="ac">
@@ -3333,6 +3344,15 @@ function normalizePaymentCode(code) {
   }
   return s;
 }
+
+
+// Debounce utility (Issue 4)
+function debounce(fn, delay){
+  let t;
+  return function(...args){clearTimeout(t);t=setTimeout(()=>fn.apply(this,args),delay);};
+}
+const debouncedRenderList = debounce(renderList, 300);
+const debouncedRenderPay  = debounce(renderPay,  300);
 
 // 自動檢查是否已登入
 if(checkAuth()){
