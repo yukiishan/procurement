@@ -1075,8 +1075,8 @@ tbody tr{will-change:auto;contain:layout style}
     </div>
     <div class="sec">
       <div class="sechd">備註 / 交涉記錄</div>
-      <div class="fg"><label>備註</label><textarea id="f-remark" rows="4" placeholder="交涉記錄、議價過程..."></textarea></div>
-      <div class="fg"><label>會簽紀錄</label><textarea id="f-signNote" rows="4" placeholder="會簽紀錄..." style="resize:vertical"></textarea></div>
+      <div class="fg"><label>備註</label><textarea id="f-remark" rows="4" placeholder="交涉記錄、議價過程..." onmouseup="saveTextareaH('remarkH',this)" ontouchend="saveTextareaH('remarkH',this)"></textarea></div>
+      <div class="fg"><label>會簽紀錄</label><textarea id="f-signNote" rows="4" placeholder="會簽紀錄..." style="resize:vertical" onmouseup="saveTextareaH('signNoteH',this)" ontouchend="saveTextareaH('signNoteH',this)"></textarea></div>
     </div>
   </div>
 </div>
@@ -2042,6 +2042,9 @@ function openDet(idOrNew){
   ['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'].forEach(f=>{
     const el=document.getElementById('f-'+f);if(el)el.value=r[f]||'';
   });
+  // Restore custom textarea heights
+  const elR=document.getElementById('f-remark');if(elR&&r.remarkH)elR.style.height=r.remarkH+'px';
+  const elS=document.getElementById('f-signNote');if(elS&&r.signNoteH)elS.style.height=r.signNoteH+'px';
   document.getElementById('f-qty').value=r.qty||1;
   setFmtAmt(document.getElementById('f-quote'),r.quote||'');
   setFmtAmt(document.getElementById('f-amount'),r.amount||'');
@@ -2230,6 +2233,9 @@ async function saveRec(){
   const sf=['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'];
   const rec={};
   sf.forEach(f=>{const el=document.getElementById('f-'+f);if(el)rec[f]=el.value;});
+  // Save custom textarea heights
+  const _r=document.getElementById('f-remark');if(_r&&_r.style.height)rec.remarkH=parseInt(_r.style.height)||null;
+  const _s=document.getElementById('f-signNote');if(_s&&_s.style.height)rec.signNoteH=parseInt(_s.style.height)||null;
   rec.qty=Number(document.getElementById('f-qty').value)||1;
   rec.quote=getRawAmt(document.getElementById('f-quote'));
   rec.amount=getRawAmt(document.getElementById('f-amount'));
@@ -3339,6 +3345,17 @@ function setValPreserveCursor(el, val){
   try{el.setSelectionRange(start,end);}catch(e){}
 }
 
+
+function saveTextareaH(field, el){
+  // 拖拉結束後即時記錄欄高到 data 陣列，不需等按儲存
+  const h=el.offsetHeight;
+  if(!h||h<60)return; // 忽略異常值
+  el.style.height=h+'px'; // 固定 height，讓下次開啟時不跑版
+  if(typeof eid==='undefined'||!eid)return;
+  const idx=data.findIndex(x=>x.id===eid);
+  if(idx<0)return;
+  data[idx][field]=h;
+}
 
 function autoFillPayCodeDesk(code){
   if(!code)return;

@@ -221,7 +221,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .form-select{font-size:15px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;-webkit-appearance:none;padding:2px 0}
 .form-input-box{background:var(--sf2);border-radius:10px;padding:10px 12px;margin-top:2px}
 .form-input-box .form-input,.form-input-box .form-select{background:none}
-.form-textarea{font-size:15px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;resize:none;min-height:135px;line-height:1.6;padding:2px 0;overflow-y:auto}
+.form-textarea{font-size:15px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;resize:vertical;min-height:135px;line-height:1.6;padding:2px 0;overflow-y:auto}
 .form-readonly{font-size:16px;color:var(--tx3);padding:2px 0}
 
 /* ── DELIVERY BATCHES ── */
@@ -1099,11 +1099,11 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
       <div class="form-section-title">備註 / 交涉記錄</div>
       <div class="form-row">
         <div class="form-label">備註</div>
-        <textarea id="f-remark" class="form-textarea" placeholder="交涉記錄、議價過程..."></textarea>
+        <textarea id="f-remark" class="form-textarea" placeholder="交涉記錄、議價過程..." onmouseup="saveTextareaHMob('remarkH',this)" ontouchend="saveTextareaHMob('remarkH',this)"></textarea>
       </div>
       <div class="form-row">
         <div class="form-label">會簽紀錄</div>
-        <textarea id="f-signNote" class="form-textarea" placeholder="會簽紀錄..."></textarea>
+        <textarea id="f-signNote" class="form-textarea" placeholder="會簽紀錄..." onmouseup="saveTextareaHMob('signNoteH',this)" ontouchend="saveTextareaHMob('signNoteH',this)"></textarea>
       </div>
     </div>
 
@@ -1487,6 +1487,16 @@ function openOptPickerMob(fieldId, title, optList){
   }
 }
 
+
+function saveTextareaHMob(field, el){
+  const h=el.offsetHeight;
+  if(!h||h<60)return;
+  el.style.height=h+'px';
+  if(typeof eid==='undefined'||!eid)return;
+  const idx=data.findIndex(x=>x.id===eid);
+  if(idx<0)return;
+  data[idx][field]=h;
+}
 
 function getPayCodeData(code){
   if(!code)return null;
@@ -2181,6 +2191,9 @@ function openDet(idOrNew){
   ['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'].forEach(f=>{
     const el=document.getElementById('f-'+f);if(el)el.value=r[f]||'';
   });
+  // Restore custom textarea heights
+  const _elR=document.getElementById('f-remark');if(_elR&&r.remarkH)_elR.style.height=r.remarkH+'px';
+  const _elS=document.getElementById('f-signNote');if(_elS&&r.signNoteH)_elS.style.height=r.signNoteH+'px';
   document.getElementById('f-qty').value=r.qty||1;
   // Auto-fill pct from saved payment code
   setTimeout(()=>{if(r.payment)autoFillPayCodeMob(r.payment);},50);
@@ -2374,9 +2387,12 @@ function getDPsM(){
 }
 
 async function saveRec(){
-  const sf=['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','status'];
+  const sf=['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'];
   const rec={};
   sf.forEach(f=>{const el=document.getElementById('f-'+f);if(el)rec[f]=el.value;});
+  // Save custom textarea heights
+  const _mR=document.getElementById('f-remark');if(_mR&&_mR.style.height)rec.remarkH=parseInt(_mR.style.height)||null;
+  const _mS=document.getElementById('f-signNote');if(_mS&&_mS.style.height)rec.signNoteH=parseInt(_mS.style.height)||null;
   rec.qty=Number(document.getElementById('f-qty').value)||1;
   rec.quote=getRawAmt(document.getElementById('f-quote'));
   rec.amount=getRawAmt(document.getElementById('f-amount'));
