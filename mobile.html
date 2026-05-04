@@ -221,7 +221,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .form-select{font-size:15px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;-webkit-appearance:none;padding:2px 0}
 .form-input-box{background:var(--sf2);border-radius:10px;padding:10px 12px;margin-top:2px}
 .form-input-box .form-input,.form-input-box .form-select{background:none}
-.form-textarea{font-size:15px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;resize:none;min-height:90px;line-height:1.6;padding:2px 0}
+.form-textarea{font-size:15px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;resize:none;min-height:135px;line-height:1.6;padding:2px 0;overflow-y:auto}
 .form-readonly{font-size:16px;color:var(--tx3);padding:2px 0}
 
 /* ── DELIVERY BATCHES ── */
@@ -2068,6 +2068,8 @@ function autoFillVendor(code){
     const el=document.getElementById(id);
     if(el&&v[k]!==undefined&&v[k]!=='')el.value=v[k];
   });
+  // 帶入付款代號後，自動連動填入付款比例
+  if(v.payment)autoFillPayCodeMob(v.payment);
 }
 
 function pickVendorMob(code){pickVendor(code);}
@@ -2759,7 +2761,7 @@ function openCodeEdit(type, code){
       ${pctBlock}
       <div class="form-row">
         <div class="form-label">備註</div>
-        <textarea id="ceDesc" class="form-textarea" placeholder="詳細備註...">${safe(descVal)}</textarea>
+        <textarea id="ceDesc" class="form-textarea" placeholder="詳細備註..." style="min-height:135px;overflow-y:auto;resize:vertical">${safe(descVal)}</textarea>
       </div>
       <div class="form-row">
         <button onclick="delCodeItem()" style="width:100%;padding:11px;background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">刪除此代號</button>

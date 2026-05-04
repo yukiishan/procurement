@@ -100,7 +100,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .fg input,.fg select,.fg textarea{font-size:12px;padding:4px 6px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;transition:border-color .15s}
 .fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--blue);background:var(--sf)}
 .fg input[readonly]{background:var(--sf3);color:var(--tx3);cursor:not-allowed}
-.fg textarea{resize:vertical;min-height:95px;font-size:12px;line-height:1.6}
+.fg textarea{resize:vertical;min-height:142px;font-size:12px;line-height:1.6;overflow-y:auto}
 .fgg{display:grid;gap:6px}
 .c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:1fr 1fr 1fr}.c4{grid-template-columns:1fr 1fr 1fr 1fr}
 .c5{grid-template-columns:repeat(5,1fr)}.c6{grid-template-columns:repeat(6,1fr)}
@@ -840,7 +840,7 @@ tbody tr{will-change:auto;contain:layout style}
         </div>
       </div>
       <div class="fgg" style="grid-template-columns:1fr;margin-top:8px">
-        <div class="fg full"><label>備註</label><textarea id="codeDetDesc" rows="3" placeholder="詳細備註內容..." style="width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;resize:vertical;outline:none"></textarea></div>
+        <div class="fg full"><label>備註</label><textarea id="codeDetDesc" rows="5" placeholder="詳細備註內容..." style="width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;resize:vertical;outline:none;overflow-y:auto;min-height:120px"></textarea></div>
       </div>
     </div>
   </div>
@@ -915,7 +915,7 @@ tbody tr{will-change:auto;contain:layout style}
         </div>
         <!-- Row3: 備註 full width -->
         <div class="fg full"><label>備註</label>
-          <textarea id="vd-remark" rows="3" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;resize:vertical;outline:none"></textarea>
+          <textarea id="vd-remark" rows="5" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;resize:vertical;outline:none;overflow-y:auto;min-height:120px"></textarea>
         </div>
       </div>
     </div>
@@ -952,7 +952,7 @@ tbody tr{will-change:auto;contain:layout style}
         <div class="fg"></div>
         <!-- Row3: 備註 -->
         <div class="fg full"><label>備註</label>
-          <textarea id="md-remark" rows="3" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;resize:vertical;outline:none"></textarea>
+          <textarea id="md-remark" rows="5" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;resize:vertical;outline:none;overflow-y:auto;min-height:120px"></textarea>
         </div>
       </div>
     </div>
@@ -1423,6 +1423,8 @@ function autoFillVendorDesk(code){
     if(el&&v[k]!==undefined&&v[k]!=='')el.value=v[k];
   });
   if(v.shipMode){bSel('f-shipMode','shipMode',true);document.getElementById('f-shipMode').value=v.shipMode;}
+  // 帶入付款代號後，自動連動填入付款比例
+  if(v.payment)autoFillPayCodeDesk(v.payment);
 }
 
 function renderVendorPickerList(){
