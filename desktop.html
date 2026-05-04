@@ -753,7 +753,9 @@ tbody tr{will-change:auto;contain:layout style}
 
 <div id="tab-payment" style="display:none">
   <div class="toolbar">
-    <input type="text" id="psrch" placeholder="🔍 搜尋 PO / 廠商..." oninput="debouncedRenderPay()">
+    <input type="text" id="psrch" placeholder="🔍 搜尋 PO / 廠商 / 設備..." oninput="debouncedRenderPay()">
+    <input type="date" id="pDateFilter" title="依付款日期篩選" style="font-size:11px;padding:3px 6px;border-radius:var(--r);border:1px solid var(--bd);background:var(--sf2);color:var(--tx);height:26px;font-family:inherit" oninput="debouncedRenderPay()">
+    <button class="btn xs" onclick="document.getElementById('pDateFilter').value='';renderPay()" title="清除日期篩選" style="padding:2px 7px">✕日期</button>
     <div style="display:flex;gap:4px;align-items:center">
       <button class="btn sm pfst-btn active" data-st="" onclick="setPFSt('',this)">全部</button>
       <button class="btn sm pfst-btn" data-st="未付" onclick="setPFSt('未付',this)">未付</button>
@@ -1039,9 +1041,9 @@ tbody tr{will-change:auto;contain:layout style}
         <div class="fg"><label>TT</label><input id="f-tt" placeholder="Transit Time" oninput="setValPreserveCursor(this,this.value.toUpperCase()" style="text-transform:uppercase"></div>
         <!-- Row 5: 幣別 報價 成交原幣 成交台幣 -->
         <div class="fg"><label>幣別</label><select id="f-currency" onchange="calcNTD()"><option>JPY</option><option>USD</option><option>NTD</option><option>EUR</option></select></div>
-        <div class="fg"><label>報價（原幣）</label><input id="f-quote" type="number" placeholder="0"></div>
-        <div class="fg"><label>成交金額（原幣）</label><input id="f-amount" type="number" placeholder="0" oninput="calcNTD();recalcAll()"></div>
-        <div class="fg"><label>成交金額（台幣）</label><input id="f-amountNTD" type="number" readonly placeholder="成交金額×匯率"></div>
+        <div class="fg"><label>報價（原幣）</label><input id="f-quote" type="text" inputmode="decimal" placeholder="0" oninput="fmtAmtInput(this)"></div>
+        <div class="fg"><label>成交金額（原幣）</label><input id="f-amount" type="text" inputmode="decimal" placeholder="0" oninput="fmtAmtInput(this);calcNTD();recalcAll()"></div>
+        <div class="fg"><label>成交金額（台幣）</label><input id="f-amountNTD" type="text" inputmode="decimal" readonly placeholder="成交金額×匯率"></div>
         <!-- Row 6: 料號 Line 國家 產地 -->
         <div class="fg"><label>料號</label><input id="f-partno" oninput="setValPreserveCursor(this,this.value.toUpperCase()" style="text-transform:uppercase"></div>
         <div class="fg"><label>Line</label><input id="f-line" placeholder="#1..."></div>
@@ -1087,6 +1089,7 @@ tbody tr{will-change:auto;contain:layout style}
   <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:9px" id="optCats"></div>
   <div class="optlist" id="optlist"></div>
   <button class="addbtn" onclick="addOptI()">＋ 新增選項</button>
+  <div id="optDupWarnDesk" style="color:var(--red,#c0392b);font-size:10px;margin-top:3px;min-height:12px;font-weight:600"></div>
   <div id="modelNameSection" style="display:none;margin-top:12px">
     <div style="font-size:10px;font-weight:700;color:var(--tx2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">型號對應設備名稱</div>
     <div id="modelNameList"></div>
@@ -1101,10 +1104,11 @@ tbody tr{will-change:auto;contain:layout style}
   <h3>匯率維護 <span style="font-size:11px;font-weight:400;color:var(--tx3)">各幣別兌台幣匯率設定</span> <button onclick="closeRate()">✕</button></h3>
   <div id="ratelist"></div>
   <div style="display:flex;gap:6px;margin-bottom:8px;margin-top:4px">
-    <input type="text" id="newRateCur" placeholder="幣別代碼 如EUR" style="flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx)">
+    <input type="text" id="newRateCur" placeholder="幣別代碼 如EUR" style="flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);text-transform:uppercase" oninput="this.value=this.value.toUpperCase();checkRateDupDesk(this.value)">
     <input type="number" id="newRateVal" placeholder="匯率" step="0.01" style="width:80px;font-size:12px;padding:5px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx)">
     <button class="btn primary sm" onclick="addRateCur()">新增幣別</button>
   </div>
+  <div id="rateDupWarnDesk" style="color:var(--red,#c0392b);font-size:10px;margin-top:3px;min-height:12px;font-weight:600"></div>
   <div class="mkft"><button class="btn" onclick="closeRate()">關閉</button><button class="btn primary" onclick="saveRates()">✓ 儲存</button></div>
 </div>
 </div>
@@ -1116,10 +1120,11 @@ tbody tr{will-change:auto;contain:layout style}
   <p style="font-size:11px;color:var(--tx2);margin-bottom:7px">新增國定假日（週六日自動反灰）</p>
   <div id="hollist" style="max-height:270px;overflow-y:auto;margin-bottom:7px"></div>
   <div style="display:flex;gap:5px;margin-bottom:7px">
-    <input type="date" id="holDate" style="flex:1;font-size:12px;padding:4px 7px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx)">
+    <input type="date" id="holDate" style="flex:1;font-size:12px;padding:4px 7px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx)" oninput="checkHolDupDesk(this.value)">
     <input type="text" id="holName" placeholder="假日名稱" style="flex:1;font-size:12px;padding:4px 7px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx)">
     <button class="btn primary sm" onclick="addHol()">新增</button>
   </div>
+  <div id="holDupWarnDesk" style="color:var(--red,#c0392b);font-size:10px;margin-top:3px;min-height:12px;font-weight:600"></div>
   <div class="mkft"><button class="btn" onclick="closeHol()">關閉</button><button class="btn primary" onclick="saveHols()">✓ 儲存</button></div>
 </div>
 </div>
@@ -1327,6 +1332,26 @@ async function saveH(){
 }
 
 const fN=n=>{const v=typeof n==='string'?Number(n.replace(/,/g,'')):Number(n);return(v||v===0)?v.toLocaleString():'—';};
+// 千分位輸入框：格式化顯示，讀值時去逗號
+function fmtAmtInput(el){
+  const raw=el.value.replace(/,/g,'');
+  if(raw===''||raw==='-'){return;}
+  const n=Number(raw);
+  if(!isNaN(n)){
+    const pos=el.selectionStart;
+    const oldLen=el.value.length;
+    el.value=n.toLocaleString();
+    // 游標位置補償
+    const diff=el.value.length-oldLen;
+    try{el.setSelectionRange(pos+diff,pos+diff);}catch(e){}
+  }
+}
+function getRawAmt(el){return Number(String(el.value).replace(/,/g,''))||0;}
+function setFmtAmt(el,val){
+  if(val===''||val===null||val===undefined){el.value='';return;}
+  const n=Number(val);
+  el.value=isNaN(n)||val===''?'':n.toLocaleString();
+}
 const fNTD=n=>n?'NT$'+Number(n).toLocaleString():'—';
 const fD=d=>{if(!d)return'';if(d instanceof Date)return d.toLocaleDateString('zh-TW');return String(d).replace(/-/g,'/')};
 const safe=s=>{const str=s===null||s===undefined?'':String(s);return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')};
@@ -1611,11 +1636,10 @@ function toggleNoCert(){
 function renderPay(){
   const q=(document.getElementById('psrch')||{value:''}).value.toLowerCase();
   const ps=(document.getElementById('pfSt')||{value:''}).value;
+  const dFilter=(document.getElementById('pDateFilter')||{value:''}).value; // YYYY-MM-DD or ''
   const tb=document.getElementById('ptb');if(!tb)return;
   const today=new Date().toISOString().slice(0,10);
-  // Pre-build payCode Map for O(1) lookup (no per-row regex)
   const _payMap=new Map(Object.entries(codeDesc.payCode||{}));
-  const _payShortMap=new Map(Object.entries(codeDesc.payCodeShort||{}));
   function _getPayEntry(code){return _payMap.get(String(code||''))||null;}
   const rows=[];
 
@@ -1631,7 +1655,14 @@ function renderPay(){
     return`<span style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap;background:${col}22;color:${col};border:1px solid ${col}55">${safe(sl)}</span>`;
   }
 
-  data.filter(r=>!q||JSON.stringify(r).toLowerCase().includes(q)).forEach(r=>{
+  // 文字搜尋：比對 PO、廠商、型號等固定欄位（不含付款明細，避免誤比對）
+  function matchRec(r){
+    if(!q) return true;
+    return [r.pr,r.vendor,r.model,r.payment,r.dept,r.plant,r.pr]
+      .some(v=>v&&String(v).toLowerCase().includes(q));
+  }
+
+  data.filter(matchRec).forEach(r=>{
     const delivs=r.deliveries&&r.deliveries.length?r.deliveries:[{payments:[{}]}];
     const allPays=delivs.flatMap(d=>d.payments||[{}]);
     const allPaid=allPays.every(p=>p.payDate&&p.payDate<=today);
@@ -1639,20 +1670,28 @@ function renderPay(){
     const recSt=allPaid?'已付清':anyPaid?'部分付款':'未付';
     if(ps&&ps!==recSt)return;
 
-    // Build all pay rows, with batch label shown inline (not separate row)
+    // 逐筆付款明細比對日期篩選
+    let firstShown=true;
     delivs.forEach((d,di)=>{
       const pays=d.payments&&d.payments.length?d.payments:[{}];
       pays.forEach((p,pi)=>{
-        const first=di===0&&pi===0;
+        // 日期篩選：若有設定日期，此付款列的任一日期欄位須符合
+        if(dFilter){
+          const payDates=[p.payDate,p.invoiceDate,p.arrivalDate,p.voucherDate,p.claimDate];
+          if(!payDates.some(d=>d&&d===dFilter)) return;
+        }
         const batchTag=`<span style="display:inline-block;padding:1px 5px;border-radius:3px;background:var(--sf3);color:var(--tx2);font-size:10px;margin-right:3px">B${di+1}</span>`;
         const pSt=payStatus(p);
-        rows.push(`<tr onclick="openDet(${r.id})">
-          <td style="font-size:10px;font-family:monospace;white-space:nowrap">${first?r.pr:''}</td>
-          <td style="font-weight:${first?'600':'400'};white-space:nowrap">${first?r.vendor:''}</td>
-          <td style="font-size:10px;white-space:nowrap">${first?r.model:''}</td>
-          <td>${first?cBdg(r.currency):''}</td>
-          <td class="ar" style="font-weight:600">${first?fN(r.amount):''}</td>
-          <td style="font-size:10px">${first?((()=>{if(!r.payment)return '—';const _cd=_getPayEntry(r.payment);const _pct=_cd&&typeof _cd==='object'?` (${Number(_cd.pctD)||0}/${Number(_cd.pctM)||0}/${Number(_cd.pctA)||0}%)`:'';return r.payment+_pct;})()):''}</td>
+        const showRec=firstShown; // 只有第一筆顯示 PO/廠商/型號
+        firstShown=false;
+        rows.push(`<tr onclick="openDet(${r.id})" style="${dFilter&&(p.payDate===dFilter||p.voucherDate===dFilter||p.claimDate===dFilter)?'background:#fffbe6':'' }">
+          <td style="font-size:10px;font-family:monospace;white-space:nowrap">${showRec?r.pr:''}</td>
+          <td style="font-weight:${showRec?'600':'400'};white-space:nowrap">${showRec?r.vendor:''}</td>
+          <td style="font-size:10px;white-space:nowrap">${showRec?r.model:''}</td>
+          <td>${showRec?cBdg(r.currency):''}</td>
+          <td class="ar" style="font-weight:600">${showRec?fN(r.amount):''}</td>
+          <td style="font-size:10px">${showRec?((()=>{if(!r.payment)return '—';const _cd=_getPayEntry(r.payment);const _pct=_cd&&typeof _cd==='object'?` (${Number(_cd.pctD)||0}/${Number(_cd.pctM)||0}/${Number(_cd.pctA)||0}%)`:'';return r.payment+_pct;})()):''}
+          </td>
           <td style="font-size:10px">${fD(p.invoiceDate)}</td>
           <td style="font-size:10px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.invoice||'—'}</td>
           <td style="font-size:10px">${fD(p.arrivalDate)}</td>
@@ -1663,7 +1702,7 @@ function renderPay(){
           <td style="font-size:10px">${p.claimType||'—'}</td>
           <td style="font-size:10px">${fD(p.voucherDate)}</td>
           <td style="font-size:10px">${fD(p.claimDate)}</td>
-          <td style="font-size:10px">${fD(p.payDate)}</td>
+          <td style="font-size:10px;font-weight:${dFilter&&p.payDate===dFilter?'700':'400'};color:${dFilter&&p.payDate===dFilter?'#854F0B':'inherit'}">${fD(p.payDate)}</td>
           <td style="font-size:10px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${safe(p.payRemark||'')}">${p.payRemark||'—'}</td>
           <td><span class="badge ${pSt.cls}">${pSt.label}</span></td>
           <td onclick="event.stopPropagation()"><button class="btn xs" onclick="openDet(${r.id})">編輯</button></td>
@@ -1671,7 +1710,7 @@ function renderPay(){
       });
     });
   });
-  tb.innerHTML=rows.length?rows.join(''):`<tr><td colspan="20"><div class="empty">無資料</div></td></tr>`;
+  tb.innerHTML=rows.length?rows.join(''):`<tr><td colspan="20"><div class="empty">${dFilter?`無符合 ${dFilter} 的付款明細`:'無資料'}</div></td></tr>`;
 }
 
 function initCalY(){
@@ -1854,15 +1893,16 @@ function clearNoCertFilter(){renderList();}
 let detDeliveries=[]; // [{etd,eta,qty,note,payments:[{...}]}]
 
 function calcNTD(){
-  const a=Number(document.getElementById('f-amount').value)||0;
+  const a=getRawAmt(document.getElementById('f-amount'));
   const c=document.getElementById('f-currency').value;
-  document.getElementById('f-amountNTD').value=a?calcNTDv(a,c):'';
+  const ntdEl=document.getElementById('f-amountNTD');
+  if(a){setFmtAmt(ntdEl,calcNTDv(a,c));}else{ntdEl.value='';}
 }
 
 function recalcPayRow(cardIdx,payIdx){
   const d=detDeliveries[cardIdx];if(!d)return;
   const p=d.payments[payIdx];if(!p)return;
-  const amount=Number(document.getElementById('f-amount').value)||0;
+  const amount=getRawAmt(document.getElementById('f-amount'));
   const arrQty=Number(p.arrivalQty)||1;
   // Always auto-fill pct from stage header
   const st=p.stageLabel;
@@ -1891,7 +1931,14 @@ function updatePayField(ci,pi,cls,val){
   const row=document.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);
   if(!row)return;
   const el=row.querySelector('.'+cls);
-  if(el)el.value=val;
+  if(!el)return;
+  // pa-inp 顯示千分位，其他正常設值
+  if(cls==='pa-inp'){
+    const n=Number(String(val).replace(/,/g,''));
+    el.value=isNaN(n)||val===''?val:n.toLocaleString();
+  } else {
+    el.value=val;
+  }
 }
 
 function recalcAll(){
@@ -1994,9 +2041,9 @@ function openDet(idOrNew){
     const el=document.getElementById('f-'+f);if(el)el.value=r[f]||'';
   });
   document.getElementById('f-qty').value=r.qty||1;
-  document.getElementById('f-quote').value=r.quote||'';
-  document.getElementById('f-amount').value=r.amount||'';
-  document.getElementById('f-amountNTD').value=r.amountNTD||calcNTDv(r.amount,r.currency)||'';
+  setFmtAmt(document.getElementById('f-quote'),r.quote||'');
+  setFmtAmt(document.getElementById('f-amount'),r.amount||'');
+  setFmtAmt(document.getElementById('f-amountNTD'),r.amountNTD||calcNTDv(r.amount,r.currency)||'');
   document.getElementById('f-pctD').value=r.pctD||'';
   document.getElementById('f-pctM').value=r.pctM||'';
   document.getElementById('f-pctA').value=r.pctA||'';
@@ -2099,7 +2146,7 @@ function renderPayRow(ci,pi){
   }"></div>
     <div class="pf"><label>期別名稱</label><select class="st-sel" onchange="onStCh(${ci},${pi},this.value)">${stageOpts}</select></div>
     <div class="pf"><label>比例%</label><input type="number" class="pct-inp" value="${p.pct||''}" oninput="detDeliveries[${ci}].payments[${pi}].pct=this.value;recalcPayRow(${ci},${pi})"></div>
-    <div class="pf"><label>付款金額(原幣)</label><input class="pa-inp" value="${p.payAmt||''}" placeholder="自動計算" oninput="detDeliveries[${ci}].payments[${pi}].payAmt=this.value"></div>
+    <div class="pf"><label>付款金額(原幣)</label><input class="pa-inp" type="text" inputmode="decimal" value="${p.payAmt?Number(p.payAmt).toLocaleString():''}" placeholder="自動計算" oninput="const rv=this.value.replace(/,/g,'');detDeliveries[${ci}].payments[${pi}].payAmt=rv;fmtAmtInput(this)"></div>
     <div class="pf" style="justify-content:flex-end;align-items:flex-end"><button class="btn xs danger" onclick="removePayRow(${ci},${pi})">✕</button></div>
     <div class="pf"><label>請款方式</label><select class="ct-sel" onchange="detDeliveries[${ci}].payments[${pi}].claimType=this.value"><option value="">—</option>${ctOpts}</select></div>
     <div class="pf"><label>憑證時間</label><input type="date" value="${p.voucherDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].voucherDate=this.value"></div>
@@ -2182,9 +2229,9 @@ async function saveRec(){
   const rec={};
   sf.forEach(f=>{const el=document.getElementById('f-'+f);if(el)rec[f]=el.value;});
   rec.qty=Number(document.getElementById('f-qty').value)||1;
-  rec.quote=Number(document.getElementById('f-quote').value)||0;
-  rec.amount=Number(document.getElementById('f-amount').value)||0;
-  rec.amountNTD=Number(document.getElementById('f-amountNTD').value)||calcNTDv(rec.amount,rec.currency);
+  rec.quote=getRawAmt(document.getElementById('f-quote'));
+  rec.amount=getRawAmt(document.getElementById('f-amount'));
+  rec.amountNTD=getRawAmt(document.getElementById('f-amountNTD'))||calcNTDv(rec.amount,rec.currency);
   rec.pctD=Number(document.getElementById('f-pctD').value)||0;
   rec.pctM=Number(document.getElementById('f-pctM').value)||0;
   rec.pctA=Number(document.getElementById('f-pctA').value)||0;
@@ -2229,7 +2276,7 @@ async function delRec(id){if(!confirm('確定刪除？'))return;data=data.filter
 const OL={plant:'廠區',dept:'部門',payStage:'付款期別',claimType:'請款方式',country:'國家',city:'產地城市',shipMode:'運送方式'};
 function openOpt(){renderOptCats();renderOptList();document.getElementById('optMod').classList.add('open');}
 function renderOptCats(){document.getElementById('optCats').innerHTML=Object.keys(OL).map(k=>`<button class="btn xs${curOptCat===k?' primary':''}" onclick="swOpt('${k}')">${OL[k]}</button>`).join('');}
-function swOpt(k){curOptCat=k;renderOptCats();renderOptList();}
+function swOpt(k){curOptCat=k;renderOptCats();renderOptList();const w=document.getElementById('optDupWarnDesk');if(w)w.textContent='';}
 function renderOptList(){
   document.getElementById('optTitle').innerHTML=`選單維護 — ${OL[curOptCat]} <button onclick="closeOpt()">✕</button>`;
   document.getElementById('optlist').innerHTML=(opts[curOptCat]||[]).map((v,i)=>`<div class="optitem"><input value="${safe(v)}" id="oi${i}"><button onclick="rmOpt(${i})">✕</button></div>`).join('');
@@ -2246,7 +2293,16 @@ function renderModelNames(){
   </div>`).join('');
 }
 function rmOpt(i){opts[curOptCat].splice(i,1);renderOptList();}
-function addOptI(){if(!opts[curOptCat])opts[curOptCat]=[];opts[curOptCat].push('');renderOptList();const ins=document.querySelectorAll('#optlist input');if(ins.length)ins[ins.length-1].focus();}
+function addOptI(){
+  const w=document.getElementById('optDupWarnDesk');if(w)w.textContent='';
+  if(!opts[curOptCat])opts[curOptCat]=[];opts[curOptCat].push('');renderOptList();
+  const ins=document.querySelectorAll('#optlist input');
+  if(ins.length){
+    const last=ins[ins.length-1];
+    last.focus();
+    last.oninput=function(){checkOptDupDesk(this.value);};
+  }
+}
 async function saveOpts(){
   const ins=document.querySelectorAll('#optlist input');
   opts[curOptCat]=Array.from(ins).map(i=>i.value.trim()).filter(Boolean);
@@ -2270,6 +2326,8 @@ function openRate(){
     <span style="font-size:11px;color:var(--tx3)">NTD</span>
     <button class="btn xs danger" onclick="delRateCur('${c}')">✕</button>
   </div>`).join('');
+  const ri=document.getElementById('newRateCur');if(ri)ri.value='';
+  const rw=document.getElementById('rateDupWarnDesk');if(rw)rw.textContent='';
   document.getElementById('rateMod').classList.add('open');
 }
 function addRateCur(){
@@ -2286,7 +2344,7 @@ async function saveRates(){
 }
 function closeRate(){document.getElementById('rateMod').classList.remove('open');}
 
-function openHol(){renderHolList();document.getElementById('holMod').classList.add('open');}
+function openHol(){renderHolList();const hw=document.getElementById('holDupWarnDesk');if(hw)hw.textContent='';const hd=document.getElementById('holDate');if(hd)hd.value='';const hn=document.getElementById('holName');if(hn)hn.value='';document.getElementById('holMod').classList.add('open');}
 function renderHolList(){
   document.getElementById('hollist').innerHTML=hols.sort((a,b)=>a.date>b.date?1:-1).map((h,i)=>`<div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px solid var(--bd)"><span style="font-size:12px;min-width:88px">${fD(h.date)}</span><span style="font-size:12px;flex:1;color:var(--tx2)">${safe(h.name||'')}</span><button class="btn xs danger" onclick="rmHol(${i})">✕</button></div>`).join('');
 }
@@ -3083,12 +3141,32 @@ function checkCodeDupDesk(code){
   if(!warn)return;
   if(!code){warn.textContent='';return;}
   const cv=String(code).toUpperCase();
-  // When editing (codeDetIdx>=0), skip same position
   const isDup=(opts[codeDetKey]||[]).some((c,i)=>
     String(c).toUpperCase()===cv && i!==codeDetIdx
   );
   const lbl=codeDetKey==='payCode'?'付款代號':'貨代代號';
   warn.textContent=isDup?`⚠ 此${lbl}已存在`:'';
+}
+
+function checkRateDupDesk(v){
+  const w=document.getElementById('rateDupWarnDesk');
+  if(!w)return;
+  const c=(v||'').trim().toUpperCase();
+  w.textContent=c&&rates[c]!==undefined?'⚠ 此幣別已存在':'';
+}
+
+function checkHolDupDesk(v){
+  const w=document.getElementById('holDupWarnDesk');
+  if(!w)return;
+  w.textContent=v&&hols.some(h=>h.date===v)?'⚠ 此假日日期已存在':'';
+}
+
+function checkOptDupDesk(v){
+  const w=document.getElementById('optDupWarnDesk');
+  if(!w)return;
+  const val=(v||'').trim();
+  const isDup=val&&(opts[curOptCat]||[]).some(x=>x.trim().toLowerCase()===val.toLowerCase());
+  w.textContent=isDup?`⚠ 此${OL[curOptCat]}已存在`:'';
 }
 
 

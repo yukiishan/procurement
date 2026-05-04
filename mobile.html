@@ -85,13 +85,19 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .page{
   position:absolute;
   top:0;left:0;right:0;bottom:0;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
+  overflow:hidden;
   background:var(--bg);
   display:none;
-  padding-bottom:8px
+  flex-direction:column
 }
-.page.active{display:block}
+.page.active{display:flex}
+/* 非 list/pay 頁保留原本捲動行為 */
+.page.scroll-page{overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;flex-direction:column}
+.page.scroll-page.active{display:block}
+/* 頁面內固定頭區 */
+.page-sticky-header{flex-shrink:0;background:var(--sf);border-bottom:1px solid var(--bd);z-index:10}
+/* 頁面內捲動內容區 */
+.page-scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:12px}
 
 /* ── TAB BAR: fixed at bottom, always visible above all panels ── */
 #tabBar{
@@ -483,17 +489,11 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 <div id="app" style="display:none">
   <div id="statusBar"></div>
 
-  <!-- Header -->
+  <!-- Header：只保留標題 + 重新整理 -->
   <div class="app-header" id="appHeader">
     <h1 id="headerTitle">採購清單</h1>
     <button class="hdr-btn" id="syncBtn" onclick="manualSync()" title="重新同步">
       <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-    </button>
-    <button class="hdr-btn" onclick="showSearch()" id="searchBtn">
-      <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="hdr-btn" onclick="openDet('new')" id="addBtn">
-      <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </button>
   </div>
 
@@ -502,37 +502,62 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 
     <!-- LIST PAGE -->
     <div class="page active" id="page-list">
-      <div class="search-bar" id="searchBar" style="display:none">
-        <div class="search-inner">
-          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="srchInput" placeholder="搜尋 PO / 廠商 / 設備..." oninput="renderCards()">
+      <!-- 固定頭區：搜尋 + 新增 + 篩選 pills -->
+      <div class="page-sticky-header">
+        <div style="padding:10px 14px 0">
+          <div style="display:flex;align-items:center;gap:8px;background:var(--sf2);border-radius:12px;padding:9px 12px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="srchInput" placeholder="搜尋 PO / 廠商 / 設備..." style="flex:1;border:none;background:none;font-size:15px;color:var(--tx);font-family:inherit;outline:none" oninput="renderCards()">
+            <button id="srchClear" onclick="document.getElementById('srchInput').value='';renderCards()" style="display:none;background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:0 2px;line-height:1">×</button>
+            <button onclick="openDet('new')" style="background:var(--accent);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1">＋</button>
+          </div>
+        </div>
+        <div class="filter-pills" id="filterPills" style="padding:8px 14px">
+          <div class="pill active" onclick="setFilter('all',this)">全部</div>
+          <div class="pill" onclick="setFilter('status:處理中',this)">處理中</div>
+          <div class="pill" onclick="setFilter('status:待交貨',this)">待交貨</div>
+          <div class="pill" onclick="setFilter('status:已交貨',this)">已交貨</div>
+          <div class="pill" onclick="setFilter('cur:JPY',this)">JPY</div>
+          <div class="pill" onclick="setFilter('cur:USD',this)">USD</div>
+          <div class="pill" onclick="setFilter('cur:NTD',this)">NTD</div>
         </div>
       </div>
-      <div class="filter-pills" id="filterPills">
-        <div class="pill active" onclick="setFilter('all',this)">全部</div>
-        <div class="pill" onclick="setFilter('status:處理中',this)">處理中</div>
-        <div class="pill" onclick="setFilter('status:待交貨',this)">待交貨</div>
-        <div class="pill" onclick="setFilter('status:已交貨',this)">已交貨</div>
-        <div class="pill" onclick="setFilter('cur:JPY',this)">JPY</div>
-        <div class="pill" onclick="setFilter('cur:USD',this)">USD</div>
-        <div class="pill" onclick="setFilter('cur:NTD',this)">NTD</div>
+      <!-- 捲動清單區 -->
+      <div class="page-scroll-body">
+        <div class="card-list" id="cardList"></div>
       </div>
-      <div class="card-list" id="cardList"></div>
     </div>
 
     <!-- PAYMENT PAGE -->
     <div class="page" id="page-pay">
-      <div class="filter-pills">
-        <div class="pill active" onclick="setPayFilter('all',this)">全部</div>
-        <div class="pill" onclick="setPayFilter('排定中',this)">排定中</div>
-        <div class="pill" onclick="setPayFilter('付款中',this)">付款中</div>
-        <div class="pill" onclick="setPayFilter('已付清',this)">已付清</div>
+      <!-- 固定頭區：搜尋 + 日期 + 狀態 pills -->
+      <div class="page-sticky-header">
+        <div style="padding:10px 14px 0">
+          <div style="display:flex;align-items:center;gap:8px;background:var(--sf2);border-radius:12px;padding:9px 12px;margin-bottom:8px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="paySrch" placeholder="搜尋 PO / 廠商 / 設備..." style="flex:1;border:none;background:none;font-size:15px;color:var(--tx);font-family:inherit;outline:none" oninput="renderPayCards()">
+            <button id="paySrchClear" onclick="document.getElementById('paySrch').value='';renderPayCards()" style="display:none;background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:0 2px;line-height:1">×</button>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <input type="date" id="payDateFilter" style="flex:1;font-size:13px;padding:7px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--sf2);color:var(--tx);font-family:inherit;outline:none;-webkit-appearance:none" oninput="renderPayCards()">
+            <button onclick="document.getElementById('payDateFilter').value='';renderPayCards()" style="padding:7px 11px;border-radius:10px;background:var(--sf2);border:1px solid var(--bd);color:var(--tx2);font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap">清除</button>
+          </div>
+        </div>
+        <div class="filter-pills" id="payFilterPills" style="padding:4px 14px 8px">
+          <div class="pill active" onclick="setPayFilter('all',this)">全部</div>
+          <div class="pill" onclick="setPayFilter('排定中',this)">排定中</div>
+          <div class="pill" onclick="setPayFilter('付款中',this)">付款中</div>
+          <div class="pill" onclick="setPayFilter('已付清',this)">已付清</div>
+        </div>
       </div>
-      <div class="card-list" id="payCardList"></div>
+      <!-- 捲動清單區 -->
+      <div class="page-scroll-body">
+        <div id="payCardList" style="padding:10px 14px;display:flex;flex-direction:column;gap:12px"></div>
+      </div>
     </div>
 
     <!-- CALENDAR PAGE -->
-    <div class="page" id="page-cal">
+    <div class="page scroll-page" id="page-cal">
       <div style="padding:12px 14px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
           <button class="hdr-btn" style="background:var(--sf2);color:var(--blue);border:1px solid var(--bd)" onclick="calPrev()">◀</button>
@@ -552,7 +577,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
     </div>
 
     <!-- MORE PAGE -->
-    <div class="page" id="page-more">
+    <div class="page scroll-page" id="page-more">
       <div class="more-section">
         <div id="statsPreview" style="margin-bottom:10px"></div>
         <div class="more-card">
@@ -596,7 +621,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 
 
     <!-- DASHBOARD PAGE -->
-    <div class="page" id="page-dash">
+    <div class="page scroll-page" id="page-dash">
       <div style="padding:14px 14px calc(var(--tab-h)+var(--safe-bot)+20px)">
         <div id="dashCards" style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px"></div>
         <div class="stat-card" style="margin-bottom:10px">
@@ -615,7 +640,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
     </div>
 
     <!-- SETTINGS PAGE -->
-    <div class="page" id="page-set">
+    <div class="page scroll-page" id="page-set">
       <div class="set-section">
         <div class="set-group-title">資料管理</div>
         <div class="set-card">
@@ -738,9 +763,16 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
       <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
     </button>
     <h2>廠商維護</h2>
-    <button class="det-nav-save" onclick="addVendorNew()">＋ 新增</button>
   </div>
-  <div class="det-scroll" style="padding:14px">
+  <!-- sticky search + add -->
+  <div style="flex-shrink:0;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--bd)">
+    <div class="add-item-row">
+      <input id="vendorSearch" placeholder="搜尋廠商代號或名稱…" oninput="renderVendorList()">
+      <button class="add-item-btn" onclick="addVendorNew()">＋ 新增</button>
+    </div>
+  </div>
+  <!-- scrollable list -->
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px">
     <div id="vendorList"></div>
   </div>
 </div>
@@ -842,9 +874,16 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
       <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
     </button>
     <h2>設備型號維護</h2>
-    <button class="det-nav-save" onclick="addModelNew()">＋ 新增</button>
   </div>
-  <div class="det-scroll" style="padding:14px;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;height:0">
+  <!-- sticky search + add -->
+  <div style="flex-shrink:0;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--bd)">
+    <div class="add-item-row">
+      <input id="modelSearch" placeholder="搜尋型號或設備名稱…" oninput="renderModelList()">
+      <button class="add-item-btn" onclick="addModelNew()">＋ 新增</button>
+    </div>
+  </div>
+  <!-- scrollable list -->
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px">
     <div id="modelList"></div>
   </div>
 </div>
@@ -913,7 +952,14 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
     <h2 id="setModalTitle">設定</h2>
     <button class="det-nav-save" id="setModalSaveBtn" onclick="saveSetModal()">儲存</button>
   </div>
-  <div class="det-scroll" id="setModalBody" style="padding:14px"></div>
+  <!-- sticky header for opts/rates/hols/codes -->
+  <div id="setModalStickyHeader" style="display:none;flex-shrink:0;padding:14px 14px 0;background:var(--bg);border-bottom:1px solid var(--bd)">
+    <div id="setModalHeaderContent"></div>
+  </div>
+  <!-- normal scroll body (non-sticky types, fallback) -->
+  <div class="det-scroll" id="setModalBody" style="padding:14px;display:none"></div>
+  <!-- scrollable list for sticky-header types -->
+  <div id="setModalScrollList" style="display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 14px 24px"></div>
 </div>
 
 <!-- Detail Page (slide in) -->
@@ -981,11 +1027,11 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
       </div>
       <div class="form-row row-2">
         <div><div class="form-label">幣別</div><div class="form-input-box"><select id="f-currency" class="form-select" onchange="calcNTD()"><option>JPY</option><option>USD</option><option>NTD</option><option>EUR</option></select></div></div>
-        <div><div class="form-label">報價（原幣）</div><div class="form-input-box"><input id="f-quote" class="form-input" type="number" placeholder="0"></div></div>
+        <div><div class="form-label">報價（原幣）</div><div class="form-input-box"><input id="f-quote" class="form-input" type="text" inputmode="decimal" placeholder="0" oninput="fmtAmtInput(this)"></div></div>
       </div>
       <div class="form-row row-2">
-        <div><div class="form-label">成交金額（原幣）</div><div class="form-input-box"><input id="f-amount" class="form-input" type="number" placeholder="0" oninput="calcNTD();recalcAll()"></div></div>
-        <div><div class="form-label">成交金額（台幣）</div><div class="form-input-box"><input id="f-amountNTD" class="form-input" type="number" readonly placeholder="自動計算"></div></div>
+        <div><div class="form-label">成交金額（原幣）</div><div class="form-input-box"><input id="f-amount" class="form-input" type="text" inputmode="decimal" placeholder="0" oninput="fmtAmtInput(this);calcNTD();recalcAll()"></div></div>
+        <div><div class="form-label">成交金額（台幣）</div><div class="form-input-box"><input id="f-amountNTD" class="form-input" type="text" inputmode="decimal" readonly placeholder="自動計算"></div></div>
       </div>
       <div class="form-row row-2">
         <div><div class="form-label">料號</div><div class="form-input-box"><input id="f-partno" class="form-input" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)" style="text-transform:uppercase"></div></div>
@@ -1263,6 +1309,24 @@ async function saveH(){try{await apiPost('saveHols',hols);lc('hols',hols);}catch
 
 // Utils
 const fN=n=>{const v=typeof n==='string'?Number(n.replace(/,/g,'')):Number(n);return(v||v===0)?v.toLocaleString():'—';};
+function fmtAmtInput(el){
+  const raw=el.value.replace(/,/g,'');
+  if(raw===''||raw==='-')return;
+  const n=Number(raw);
+  if(!isNaN(n)){
+    const pos=el.selectionStart;
+    const oldLen=el.value.length;
+    el.value=n.toLocaleString();
+    const diff=el.value.length-oldLen;
+    try{el.setSelectionRange(pos+diff,pos+diff);}catch(e){}
+  }
+}
+function getRawAmt(el){return Number(String(el.value).replace(/,/g,''))||0;}
+function setFmtAmt(el,val){
+  if(val===''||val===null||val===undefined){el.value='';return;}
+  const n=Number(val);
+  el.value=isNaN(n)||val===''?'':n.toLocaleString();
+}
 const fD=d=>{if(!d)return'';if(d instanceof Date)return d.toLocaleDateString('zh-TW');return String(d).replace(/-/g,'/')};
 const safe=s=>{const str=s===null||s===undefined?'':String(s);return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')};
 function getRate(c){return rates[c]||1;}
@@ -1572,16 +1636,21 @@ function showPage(pageId){
     p.style.display='none';p.classList.remove('active');
   });
   const target=document.getElementById(pageId);
-  if(target){target.style.display='block';target.classList.add('active');target.scrollTop=0;}
+  if(target){
+    // scroll-page 用 block，flex-page 用 flex
+    target.style.display=target.classList.contains('scroll-page')?'block':'flex';
+    target.classList.add('active');
+    // 捲動重置：scroll-page 直接 scrollTop，flex-page 重置捲動內容區
+    if(target.classList.contains('scroll-page')){target.scrollTop=0;}
+    else{const sb=target.querySelector('.page-scroll-body');if(sb)sb.scrollTop=0;}
+  }
   // Update tab buttons
   document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.classList.toggle('active',btn.id==='tab-'+t);
   });
-  // Update header
+  // Update header title
   const titles={list:'採購清單',pay:'付款管理',cal:'行事曆',dash:'儀表板',set:'設定',more:'更多'};
   const hdr=document.getElementById('headerTitle');if(hdr)hdr.textContent=titles[t]||t;
-  const addBtn=document.getElementById('addBtn');if(addBtn)addBtn.style.display=t==='list'?'flex':'none';
-  const srchBtn=document.getElementById('searchBtn');if(srchBtn)srchBtn.style.display=t==='list'?'flex':'none';
   // Trigger renders
   if(t==='dash')renderDashboard();
   else if(t==='cal')renderCal();
@@ -1591,9 +1660,8 @@ function showPage(pageId){
 function switchTab(t){showPage('page-'+t);}
 
 function showSearch(){
-  searchVisible=!searchVisible;
-  document.getElementById('searchBar').style.display=searchVisible?'block':'none';
-  if(searchVisible)document.getElementById('srchInput').focus();
+  // 已整合至採購清單固定頭，保留以避免殘留呼叫報錯
+  const el=document.getElementById('srchInput');if(el)el.focus();
 }
 
 // ══════════════════════════════════════════════════
@@ -1608,6 +1676,8 @@ function setFilter(f,el){
 
 function getFiltered(){
   const q=(document.getElementById('srchInput')||{value:''}).value.toLowerCase();
+  const clrBtn=document.getElementById('srchClear');
+  if(clrBtn)clrBtn.style.display=q?'block':'none';
   return data.filter(r=>{
     if(curFilter==='all'){}
     else if(curFilter.startsWith('status:')&&r.status!==curFilter.slice(7))return false;
@@ -1665,7 +1735,7 @@ function renderCards(){
 // ══════════════════════════════════════════════════
 function setPayFilter(f,el){
   curPayFilter=f;
-  document.querySelectorAll('#page-pay .filter-pills .pill').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#payFilterPills .pill').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
   renderPayCards();
 }
@@ -1686,31 +1756,123 @@ function getPayStatus(r){
 function renderPayCards(){
   const list=document.getElementById('payCardList');
   const today=new Date().toISOString().slice(0,10);
-  let f=data;
-  if(curPayFilter!=='all'){
-    f=data.filter(r=>getPayStatus(r).label===curPayFilter);
+  const q=(document.getElementById('paySrch')||{value:''}).value.trim().toLowerCase();
+  const dFilter=(document.getElementById('payDateFilter')||{value:''}).value;
+
+  // 更新搜尋清除鈕顯示
+  const clrBtn=document.getElementById('paySrchClear');
+  if(clrBtn) clrBtn.style.display=q?'block':'none';
+
+  const stageColors=['#9A7A78','#3B6D11','#854F0B','#A32D2D','#534AB7','#0F6E56','#888'];
+  function stageBdg(sl,idx){
+    if(!sl)return'';
+    const ai=(opts.payStage||[]).indexOf(sl);
+    const col=stageColors[ai>=0?ai%stageColors.length:0];
+    return`<span style="display:inline-block;padding:1px 7px;border-radius:12px;font-size:10px;font-weight:600;background:${col}22;color:${col};border:1px solid ${col}44">${safe(sl)}</span>`;
   }
-  if(!f.length){
-    list.innerHTML=`<div class="empty-state"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><p>無付款資料</p></div>`;
+  function pRowStatus(p){
+    if(!p.payDate)return{label:'排定中',cls:'ps-planned'};
+    return p.payDate<=today?{label:'已付清',cls:'ps-paid'}:{label:'付款中',cls:'ps-partial'};
+  }
+
+  // 文字篩選（比對採購主欄位）
+  function matchRec(r){
+    if(!q)return true;
+    return[r.pr,r.vendor,r.model,r.payment,r.dept,r.plant]
+      .some(v=>v&&String(v).toLowerCase().includes(q));
+  }
+
+  // 先套文字+狀態篩選
+  let filtered=data.filter(r=>{
+    if(!matchRec(r))return false;
+    if(curPayFilter!=='all'&&getPayStatus(r).label!==curPayFilter)return false;
+    return true;
+  });
+
+  // 若有日期篩選，再過濾：只保留含有符合日期明細的記錄
+  if(dFilter){
+    filtered=filtered.filter(r=>(r.deliveries||[]).some(d=>
+      (d.payments||[]).some(p=>
+        [p.payDate,p.invoiceDate,p.arrivalDate,p.voucherDate,p.claimDate].some(dt=>dt&&dt===dFilter)
+      )
+    ));
+  }
+
+  if(!filtered.length){
+    list.innerHTML=`<div class="empty-state">
+      <svg viewBox="0 0 24 24" style="width:48px;height:48px;stroke:var(--tx3);fill:none;stroke-width:1.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      <p>${dFilter?`無符合 ${dFilter} 的付款明細`:'無付款資料'}</p>
+    </div>`;
     return;
   }
-  list.innerHTML=f.map(r=>{
+
+  list.innerHTML=filtered.map(r=>{
     const ps=getPayStatus(r);
     const ntd=r.amountNTD||calcNTDv(r.amount,r.currency);
-    const pays=(r.deliveries||[]).flatMap(d=>d.payments||[]);
-    const nextPay=pays.find(p=>!p.payDate||p.payDate>today);
-    return`<div class="pay-card-m" onclick="openDet(${r.id})">
-      <div class="pay-card-top">
-        <span class="pay-card-po">${safe(r.pr)}</span>
+    const delivs=r.deliveries&&r.deliveries.length?r.deliveries:[{payments:[{}]}];
+
+    // 批次區塊
+    const batchBlocks=delivs.map((d,di)=>{
+      let pays=d.payments&&d.payments.length?d.payments:[{}];
+      // 若有日期篩選，只顯示符合的付款列
+      if(dFilter){
+        pays=pays.filter(p=>[p.payDate,p.invoiceDate,p.arrivalDate,p.voucherDate,p.claimDate].some(dt=>dt&&dt===dFilter));
+        if(!pays.length)return'';
+      }
+      const payRows=pays.map((p,pi)=>{
+        const pst=pRowStatus(p);
+        const isHit=dFilter&&[p.payDate,p.invoiceDate,p.arrivalDate,p.voucherDate,p.claimDate].some(dt=>dt===dFilter);
+        const payDateHl=dFilter&&p.payDate===dFilter?`style="font-weight:700;color:#854F0B"`:'';
+        return`<div style="padding:8px 10px;border-radius:8px;border:1px solid var(--bd);background:${isHit?'#fffbe6':'var(--sf)'};margin-bottom:5px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:11px;font-weight:600;color:var(--tx2)">${stageBdg(p.stageLabel,pi)||`期 ${pi+1}`}</span>
+            <span class="pay-status ${pst.cls}" style="font-size:10px;padding:2px 7px">${pst.label}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:11px;color:var(--tx2)">
+            ${p.pct!=null&&p.pct!==''?`<span>比例：${p.pct}%</span>`:''}
+            ${p.payAmt!=null&&p.payAmt!==''?`<span>金額：${fN(p.payAmt)}</span>`:''}
+            ${p.invoiceDate?`<span>發票日：${fD(p.invoiceDate)}</span>`:''}
+            ${p.invoice?`<span>發票號：${safe(p.invoice)}</span>`:''}
+            ${p.arrivalDate?`<span>到廠日：${fD(p.arrivalDate)}</span>`:''}
+            ${p.arrivalQty?`<span>數量：${p.arrivalQty}</span>`:''}
+            ${p.claimType?`<span>請款方式：${safe(p.claimType)}</span>`:''}
+            ${p.voucherDate?`<span>憑證日：${fD(p.voucherDate)}</span>`:''}
+            ${p.claimDate?`<span>請款日：${fD(p.claimDate)}</span>`:''}
+            ${p.payDate?`<span ${payDateHl}>付款日：${fD(p.payDate)}</span>`:''}
+            ${p.payRemark?`<span style="grid-column:1/-1;color:var(--tx3)">備註：${safe(p.payRemark)}</span>`:''}
+          </div>
+        </div>`;
+      }).join('');
+
+      const batchInfo=[d.etd?`ETD ${fD(d.etd)}`:null,d.eta?`ETA ${fD(d.eta)}`:null,
+        d.qty?`${d.qty}台`:null].filter(Boolean).join(' · ');
+
+      return`<div style="margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--blue-tx);margin-bottom:5px;display:flex;align-items:center;gap:6px">
+          <span style="background:var(--blue-bg);color:var(--blue-tx);padding:1px 7px;border-radius:10px">批次 ${di+1}</span>
+          ${batchInfo?`<span style="font-weight:400;color:var(--tx3)">${batchInfo}</span>`:''}
+        </div>
+        ${payRows}
+      </div>`;
+    }).join('');
+
+    return`<div style="background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);padding:13px 14px">
+      <!-- 採購標頭 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:11px;font-family:monospace;color:var(--tx3)">${safe(r.pr)}</span>
         <span class="pay-status ${ps.cls}">${ps.label}</span>
       </div>
-      <div class="pay-card-name">${safe(r.vendor)} · ${safe(r.model)}</div>
-      <div class="pay-card-meta">
+      <div style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:4px">${safe(r.vendor)} · ${safe(r.model)}</div>
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:10px;display:flex;gap:10px;flex-wrap:wrap">
         <span>${r.currency} ${fN(r.amount)}</span>
         <span>NT$ ${fN(ntd)}</span>
-        ${r.payment?`<span>付款: ${safe(displayCode(r.payment))}${(()=>{const _cd=getPayCodeEntry(r.payment);if(_cd&&typeof _cd==='object'){const d=Number(_cd.pctD)||0,m2=Number(_cd.pctM)||0,a=Number(_cd.pctA)||0;return ` (${d}/${m2}/${a}%)`;}return '';})()}</span>`:''}
-        ${nextPay&&nextPay.voucherDate?`<span>憑證: ${fD(nextPay.voucherDate)}</span>`:''}
-        ${nextPay&&nextPay.payDate?`<span>下次: ${fD(nextPay.payDate)}</span>`:''}
+        ${r.payment?`<span>付款代號：${safe(displayCode(r.payment))}</span>`:''}
+      </div>
+      <!-- 批次+付款明細區塊 -->
+      ${batchBlocks||'<div style="font-size:12px;color:var(--tx3);padding:6px 0">無付款明細</div>'}
+      <!-- 編輯連結 -->
+      <div style="margin-top:8px;text-align:right">
+        <button onclick="openDet(${r.id})" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 14px;font-size:12px;color:var(--tx2);cursor:pointer;font-family:inherit">編輯</button>
       </div>
     </div>`;
   }).join('');
@@ -1871,9 +2033,10 @@ function renderDashboard(){
 //  DETAIL (edit/create)
 // ══════════════════════════════════════════════════
 function calcNTD(){
-  const a=Number(document.getElementById('f-amount').value)||0;
+  const a=getRawAmt(document.getElementById('f-amount'));
   const c=document.getElementById('f-currency').value;
-  document.getElementById('f-amountNTD').value=a?calcNTDv(a,c):'';
+  const ntdEl=document.getElementById('f-amountNTD');
+  if(a){setFmtAmt(ntdEl,calcNTDv(a,c));}else{ntdEl.value='';}
 }
 function recalcAll(){calcNTD();detDeliveries.forEach((d,ci)=>d.payments.forEach((p,pi)=>recalcPayRow(ci,pi)));}
 function checkQty(){}
@@ -2019,9 +2182,9 @@ function openDet(idOrNew){
   document.getElementById('f-qty').value=r.qty||1;
   // Auto-fill pct from saved payment code
   setTimeout(()=>{if(r.payment)autoFillPayCodeMob(r.payment);},50);
-  document.getElementById('f-quote').value=r.quote||'';
-  document.getElementById('f-amount').value=r.amount||'';
-  document.getElementById('f-amountNTD').value=r.amountNTD||calcNTDv(r.amount,r.currency)||'';
+  setFmtAmt(document.getElementById('f-quote'),r.quote||'');
+  setFmtAmt(document.getElementById('f-amount'),r.amount||'');
+  setFmtAmt(document.getElementById('f-amountNTD'),r.amountNTD||calcNTDv(r.amount,r.currency)||'');
   document.getElementById('f-pctD').value=r.pctD||'';
   document.getElementById('f-pctM').value=r.pctM||'';
   document.getElementById('f-pctA').value=r.pctA||'';
@@ -2099,7 +2262,7 @@ function renderPayRowM(ci,pi){
     <div class="pay-grid-m">
       <div class="pay-field-m"><label>期別名稱</label><select data-st onchange="onStChM(${ci},${pi},this.value)">${stOpts}</select></div>
       <div class="pay-field-m"><label>比例%</label><input type="number" data-pct value="${p.pct||''}" oninput="detDeliveries[${ci}].payments[${pi}].pct=this.value;recalcPayRow(${ci},${pi})"></div>
-      <div class="pay-field-m"><label>付款金額(原幣)</label><input data-pa value="${p.payAmt||''}" placeholder="自動計算" oninput="detDeliveries[${ci}].payments[${pi}].payAmt=this.value"></div>
+      <div class="pay-field-m"><label>付款金額(原幣)</label><input data-pa type="text" inputmode="decimal" value="${p.payAmt?Number(p.payAmt).toLocaleString():''}" placeholder="自動計算" oninput="const rv=this.value.replace(/,/g,'');detDeliveries[${ci}].payments[${pi}].payAmt=rv;fmtAmtInput(this)"></div>
       <div class="pay-field-m"><label>發票日期</label><input type="date" value="${p.invoiceDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].invoiceDate=this.value"></div>
       <div class="pay-field-m"><label>發票號碼</label><input value="${safe(p.invoice||'')}" oninput="detDeliveries[${ci}].payments[${pi}].invoice=this.value.toUpperCase()" style="text-transform:uppercase"></div>
       <div class="pay-field-m"><label>實際到廠日</label><input type="date" class="ad-inp" value="${p.arrivalDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].arrivalDate=this.value"></div>
@@ -2118,7 +2281,7 @@ function renderPayRowM(ci,pi){
 function recalcPayRow(ci,pi){
   const d=detDeliveries[ci];if(!d)return;
   const p=d.payments[pi];if(!p)return;
-  const amount=Number(document.getElementById('f-amount').value)||0;
+  const amount=getRawAmt(document.getElementById('f-amount'));
   const arrQty=Number(p.arrivalQty)||1;
   const st=p.stageLabel;
   const getHdr=(id)=>{const el=document.getElementById(id);return el&&el.value!==''?Number(el.value):null;};
@@ -2132,7 +2295,7 @@ function recalcPayRow(ci,pi){
     if(card){const el=card.querySelector('[data-pct]');if(el)el.value=String(pct);}
     const calc=Math.round(amount*(pct/100)*arrQty);
     p.payAmt=String(calc);
-    if(card){const el=card.querySelector('[data-pa]');if(el)el.value=String(calc);}
+    if(card){const el=card.querySelector('[data-pa]');if(el){const n=Number(calc);el.value=isNaN(n)?String(calc):n.toLocaleString();}}
   }
 }
 
@@ -2213,9 +2376,9 @@ async function saveRec(){
   const rec={};
   sf.forEach(f=>{const el=document.getElementById('f-'+f);if(el)rec[f]=el.value;});
   rec.qty=Number(document.getElementById('f-qty').value)||1;
-  rec.quote=Number(document.getElementById('f-quote').value)||0;
-  rec.amount=Number(document.getElementById('f-amount').value)||0;
-  rec.amountNTD=Number(document.getElementById('f-amountNTD').value)||calcNTDv(rec.amount,rec.currency);
+  rec.quote=getRawAmt(document.getElementById('f-quote'));
+  rec.amount=getRawAmt(document.getElementById('f-amount'));
+  rec.amountNTD=getRawAmt(document.getElementById('f-amountNTD'))||calcNTDv(rec.amount,rec.currency);
   rec.pctD=Number(document.getElementById('f-pctD').value)||0;
   rec.pctM=Number(document.getElementById('f-pctM').value)||0;
   rec.pctA=Number(document.getElementById('f-pctA').value)||0;
@@ -2310,12 +2473,24 @@ function openSetModal(type){
   curSetType = type;
   const modal = document.getElementById('setModal');
   const title = document.getElementById('setModalTitle');
-  const body = document.getElementById('setModalBody');
   const saveBtn = document.getElementById('setModalSaveBtn');
+  const stickyHeader = document.getElementById('setModalStickyHeader');
+  const headerContent = document.getElementById('setModalHeaderContent');
+  const scrollList = document.getElementById('setModalScrollList');
+  const body = document.getElementById('setModalBody');
   const titles = {opts:'選單維護', rates:'匯率維護', hols:'假日維護', codes:'付款/貨代代號'};
   title.textContent = titles[type] || '設定';
-  saveBtn.style.display = type === 'codes' ? 'none' : 'block';
-  renderSetBody(type, body);
+  saveBtn.style.display = 'block';
+  // All types use sticky header + scroll list
+  body.style.display = 'none';
+  stickyHeader.style.display = 'block';
+  scrollList.style.display = 'block';
+  headerContent.innerHTML = '';
+  scrollList.innerHTML = '';
+  if(type === 'opts') renderOptsEdit();
+  else if(type === 'rates') renderRatesEdit();
+  else if(type === 'hols') renderHolsEdit();
+  else if(type === 'codes'){ saveBtn.style.display='none'; renderCodesEdit(); }
   modal.classList.add('open');
 }
 
@@ -2334,18 +2509,30 @@ async function saveSetModal(){
   closeSetModal();
 }
 
-function renderSetBody(type, body){
-  if(type === 'rates') renderRatesEdit(body);
-  else if(type === 'hols') renderHolsEdit(body);
-  else if(type === 'opts') renderOptsEdit(body);
-  else if(type === 'codes') renderCodesEdit(body);
+function renderSetBody(type){
+  if(type === 'rates') renderRatesEdit();
+  else if(type === 'hols') renderHolsEdit();
+  else if(type === 'opts') renderOptsEdit();
+  else if(type === 'codes') renderCodesEdit();
 }
 
 // ── 匯率維護 ──────────────────────────────────────
-function renderRatesEdit(body){
+function renderRatesEdit(){
+  const header = document.getElementById('setModalHeaderContent');
+  const list = document.getElementById('setModalScrollList');
+  if(!header||!list) return;
+  // Sticky header: add row + dup warn
+  header.innerHTML = `
+    <div class="add-item-row">
+      <input id="newCurCode" placeholder="新幣別代碼（如 EUR）" style="text-transform:uppercase" oninput="checkRateDupMob(this.value)">
+      <input id="newCurRate" type="number" step="0.001" placeholder="匯率" style="max-width:90px">
+      <button class="add-item-btn" onclick="addRate()">新增</button>
+    </div>
+    <div id="rateDupWarn" style="color:var(--red,#B87070);font-size:11px;margin-top:4px;min-height:14px;font-weight:600;padding-bottom:6px"></div>`;
+  // Scrollable list
   const curs = Object.keys(rates);
-  body.innerHTML = `
-    <div class="set-modal-label">1 外幣 = ? 台幣</div>
+  list.innerHTML = `
+    <div class="set-modal-label" style="padding-top:10px">1 外幣 = ? 台幣</div>
     ${curs.map(c => `
       <div class="rate-row">
         <span class="cur-badge">${safe(c)}</span>
@@ -2354,56 +2541,68 @@ function renderRatesEdit(body){
           ${c==='NTD'?'readonly style="color:var(--tx3)"':''}
           placeholder="0.000">
         <span class="rate-unit">NT$</span>
-        ${c!=='NTD'?`<button onclick="delRate('${c}',this.closest('.rate-row'))" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer">×</button>`:''}
-      </div>`).join('')}
-    <div class="add-item-row" style="margin-top:12px">
-      <input id="newCurCode" placeholder="新幣別代碼（如 EUR）" style="text-transform:uppercase">
-      <input id="newCurRate" type="number" step="0.001" placeholder="匯率" style="max-width:100px">
-      <button class="add-item-btn" onclick="addRate()">新增</button>
-    </div>`;
+        ${c!=='NTD'?`<button onclick="delRate('${c}')" style="background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:4px">×</button>`:''}
+      </div>`).join('')}`;
 }
 
-function delRate(c, row){
+function delRate(c){
   if(!confirm(`刪除 ${c}？`))return;
   delete rates[c];
-  row.remove();
+  renderRatesEdit();
 }
 
+function checkRateDupMob(v){
+  const w=document.getElementById('rateDupWarn');
+  if(!w)return;
+  const c=(v||'').trim().toUpperCase();
+  w.textContent=c&&rates[c]!==undefined?'⚠ 此幣別已存在':'';
+}
 function addRate(){
   const code = (document.getElementById('newCurCode').value||'').trim().toUpperCase();
   const rate = Number(document.getElementById('newCurRate').value)||0;
   if(!code){toast('請輸入幣別代碼');return;}
   if(rates[code]!==undefined){toast('此幣別已存在');return;}
   rates[code] = rate;
-  renderRatesEdit(document.getElementById('setModalBody'));
+  renderRatesEdit();
 }
 
 // ── 假日維護 ──────────────────────────────────────
-function renderHolsEdit(body){
+function renderHolsEdit(){
+  const header = document.getElementById('setModalHeaderContent');
+  const list = document.getElementById('setModalScrollList');
+  if(!header||!list) return;
+  // Sticky header: add row + dup warn
+  header.innerHTML = `
+    <div class="add-item-row">
+      <input id="newHolDate" type="date" style="flex:1.2" oninput="checkHolDupMob(this.value)">
+      <input id="newHolName" placeholder="假日名稱" style="flex:1.5">
+      <button class="add-item-btn" onclick="addHol()">新增</button>
+    </div>
+    <div id="holDupWarn" style="color:var(--red,#B87070);font-size:11px;margin-top:4px;min-height:14px;font-weight:600;padding-bottom:6px"></div>`;
+  // Scrollable list
   const sorted = [...hols].sort((a,b)=>a.date>b.date?1:-1);
-  body.innerHTML = `
-    <div class="set-modal-label">國定假日</div>
+  list.innerHTML = `
+    <div class="set-modal-label" style="padding-top:10px">國定假日</div>
     <div id="holsList">
-      ${sorted.map((h,i)=>`
+      ${sorted.map(h=>`
         <div class="hol-row">
           <span class="hol-date">${safe(h.date)}</span>
           <span class="hol-name">${safe(h.name)}</span>
           <button class="hol-del" onclick="delHol('${h.date}')">×</button>
         </div>`).join('')}
-    </div>
-    <div class="set-modal-label" style="margin-top:16px">新增假日</div>
-    <div class="add-item-row">
-      <input id="newHolDate" type="date" style="flex:1.2">
-      <input id="newHolName" placeholder="假日名稱" style="flex:1.5">
-      <button class="add-item-btn" onclick="addHol()">新增</button>
     </div>`;
 }
 
 function delHol(date){
   hols = hols.filter(h=>h.date!==date);
-  renderHolsEdit(document.getElementById('setModalBody'));
+  renderHolsEdit();
 }
 
+function checkHolDupMob(v){
+  const w=document.getElementById('holDupWarn');
+  if(!w)return;
+  w.textContent=v&&hols.some(h=>h.date===v)?'⚠ 此假日日期已存在':'';
+}
 function addHol(){
   const date = document.getElementById('newHolDate').value;
   const name = document.getElementById('newHolName').value.trim();
@@ -2411,86 +2610,99 @@ function addHol(){
   if(hols.find(h=>h.date===date)){toast('此日期已存在');return;}
   hols.push({date,name});
   hols.sort((a,b)=>a.date>b.date?1:-1);
-  document.getElementById('newHolDate').value='';
-  document.getElementById('newHolName').value='';
-  renderHolsEdit(document.getElementById('setModalBody'));
+  renderHolsEdit();
 }
 
 // ── 選單維護（簡化版）────────────────────────────
-function renderOptsEdit(body){
+function renderOptsEdit(){
+  const header = document.getElementById('setModalHeaderContent');
+  const list = document.getElementById('setModalScrollList');
+  if(!header||!list) return;
   const cats = Object.keys(OL_M);
-  body.innerHTML = `
-    <div class="opt-cat-pills">
+  // Sticky header: tabs + add row + dup warn
+  header.innerHTML = `
+    <div class="opt-cat-pills" style="margin-bottom:10px">
       ${cats.map(k=>`<div class="opt-cat-pill${k===curOptCat?' active':''}" onclick="swOptCat('${k}')">${OL_M[k]}</div>`).join('')}
     </div>
-    <div class="set-modal-label">${OL_M[curOptCat]} 選項</div>
+    <div class="add-item-row">
+      <input id="newOptVal" placeholder="新增 ${OL_M[curOptCat]}..." oninput="checkOptDupMob(this.value)">
+      <button class="add-item-btn" onclick="addOpt()">新增</button>
+    </div>
+    <div id="optDupWarn" style="color:var(--red,#B87070);font-size:11px;margin-top:4px;min-height:14px;font-weight:600;padding-bottom:6px"></div>`;
+  // Scrollable list
+  list.innerHTML = `
+    <div class="set-modal-label" style="padding-top:10px">${OL_M[curOptCat]} 選項</div>
     <div id="optItemsList">
       ${(opts[curOptCat]||[]).map((v,i)=>`
         <div class="opt-item-row">
           <input value="${safe(v)}" oninput="opts['${curOptCat}'][${i}]=this.value">
           <button class="opt-item-del" onclick="delOpt(${i})">×</button>
         </div>`).join('')}
-    </div>
-    <div class="add-item-row" style="margin-top:8px">
-      <input id="newOptVal" placeholder="新增選項...">
-      <button class="add-item-btn" onclick="addOpt()">新增</button>
     </div>`;
 }
 
 function swOptCat(k){
   curOptCat=k;
-  renderOptsEdit(document.getElementById('setModalBody'));
+  renderOptsEdit();
 }
 
 function delOpt(i){
   opts[curOptCat].splice(i,1);
-  renderOptsEdit(document.getElementById('setModalBody'));
+  renderOptsEdit();
 }
 
+function checkOptDupMob(v){
+  const w=document.getElementById('optDupWarn');
+  if(!w)return;
+  const val=(v||'').trim();
+  const isDup=val&&(opts[curOptCat]||[]).some(x=>x.trim().toLowerCase()===val.toLowerCase());
+  w.textContent=isDup?`⚠ 此${OL_M[curOptCat]}已存在`:'';
+}
 function addOpt(){
   const val = document.getElementById('newOptVal').value.trim();
   if(!val){toast('請輸入選項名稱');return;}
   if(!opts[curOptCat])opts[curOptCat]=[];
+  if(opts[curOptCat].some(x=>x.trim().toLowerCase()===val.toLowerCase())){toast('此選項已存在');return;}
   opts[curOptCat].push(val);
-  document.getElementById('newOptVal').value='';
-  renderOptsEdit(document.getElementById('setModalBody'));
+  renderOptsEdit();
 }
 
 // ── 付款/貨代代號維護 ────────────────────────────
 let curCodeType = 'payCode';
-function renderCodesEdit(body){
-  body.innerHTML = `
-    <div class="opt-cat-pills" style="margin-bottom:12px">
+function renderCodesEdit(){
+  const header = document.getElementById('setModalHeaderContent');
+  const listEl = document.getElementById('setModalScrollList');
+  if(!header||!listEl) return;
+  header.innerHTML = `
+    <div class="opt-cat-pills" style="margin-bottom:10px">
       <div class="opt-cat-pill${curCodeType==='payCode'?' active':''}" onclick="swCodeType('payCode')">付款代號</div>
       <div class="opt-cat-pill${curCodeType==='fwdCode'?' active':''}" onclick="swCodeType('fwdCode')">貨代代號</div>
     </div>
-    <div id="codesList">
-      ${(opts[curCodeType]||[]).map((c,i)=>`
-        <div class="code-row" onclick="openCodeEdit('${curCodeType}','${safe(c)}')">
-          <span class="code-badge">${safe(c)}</span>
-          <span class="code-short">${(()=>{
-            const sh=safe((codeDesc[curCodeType+'Short']&&codeDesc[curCodeType+'Short'][c])||'');
-            let rawCd=codeDesc[curCodeType]&&codeDesc[curCodeType][c];
-            if(typeof rawCd==='string'){try{rawCd=JSON.parse(rawCd);}catch(e){rawCd={desc:rawCd};}}
-            const cd=(rawCd&&typeof rawCd==='object')?rawCd:{};
-            let extra='';
-            if(curCodeType==='payCode'&&(cd.pctD||cd.pctM||cd.pctA)){extra=' ('+[cd.pctD||0,cd.pctM||0,cd.pctA||0].map(v=>v+'%').join('/')+')';}
-            else if(curCodeType==='fwdCode'&&cd.shipMode){extra=' ['+cd.shipMode+']';}
-            return sh+extra;
-          })()}</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
-        </div>`).join('')}
-    </div>
-    <div class="add-item-row" style="margin-top:10px">
+    <div class="add-item-row">
       <input id="newCodeVal" placeholder="新代號（如 J94）" style="text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s);checkCodeDupMob(this.value)">
       <button class="add-item-btn" onclick="addCode()">新增</button>
     </div>
-    <div id="newCodeDupWarn" style="color:var(--red,#B87070);font-size:11px;margin-top:4px;min-height:14px;font-weight:600"></div>`;
+    <div id="newCodeDupWarn" style="color:var(--red,#B87070);font-size:11px;margin-top:4px;min-height:14px;font-weight:600;padding-bottom:6px"></div>`;
+  listEl.innerHTML = (opts[curCodeType]||[]).map((c)=>`
+    <div class="code-row" onclick="openCodeEdit('${curCodeType}','${safe(c)}')">
+      <span class="code-badge">${safe(c)}</span>
+      <span class="code-short">${(()=>{
+        const sh=safe((codeDesc[curCodeType+'Short']&&codeDesc[curCodeType+'Short'][c])||'');
+        let rawCd=codeDesc[curCodeType]&&codeDesc[curCodeType][c];
+        if(typeof rawCd==='string'){try{rawCd=JSON.parse(rawCd);}catch(e){rawCd={desc:rawCd};}}
+        const cd=(rawCd&&typeof rawCd==='object')?rawCd:{};
+        let extra='';
+        if(curCodeType==='payCode'&&(cd.pctD||cd.pctM||cd.pctA)){extra=' ('+[cd.pctD||0,cd.pctM||0,cd.pctA||0].map(v=>v+'%').join('/')+')';}
+        else if(curCodeType==='fwdCode'&&cd.shipMode){extra=' ['+cd.shipMode+']';}
+        return sh+extra;
+      })()}</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+    </div>`).join('') || '<div style="color:var(--tx3);font-size:14px;padding:16px 0">尚無資料</div>';
 }
 
 function swCodeType(t){
   curCodeType=t;
-  renderCodesEdit(document.getElementById('setModalBody'));
+  renderCodesEdit();
 }
 
 function addCode(){
@@ -2499,8 +2711,7 @@ function addCode(){
   if(!opts[curCodeType])opts[curCodeType]=[];
   if(opts[curCodeType].includes(val)){toast('此代號已存在');return;}
   opts[curCodeType].push(val);
-  document.getElementById('newCodeVal').value='';
-  renderCodesEdit(document.getElementById('setModalBody'));
+  renderCodesEdit();
 }
 
 // Code detail edit page
@@ -2529,7 +2740,12 @@ function openCodeEdit(type, code){
       <div class="form-label">運送方式</div>
       <div class="form-input-box"><select id="ceShipMode" class="form-select"><option value="">—</option>${shipModeOpts}</select></div>
     </div>`:'';
-  document.getElementById('setModalBody').innerHTML=`
+  // Switch to edit view: hide codes panels, show body
+  document.getElementById('setModalStickyHeader').style.display='none';
+  document.getElementById('setModalScrollList').style.display='none';
+  const body = document.getElementById('setModalBody');
+  body.style.display='';
+  body.innerHTML=`
     <div class="form-section">
       <div class="form-row">
         <div class="form-label">${lbl}（3碼）</div>
@@ -2594,7 +2810,10 @@ async function saveCodeEdit(){
   document.getElementById('setModalTitle').textContent='付款/貨代代號';
   document.getElementById('setModalSaveBtn').style.display='none';
   document.getElementById('setModalSaveBtn').onclick=saveSetModal;
-  renderCodesEdit(document.getElementById('setModalBody'));
+  document.getElementById('setModalBody').style.display='none';
+  document.getElementById('setModalStickyHeader').style.display='block';
+  document.getElementById('setModalScrollList').style.display='block';
+  renderCodesEdit();
 }
 
 async function delCodeItem(){
@@ -2611,7 +2830,10 @@ async function delCodeItem(){
   document.getElementById('setModalTitle').textContent='付款/貨代代號';
   document.getElementById('setModalSaveBtn').style.display='none';
   document.getElementById('setModalSaveBtn').onclick=saveSetModal;
-  renderCodesEdit(document.getElementById('setModalBody'));
+  document.getElementById('setModalBody').style.display='none';
+  document.getElementById('setModalStickyHeader').style.display='block';
+  document.getElementById('setModalScrollList').style.display='block';
+  renderCodesEdit();
 }
 
 
@@ -2621,6 +2843,7 @@ async function delCodeItem(){
 let vendorEditIdx = -1;
 
 function openVendorMaint(){
+  const s=document.getElementById('vendorSearch');if(s)s.value='';
   renderVendorList();
   document.getElementById('vendorMaintPage').classList.add('open');
 }
@@ -2628,11 +2851,20 @@ function openVendorMaint(){
 function renderVendorList(){
   const el=document.getElementById('vendorList');
   if(!el)return;
+  const q=(document.getElementById('vendorSearch')?.value||'').trim().toLowerCase();
+  const filtered=vendors.map((v,i)=>({v,i})).filter(({v})=>{
+    if(!q)return true;
+    return (v.vendorCode||'').toLowerCase().includes(q)||(v.vendor||'').toLowerCase().includes(q)||(v.agent||'').toLowerCase().includes(q);
+  });
   if(!vendors.length){
     el.innerHTML=`<div style="text-align:center;padding:32px;color:var(--tx3);font-size:14px">尚無廠商資料<br><button onclick="addVendorNew()" style="margin-top:12px;padding:10px 20px;border-radius:10px;background:#93939B;color:#fff;border:none;font-size:14px;cursor:pointer;font-family:inherit">新增第一筆</button></div>`;
     return;
   }
-  el.innerHTML=vendors.map((v,i)=>`
+  if(!filtered.length){
+    el.innerHTML=`<div style="text-align:center;padding:32px;color:var(--tx3);font-size:14px">查無符合的廠商</div>`;
+    return;
+  }
+  el.innerHTML=filtered.map(({v,i})=>`
     <div onclick="openVendorEdit(${i})" style="display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--sf);border-radius:12px;border:1px solid var(--bd);margin-bottom:8px;cursor:pointer">
       <div style="width:40px;height:40px;border-radius:10px;background:#E2EBF2;display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3D5F78" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
@@ -2712,6 +2944,7 @@ async function deleteVendorEdit(){
 let modelEditIdx = -1;
 
 function openModelMaint(){
+  const s=document.getElementById('modelSearch');if(s)s.value='';
   renderModelList();
   document.getElementById('modelMaintPage').classList.add('open');
 }
@@ -2719,11 +2952,20 @@ function openModelMaint(){
 function renderModelList(){
   const el=document.getElementById('modelList');
   if(!el)return;
+  const q=(document.getElementById('modelSearch')?.value||'').trim().toLowerCase();
+  const filtered=models.map((m,i)=>({m,i})).filter(({m})=>{
+    if(!q)return true;
+    return (m.model||'').toLowerCase().includes(q)||(m.name||'').toLowerCase().includes(q);
+  });
   if(!models.length){
     el.innerHTML=`<div style="text-align:center;padding:32px;color:var(--tx3);font-size:14px">尚無型號資料<br><button onclick="addModelNew()" style="margin-top:12px;padding:10px 20px;border-radius:10px;background:#93939B;color:#fff;border:none;font-size:14px;cursor:pointer;font-family:inherit">新增第一筆</button></div>`;
     return;
   }
-  el.innerHTML=models.map((m,i)=>`
+  if(!filtered.length){
+    el.innerHTML=`<div style="text-align:center;padding:32px;color:var(--tx3);font-size:14px">查無符合的型號</div>`;
+    return;
+  }
+  el.innerHTML=filtered.map(({m,i})=>`
     <div onclick="openModelEdit(${i})" style="display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--sf);border-radius:12px;border:1px solid var(--bd);margin-bottom:8px;cursor:pointer">
       <div style="width:40px;height:40px;border-radius:10px;background:#E5EDEA;display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3D6647" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
