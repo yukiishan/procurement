@@ -1554,6 +1554,32 @@ function autoFillPayCodeMob(code){
   if(elD&&cd.pctD!==undefined)elD.value=cd.pctD;
   if(elM&&cd.pctM!==undefined)elM.value=cd.pctM;
   if(elA&&cd.pctA!==undefined)elA.value=cd.pctA;
+
+  // 根據新比例決定各期預設 stageLabel
+  function defaultStage(pi){
+    if(pi===0) return cd.pctD>0?'訂金款':cd.pctM>0?'交機款':'驗收款';
+    if(pi===1) return cd.pctM>0?'交機款':'驗收款';
+    return '驗收款';
+  }
+  let needRender=false;
+  detDeliveries.forEach((d,ci)=>{
+    d.payments.forEach((p,pi)=>{
+      if(p.pctManual) return; // 使用者手動改過的不動
+      const newStage=defaultStage(pi);
+      if(p.stageLabel!==newStage){
+        p.stageLabel=newStage;
+        p.pct=''; // 清空讓 recalcPayRow 重算
+        needRender=true;
+      }
+    });
+  });
+  if(needRender){
+    // 重新渲染所有付款列
+    detDeliveries.forEach((d,ci)=>{
+      const con=document.getElementById(`pays-m-${ci}`);
+      if(con){con.innerHTML='';d.payments.forEach((_,pi2)=>renderPayRowM(ci,pi2));}
+    });
+  }
   if(typeof recalcAll==='function')recalcAll();
 }
 
