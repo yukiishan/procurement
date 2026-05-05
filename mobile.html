@@ -1585,7 +1585,7 @@ function autoFillPayCodeMob(code){
   let needRender=false;
   detDeliveries.forEach((d,ci)=>{
     d.payments.forEach((p,pi)=>{
-      if(p.pctManual) return; // 使用者手動改過的不動
+      if(p.pctManual||p.stageManual) return; // 使用者手動改過比例或期別的不動
       const newStage=defaultStage(pi);
       if(p.stageLabel!==newStage){
         p.stageLabel=newStage;
@@ -2360,7 +2360,7 @@ function renderPayRowM(ci,pi){
     </div>
     <div class="pay-grid-m">
       <div class="pay-field-m"><label>期別名稱</label><select data-st onchange="onStChM(${ci},${pi},this.value)">${stOpts}</select></div>
-      <div class="pay-field-m"><label>比例%</label><input type="number" data-pct value="${p.pct||''}" oninput="detDeliveries[${ci}].payments[${pi}].pct=this.value;recalcPayRow(${ci},${pi})"></div>
+      <div class="pay-field-m"><label>比例%</label><input type="number" data-pct value="${p.pct||''}" oninput="detDeliveries[${ci}].payments[${pi}].pct=this.value;detDeliveries[${ci}].payments[${pi}].pctManual=true;recalcPayRow(${ci},${pi})"></div>
       <div class="pay-field-m"><label>付款金額(原幣)</label><input data-pa type="text" inputmode="decimal" value="${p.payAmt?Number(p.payAmt).toLocaleString():''}" placeholder="自動計算" oninput="const rv=this.value.replace(/,/g,'');detDeliveries[${ci}].payments[${pi}].payAmt=rv;fmtAmtInput(this)"></div>
       <div class="pay-field-m"><label>發票日期</label><input type="date" value="${p.invoiceDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].invoiceDate=this.value"></div>
       <div class="pay-field-m"><label>發票號碼</label><input value="${safe(p.invoice||'')}" oninput="detDeliveries[${ci}].payments[${pi}].invoice=this.value.toUpperCase()" style="text-transform:uppercase"></div>
@@ -2400,6 +2400,7 @@ function recalcPayRow(ci,pi){
 
 function onStChM(ci,pi,val){
   detDeliveries[ci].payments[pi].stageLabel=val;
+  detDeliveries[ci].payments[pi].stageManual=true;  // 標記使用者手動改過期別
   detDeliveries[ci].payments[pi].pct='';
   detDeliveries[ci].payments[pi].payAmt='';
   recalcPayRow(ci,pi);

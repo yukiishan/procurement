@@ -2172,7 +2172,7 @@ function renderPayRow(ci,pi){
     }
   }"></div>
     <div class="pf"><label>期別名稱</label><select class="st-sel" onchange="onStCh(${ci},${pi},this.value)">${stageOpts}</select></div>
-    <div class="pf"><label>比例%</label><input type="number" class="pct-inp" value="${p.pct||''}" oninput="detDeliveries[${ci}].payments[${pi}].pct=this.value;recalcPayRow(${ci},${pi})"></div>
+    <div class="pf"><label>比例%</label><input type="number" class="pct-inp" value="${p.pct||''}" oninput="detDeliveries[${ci}].payments[${pi}].pct=this.value;detDeliveries[${ci}].payments[${pi}].pctManual=true;recalcPayRow(${ci},${pi})"></div>
     <div class="pf"><label>付款金額(原幣)</label><input class="pa-inp" type="text" inputmode="decimal" value="${p.payAmt?Number(p.payAmt).toLocaleString():''}" placeholder="自動計算" oninput="const rv=this.value.replace(/,/g,'');detDeliveries[${ci}].payments[${pi}].payAmt=rv;fmtAmtInput(this)"></div>
     <div class="pf" style="justify-content:flex-end;align-items:flex-end"><button class="btn xs danger" onclick="removePayRow(${ci},${pi})">✕</button></div>
     <div class="pf"><label>請款方式</label><select class="ct-sel" onchange="detDeliveries[${ci}].payments[${pi}].claimType=this.value"><option value="">—</option>${ctOpts}</select></div>
@@ -2224,7 +2224,7 @@ function addPayRow(ci){
   if(cd&&typeof cd==='string'){try{cdObj=JSON.parse(cd);}catch(e){}}
   else if(cd&&typeof cd==='object'){cdObj=cd;}
   const stageLabel=getDefaultStageByOrder(pi, cdObj);
-  d.payments.push({invoiceDate,invoice,arrivalDate,arrivalQty,stageLabel,pct:'',payAmt:'',claimType:'',voucherDate:'',claimDate:'',payDate:'',payRemark:'',pctManual:false,payAmtManual:false});
+  d.payments.push({invoiceDate,invoice,arrivalDate,arrivalQty,stageLabel,pct:'',payAmt:'',claimType:'',voucherDate:'',claimDate:'',payDate:'',payRemark:'',pctManual:false,payAmtManual:false,stageManual:false});
   renderPayRow(ci,pi);
   setTimeout(()=>recalcPayRow(ci,pi),20);
 }
@@ -2241,7 +2241,8 @@ function removePayRow(ci,pi){
 
 function onStCh(ci,pi,val){
   detDeliveries[ci].payments[pi].stageLabel=val;
-  detDeliveries[ci].payments[pi].pct='';  // clear pct so header value is re-applied
+  detDeliveries[ci].payments[pi].stageManual=true;  // 標記使用者手動改過期別
+  detDeliveries[ci].payments[pi].pct='';
   detDeliveries[ci].payments[pi].payAmt='';
   recalcPayRow(ci,pi);
 }
@@ -3428,7 +3429,7 @@ function autoFillPayCodeDesk(code){
   let needRender=false;
   detDeliveries.forEach((d,ci)=>{
     d.payments.forEach((p,pi)=>{
-      if(p.pctManual) return; // 使用者手動改過的不動
+      if(p.pctManual||p.stageManual) return; // 使用者手動改過比例或期別的不動
       const newStage=defaultStage(pi);
       if(p.stageLabel!==newStage){
         p.stageLabel=newStage;
