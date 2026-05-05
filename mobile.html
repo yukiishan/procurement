@@ -1122,8 +1122,9 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 //  SHARED DATA LAYER (same as desktop version)
 // ══════════════════════════════════════════════════
 const API_URL='https://script.google.com/macros/s/AKfycbxEwmi0ZihkIAbutNJ_hA9lR17_x4LSmJF9XcIm3rTQ6nzLslKyqTfLjdGFwfKdglza/exec';
-const PWD='014063';
+// ── 安全驗證（Token 由 GAS 伺服器發放，密碼不在前端）──
 const SESSION_KEY='pv6_auth';
+let _TOKEN=sessionStorage.getItem('pv6_token')||'';
 
 const DO={
   plant:['3B','3A','2B','1F'],
@@ -1208,8 +1209,27 @@ let curFilter='all',curPayFilter='all',searchVisible=false;
 let detDeliveries=[];
 
 // API
-async function apiGet(a){const r=await fetch(`${API_URL}?action=${a}`);const j=await r.json();if(!j.ok)throw new Error(j.error);return j.data;}
-async function apiPost(a,p){const r=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:a,payload:p})});const j=await r.json();if(!j.ok)throw new Error(j.error);return j.data;}
+async function apiGet(a){
+  const r=await fetch(`${API_URL}?action=${a}&token=${encodeURIComponent(_TOKEN)}`);
+  const j=await r.json();
+  if(j.code==='INVALID_TOKEN'){_handleTokenExpiry();throw new Error('請重新登入');}
+  if(!j.ok)throw new Error(j.error);
+  return j.data;
+}
+async function apiPost(a,p){
+  const r=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:a,payload:p,token:_TOKEN})});
+  const j=await r.json();
+  if(j.code==='INVALID_TOKEN'){_handleTokenExpiry();throw new Error('請重新登入');}
+  if(!j.ok)throw new Error(j.error);
+  return j.data;
+}
+function _handleTokenExpiry(){
+  _TOKEN='';
+  sessionStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem('pv6_token');
+  alert('登入已過期，請重新登入');
+  location.reload();
+}
 function lc(k,v){try{localStorage.setItem('pv6_'+k,JSON.stringify(v));}catch(e){}}
 function lr(k){try{const s=localStorage.getItem('pv6_'+k);return s?JSON.parse(s):null;}catch(e){return null;}}
 
@@ -1338,17 +1358,33 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 // ══════════════════════════════════════════════════
 //  AUTH
 // ══════════════════════════════════════════════════
-function doLogin(){
+async function doLogin(){
   const input=document.getElementById('pwInput');
   const err=document.getElementById('loginErr');
-  if(input.value===PWD){
-    sessionStorage.setItem(SESSION_KEY,'1');
-    document.getElementById('loginScreen').style.display='none';
-    document.getElementById('app').style.display='flex';
-    startApp();
-  } else {
-    err.textContent='密碼錯誤';input.value='';input.focus();
-    setTimeout(()=>err.textContent='',2500);
+  const pw=input.value.trim();
+  if(!pw)return;
+  err.textContent='驗證中...';
+  input.disabled=true;
+  try{
+    const res=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'checkPw',pw})});
+    const json=await res.json();
+    if(json.ok){
+      _TOKEN=json.token;
+      sessionStorage.setItem(SESSION_KEY,'1');
+      sessionStorage.setItem('pv6_token',_TOKEN);
+      document.getElementById('loginScreen').style.display='none';
+      document.getElementById('app').style.display='flex';
+      startApp();
+    } else {
+      err.textContent=json.error||'密碼錯誤';
+      input.value='';input.focus();
+      setTimeout(()=>err.textContent='',3000);
+    }
+  } catch(e){
+    err.textContent='連線失敗，請確認網路';
+    setTimeout(()=>err.textContent='',3000);
+  } finally {
+    input.disabled=false;
   }
 }
 
@@ -1612,6 +1648,7 @@ function debounce(fn, delay){
 
 const debouncedRenderList = debounce(()=>renderCards(), 300);
 async function startApp(){
+  if(!_TOKEN)_TOKEN=sessionStorage.getItem('pv6_token')||'';
   initCalY();
   const hasCache=!!lr('data')&&!!lr('models');
   if(hasCache){

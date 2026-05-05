@@ -1234,16 +1234,27 @@ let opts={},rates={},hols=[],modelNames={};
 
 // ── API 呼叫工具 ──────────────────────────────────────
 async function apiGet(action){
-  const res=await fetch(`${API_URL}?action=${action}`);
+  const res=await fetch(`${API_URL}?action=${action}&token=${encodeURIComponent(_TOKEN)}`);
   const json=await res.json();
+  if(json.code==='INVALID_TOKEN'){_handleTokenExpiry();throw new Error('請重新登入');}
   if(!json.ok)throw new Error(json.error);
   return json.data;
 }
 async function apiPost(action,payload){
-  const res=await fetch(API_URL,{method:'POST',body:JSON.stringify({action,payload})});
+  const res=await fetch(API_URL,{method:'POST',body:JSON.stringify({action,payload,token:_TOKEN})});
   const json=await res.json();
+  if(json.code==='INVALID_TOKEN'){_handleTokenExpiry();throw new Error('請重新登入');}
   if(!json.ok)throw new Error(json.error);
   return json.data;
+}
+
+// Token 過期或失效時，強制重新登入
+function _handleTokenExpiry(){
+  _TOKEN='';
+  sessionStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem('pv6_token');
+  alert('登入已過期，請重新登入');
+  location.reload();
 }
 
 // 本地快取寫入（備援）
@@ -2548,30 +2559,49 @@ async function saveCodeDet(){
 
 
 // ── 密碼保護 ──────────────────────────────────────────
-const PWD = '014063';
+// ── 安全驗證（Token 由 GAS 伺服器發放，密碼不在前端）──
 const SESSION_KEY = 'pv6_auth';
+let _TOKEN = sessionStorage.getItem('pv6_token') || '';  // 執行期間持有 Token
 
 function checkAuth(){
-  // 檢查 sessionStorage（關閉分頁後需重新登入）
-  return sessionStorage.getItem(SESSION_KEY) === '1';
+  return !!_TOKEN && sessionStorage.getItem(SESSION_KEY) === '1';
 }
 
-function doLogin(){
+async function doLogin(){
   const input = document.getElementById('pwInput');
-  const err = document.getElementById('lerr');
-  if(input.value === PWD){
-    sessionStorage.setItem(SESSION_KEY,'1');
-    document.getElementById('ls').style.display='none';
-    startApp().catch(e=>{
-      console.error('login startApp error:',e);
-      document.getElementById('ls').style.display='flex';
-      err.textContent = '系統啟動失敗，請重新整理頁面';
+  const err   = document.getElementById('lerr');
+  const pw    = input.value.trim();
+  if(!pw) return;
+  err.textContent = '驗證中...';
+  input.disabled = true;
+  try {
+    // 密碼送到 GAS 伺服器比對，前端不做任何比對
+    const res  = await fetch(API_URL, {
+      method:'POST',
+      body: JSON.stringify({ action:'checkPw', pw })
     });
-  } else {
-    err.textContent = '密碼錯誤，請重試';
-    input.value = '';
-    input.focus();
-    setTimeout(()=>err.textContent='', 2500);
+    const json = await res.json();
+    if(json.ok){
+      _TOKEN = json.token;
+      sessionStorage.setItem(SESSION_KEY,'1');
+      sessionStorage.setItem('pv6_token', _TOKEN);
+      document.getElementById('ls').style.display='none';
+      startApp().catch(e=>{
+        console.error('login startApp error:',e);
+        document.getElementById('ls').style.display='flex';
+        err.textContent = '系統啟動失敗，請重新整理頁面';
+      });
+    } else {
+      err.textContent = json.error || '密碼錯誤，請重試';
+      input.value = '';
+      input.focus();
+      setTimeout(()=>err.textContent='', 3000);
+    }
+  } catch(e) {
+    err.textContent = '連線失敗，請確認網路';
+    setTimeout(()=>err.textContent='', 3000);
+  } finally {
+    input.disabled = false;
   }
 }
 
@@ -2911,6 +2941,8 @@ function renderMobDash(){
 const _origStartApp = startApp;
 // Override startApp to also init mobile after load
 async function startApp(){
+  // 還原 Token（頁面重整後從 sessionStorage 取回）
+  if(!_TOKEN) _TOKEN = sessionStorage.getItem('pv6_token') || '';
   try{
     initCalY();
     await load();
