@@ -1249,12 +1249,23 @@ async function apiPost(action,payload){
 }
 
 // Token 過期或失效時，強制重新登入
+let _expiryHandled = false; // 防止多個 API 同時過期時重複觸發
 function _handleTokenExpiry(){
-  _TOKEN='';
+  if(_expiryHandled) return;
+  _expiryHandled = true;
+  _TOKEN = '';
   sessionStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem('pv6_token');
-  alert('登入已過期，請重新登入');
-  location.reload();
+  // 直接顯示登入畫面，不用 reload（reload 後 checkAuth 有時還未完成清除）
+  const ls = document.getElementById('ls');
+  if(ls) ls.style.display = 'flex';
+  const pw = document.getElementById('pwInput');
+  const err = document.getElementById('lerr');
+  if(err) err.textContent = '登入已過期，請重新登入';
+  setTimeout(() => {
+    if(pw) pw.focus();
+    _expiryHandled = false; // 重置旗標，讓下次過期可以再觸發
+  }, 300);
 }
 
 // 本地快取寫入（備援）

@@ -1223,12 +1223,25 @@ async function apiPost(a,p){
   if(!j.ok)throw new Error(j.error);
   return j.data;
 }
+let _expiryHandled = false;
 function _handleTokenExpiry(){
-  _TOKEN='';
+  if(_expiryHandled) return;
+  _expiryHandled = true;
+  _TOKEN = '';
   sessionStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem('pv6_token');
-  alert('登入已過期，請重新登入');
-  location.reload();
+  // 直接顯示登入畫面
+  const ls = document.getElementById('loginScreen');
+  if(ls) ls.style.display = 'flex';
+  const app = document.getElementById('app');
+  if(app) app.style.display = 'none';
+  const pw = document.getElementById('pwInput');
+  const err = document.getElementById('loginErr');
+  if(err) err.textContent = '登入已過期，請重新登入';
+  setTimeout(() => {
+    if(pw) pw.focus();
+    _expiryHandled = false;
+  }, 300);
 }
 function lc(k,v){try{localStorage.setItem('pv6_'+k,JSON.stringify(v));}catch(e){}}
 function lr(k){try{const s=localStorage.getItem('pv6_'+k);return s?JSON.parse(s):null;}catch(e){return null;}}
