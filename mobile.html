@@ -1537,6 +1537,16 @@ function openOptPickerMob(fieldId, title, optList){
 }
 
 
+function getDefaultStageByOrder(pi, cd){
+  if(!cd||typeof cd!=='object') return '訂金款';
+  const ordered=[];
+  if(Number(cd.pctD)>0) ordered.push('訂金款');
+  if(Number(cd.pctM)>0) ordered.push('交機款');
+  if(Number(cd.pctA)>0) ordered.push('驗收款');
+  if(!ordered.length) return '訂金款';
+  return ordered[Math.min(pi, ordered.length-1)];
+}
+
 function saveTextareaHMob(field, el){
   const h=el.offsetHeight;
   if(!h||h<60)return;
@@ -1568,11 +1578,9 @@ function autoFillPayCodeMob(code){
   if(elM&&cd.pctM!==undefined)elM.value=cd.pctM;
   if(elA&&cd.pctA!==undefined)elA.value=cd.pctA;
 
-  // 根據新比例決定各期預設 stageLabel
+  // 根據新比例依順序分配各期 stageLabel
   function defaultStage(pi){
-    if(pi===0) return cd.pctD>0?'訂金款':cd.pctM>0?'交機款':'驗收款';
-    if(pi===1) return cd.pctM>0?'交機款':'驗收款';
-    return '驗收款';
+    return getDefaultStageByOrder(pi, cd);
   }
   let needRender=false;
   detDeliveries.forEach((d,ci)=>{
@@ -2438,7 +2446,14 @@ function addPayRowM(ci){
   const pi=d.payments.length;
   const arrivalDate=pi===0?(d.eta||''):(d.payments[0].arrivalDate||d.eta||'');
   const arrivalQty=pi===0?(d.qty||''):(d.payments[0].arrivalQty||d.qty||'');
-  d.payments.push({invoiceDate:new Date().toISOString().slice(0,10),invoice:'',arrivalDate,arrivalQty,stageLabel:'訂金款',pct:'',payAmt:'',claimType:'',claimDate:'',payDate:''});
+  // 依有值比例的順序分配期別
+  const payCode=document.getElementById('f-payment')?.value||'';
+  const cd=codeDesc.payCode&&codeDesc.payCode[payCode];
+  let cdObj=null;
+  if(cd&&typeof cd==='string'){try{cdObj=JSON.parse(cd);}catch(e){}}
+  else if(cd&&typeof cd==='object'){cdObj=cd;}
+  const stageLabel=getDefaultStageByOrder(pi, cdObj);
+  d.payments.push({invoiceDate:new Date().toISOString().slice(0,10),invoice:'',arrivalDate,arrivalQty,stageLabel,pct:'',payAmt:'',claimType:'',claimDate:'',payDate:''});
   renderPayRowM(ci,pi);
   setTimeout(()=>recalcPayRow(ci,pi),20);
 }
