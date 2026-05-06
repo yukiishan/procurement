@@ -1223,13 +1223,30 @@ async function apiPost(a,p){
   if(!j.ok)throw new Error(j.error);
   return j.data;
 }
+// ── 登入時效管理（純前端計時，4 小時自動登出）──
+const SESSION_TTL_MS = 4 * 60 * 60 * 1000;
 let _expiryHandled = false;
+let _heartbeatTimer = null;
+
+function startTokenHeartbeat(){
+  stopTokenHeartbeat();
+  _heartbeatTimer = setInterval(() => {
+    if(!_TOKEN || !sessionStorage.getItem(SESSION_KEY)){ stopTokenHeartbeat(); return; }
+    const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
+    if(!loginTime) return;
+    if(Date.now() - loginTime >= SESSION_TTL_MS){ stopTokenHeartbeat(); _handleTokenExpiry(); }
+  }, 30000);
+}
+function stopTokenHeartbeat(){ if(_heartbeatTimer){ clearInterval(_heartbeatTimer); _heartbeatTimer=null; } }
+
 function _handleTokenExpiry(){
   if(_expiryHandled) return;
   _expiryHandled = true;
+  stopTokenHeartbeat();
   _TOKEN = '';
   sessionStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem('pv6_token');
+  sessionStorage.removeItem('pv6_login_time');
   // 直接顯示登入畫面
   const ls = document.getElementById('loginScreen');
   if(ls) ls.style.display = 'flex';
@@ -1385,6 +1402,8 @@ async function doLogin(){
       _TOKEN=json.token;
       sessionStorage.setItem(SESSION_KEY,'1');
       sessionStorage.setItem('pv6_token',_TOKEN);
+      sessionStorage.setItem('pv6_login_time', String(Date.now()));
+      startTokenHeartbeat();
       document.getElementById('loginScreen').style.display='none';
       document.getElementById('app').style.display='flex';
       startApp();
@@ -1696,6 +1715,14 @@ function debounce(fn, delay){
 const debouncedRenderList = debounce(()=>renderCards(), 300);
 async function startApp(){
   if(!_TOKEN)_TOKEN=sessionStorage.getItem('pv6_token')||'';
+  // 還原計時器（頁面重整後）
+  if(_TOKEN && sessionStorage.getItem(SESSION_KEY)==='1'){
+    const loginTime=Number(sessionStorage.getItem('pv6_login_time')||0);
+    if(loginTime && (Date.now()-loginTime)>=SESSION_TTL_MS){
+      _handleTokenExpiry(); return;
+    }
+    startTokenHeartbeat();
+  }
   initCalY();
   const hasCache=!!lr('data')&&!!lr('models');
   if(hasCache){

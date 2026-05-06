@@ -1248,15 +1248,32 @@ async function apiPost(action,payload){
   return json.data;
 }
 
-// Token 過期或失效時，強制重新登入
-let _expiryHandled = false; // 防止多個 API 同時過期時重複觸發
+// ── 登入時效管理（純前端計時，4 小時自動登出）──
+const SESSION_TTL_MS = 4 * 60 * 60 * 1000; // 4 小時（毫秒）
+let _expiryHandled = false;
+let _heartbeatTimer = null;
+
+function startTokenHeartbeat(){
+  stopTokenHeartbeat();
+  _heartbeatTimer = setInterval(() => {
+    if(!_TOKEN || !sessionStorage.getItem(SESSION_KEY)){ stopTokenHeartbeat(); return; }
+    const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
+    if(!loginTime) return;
+    const elapsed = Date.now() - loginTime;
+    if(elapsed >= SESSION_TTL_MS){ stopTokenHeartbeat(); _handleTokenExpiry(); }
+  }, 30000); // 每 30 秒檢查一次
+}
+function stopTokenHeartbeat(){ if(_heartbeatTimer){ clearInterval(_heartbeatTimer); _heartbeatTimer=null; } }
+
 function _handleTokenExpiry(){
   if(_expiryHandled) return;
   _expiryHandled = true;
+  stopTokenHeartbeat();
   _TOKEN = '';
   sessionStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem('pv6_token');
-  // 直接顯示登入畫面，不用 reload（reload 後 checkAuth 有時還未完成清除）
+  sessionStorage.removeItem('pv6_login_time'); // 清除登入時間
+  // 直接顯示登入畫面
   const ls = document.getElementById('ls');
   if(ls) ls.style.display = 'flex';
   const pw = document.getElementById('pwInput');
@@ -2595,6 +2612,8 @@ async function doLogin(){
       _TOKEN = json.token;
       sessionStorage.setItem(SESSION_KEY,'1');
       sessionStorage.setItem('pv6_token', _TOKEN);
+      sessionStorage.setItem('pv6_login_time', String(Date.now())); // 記錄登入時間
+      startTokenHeartbeat(); // 啟動計時器
       document.getElementById('ls').style.display='none';
       startApp().catch(e=>{
         console.error('login startApp error:',e);
@@ -2953,6 +2972,14 @@ const _origStartApp = startApp;
 async function startApp(){
   // 還原 Token（頁面重整後從 sessionStorage 取回）
   if(!_TOKEN) _TOKEN = sessionStorage.getItem('pv6_token') || '';
+  // 還原計時器（頁面重整後）
+  if(_TOKEN && sessionStorage.getItem(SESSION_KEY)==='1'){
+    const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
+    if(loginTime && (Date.now() - loginTime) >= SESSION_TTL_MS){
+      _handleTokenExpiry(); return; // 重整時已過期，直接登出
+    }
+    startTokenHeartbeat();
+  }
   try{
     initCalY();
     await load();
