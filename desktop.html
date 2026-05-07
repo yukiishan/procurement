@@ -2257,9 +2257,20 @@ function addDP(){
     if(!confirm(`各批次數量已達總數量(${total}台)，仍要新增批次？`))return;
   }
   const todayDP=new Date().toISOString().slice(0,10);
-  detDeliveries.push({etd:'',eta:'',qty:'',sn:'',payments:[{invoiceDate:todayDP,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel:'訂金款',pct:'',payAmt:'',claimType:'',claimDate:'',payDate:'',voucherDate:'',payRemark:'',pctManual:false,payAmtManual:false}]});
+  // 讀取付款代號，決定第一筆付款列的期別和比例
+  const payCode=document.getElementById('f-payment')?.value||'';
+  const cd=codeDesc.payCode&&codeDesc.payCode[payCode];
+  let cdObj=null;
+  if(cd&&typeof cd==='string'){try{cdObj=JSON.parse(cd);}catch(e){}}
+  else if(cd&&typeof cd==='object'){cdObj=cd;}
+  const stageLabel=getDefaultStageByOrder(0,cdObj);
+  // 批次索引（新批次是第幾個）
+  const newCi=detDeliveries.length;
+  detDeliveries.push({etd:'',eta:'',qty:'',sn:'',payments:[{invoiceDate:todayDP,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel,pct:'',payAmt:'',claimType:'',claimDate:'',payDate:'',voucherDate:'',payRemark:'',pctManual:false,payAmtManual:false,stageManual:false}]});
   const ci=detDeliveries.length-1;
   renderDPCard(ci);
+  // 帶入比例（非手動改過）
+  setTimeout(()=>recalcPayRow(ci,0),30);
   updateQtyInfo();
 }
 

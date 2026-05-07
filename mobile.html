@@ -2491,10 +2491,20 @@ function cascadeAqM(ci,firstAq){
 }
 
 function addDP(){
-  detDeliveries.push({etd:'',eta:'',qty:'',sn:'',payments:[{invoiceDate:new Date().toISOString().slice(0,10),invoice:'',arrivalDate:'',arrivalQty:'',stageLabel:'訂金款',pct:'',payAmt:'',claimType:'',claimDate:'',payDate:''}]});
+  const todayDP=new Date().toISOString().slice(0,10);
+  // 讀取付款代號，決定第一筆付款列的期別和比例
+  const payCode=document.getElementById('f-payment')?.value||'';
+  const cd=codeDesc.payCode&&codeDesc.payCode[payCode];
+  let cdObj=null;
+  if(cd&&typeof cd==='string'){try{cdObj=JSON.parse(cd);}catch(e){}}
+  else if(cd&&typeof cd==='object'){cdObj=cd;}
+  const stageLabel=getDefaultStageByOrder(0,cdObj);
+  detDeliveries.push({etd:'',eta:'',qty:'',sn:'',payments:[{invoiceDate:todayDP,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel,pct:'',payAmt:'',claimType:'',claimDate:'',payDate:'',pctManual:false,payAmtManual:false,stageManual:false}]});
   const ci=detDeliveries.length-1;
   const con=document.getElementById('dpListM');
   renderDPCardM(ci,con);
+  // 帶入比例
+  setTimeout(()=>recalcPayRow(ci,0),30);
 }
 
 function removeDPM(ci){
