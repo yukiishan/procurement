@@ -1014,7 +1014,10 @@ tbody tr{will-change:auto;contain:layout style}
         <!-- Row 1: 廠區 部門 PO號 狀態 -->
         <div class="fg"><label>廠區</label><select id="f-plant"></select></div>
         <div class="fg"><label>部門</label><select id="f-dept"></select></div>
-        <div class="fg"><label>PO號碼</label><input id="f-pr" placeholder="PO號碼" oninput="setValPreserveCursor(this,this.value.toUpperCase()" style="text-transform:uppercase"></div>
+        <div class="fg"><label>PO號碼</label>
+          <input id="f-pr" placeholder="PO號碼" oninput="setValPreserveCursor(this,this.value.toUpperCase());checkPrDupDesk(this.value)" style="text-transform:uppercase">
+          <div id="prDupWarnDesk" style="color:var(--red,#c0392b);font-size:10px;margin-top:2px;min-height:12px;font-weight:600"></div>
+        </div>
         <div class="fg"><label>狀態</label><select id="f-status"><option>處理中</option><option>待交貨</option><option>已交貨</option></select></div>
         <!-- Row 2: 廠商代號 廠商 代理商 設備型號 -->
         <div class="fg"><label>廠商代號 <span style="font-size:9px;color:var(--tx3);font-weight:400">輸入後自動帶入廠商資料</span></label>
@@ -2129,6 +2132,7 @@ function openDet(idOrNew){
   ['f-vendor','f-agent','f-forwarder','f-name','f-country','f-city','f-currency',
    'f-pctD','f-pctM','f-pctA','f-shipMode','f-rigging','f-noCert','f-payment']
     .forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});
+  const _pw=document.getElementById('prDupWarnDesk');if(_pw)_pw.textContent='';
   // Restore custom textarea heights
   const elR=document.getElementById('f-remark');if(elR&&r.remarkH)elR.style.height=r.remarkH+'px';
   const elS=document.getElementById('f-signNote');if(elS&&r.signNoteH)elS.style.height=r.signNoteH+'px';
@@ -3251,6 +3255,18 @@ function migrateModelsFromOpts(){
 
 
 // ── 重複代號檢查（桌機版）──────────────────────────
+function checkPrDupDesk(val){
+  const warn=document.getElementById('prDupWarnDesk');
+  if(!warn)return;
+  if(!val){warn.textContent='';return;}
+  const v=String(val).toUpperCase().trim();
+  // 排除自己（eid 是目前編輯的記錄 id）
+  const isDup=data.some(r=>
+    String(r.pr||'').toUpperCase().trim()===v && r.id!==eid
+  );
+  warn.textContent=isDup?'⚠ 此PO號碼已存在':'';
+}
+
 function checkVendorCodeDupDesk(code){
   const warn=document.getElementById('vdCodeDupWarn');
   if(!warn)return;

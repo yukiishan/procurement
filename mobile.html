@@ -982,7 +982,11 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
         <div><div class="form-label">部門</div><div class="form-input-box"><select id="f-dept" class="form-select"></select></div></div>
       </div>
       <div class="form-row row-2">
-        <div><div class="form-label">PO號碼</div><div class="form-input-box"><input id="f-pr" class="form-input" placeholder="PO號碼" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s)" style="text-transform:uppercase"></div></div>
+        <div>
+          <div class="form-label">PO號碼</div>
+          <div class="form-input-box"><input id="f-pr" class="form-input" placeholder="PO號碼" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s);checkPrDupMob(this.value)" style="text-transform:uppercase"></div>
+          <div id="prDupWarnMob" style="color:var(--red,#B87070);font-size:11px;margin-top:4px;min-height:14px;font-weight:600"></div>
+        </div>
         <div><div class="form-label">狀態</div><div class="form-input-box"><select id="f-status" class="form-select"><option>處理中</option><option>待交貨</option><option>已交貨</option></select></div></div>
       </div>
       <!-- Row2: 廠商代號 廠商 代理商 設備型號 -->
@@ -2336,6 +2340,7 @@ function openDet(idOrNew){
   ['f-vendor','f-agent','f-forwarder','f-name','f-country','f-city','f-currency',
    'f-pctD','f-pctM','f-pctA','f-shipMode','f-rigging','f-noCert','f-payment']
     .forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});
+  const _pw=document.getElementById('prDupWarnMob');if(_pw)_pw.textContent='';
   // Restore custom textarea heights
   const _elR=document.getElementById('f-remark');if(_elR&&r.remarkH)_elR.style.height=r.remarkH+'px';
   const _elS=document.getElementById('f-signNote');if(_elS&&r.signNoteH)_elS.style.height=r.signNoteH+'px';
@@ -3246,6 +3251,17 @@ function migrateModelsFromOpts(){ /* disabled: models[] is now authoritative */ 
 
 
 // ── 重複代號檢查 ────────────────────────────────────
+function checkPrDupMob(val){
+  const warn=document.getElementById('prDupWarnMob');
+  if(!warn)return;
+  if(!val){warn.textContent='';return;}
+  const v=String(val).toUpperCase().trim();
+  const isDup=data.some(r=>
+    String(r.pr||'').toUpperCase().trim()===v && r.id!==eid
+  );
+  warn.textContent=isDup?'⚠ 此PO號碼已存在':'';
+}
+
 function checkVendorCodeDup(code){
   const warn=document.getElementById('veCodeDupWarn');
   if(!warn)return;
