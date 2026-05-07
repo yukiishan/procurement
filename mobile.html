@@ -1012,6 +1012,10 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
         <div class="form-label">設備名稱</div>
         <div class="form-input-box"><input id="f-name" class="form-input" placeholder="設備完整名稱"></div>
       </div>
+      <div class="form-row">
+        <div class="form-label">報價單號</div>
+        <div class="form-input-box"><input id="f-quoteNo" class="form-input" placeholder="報價單號（手動輸入）"></div>
+      </div>
     </div>
 
     <!-- 規格金額 -->
@@ -1230,14 +1234,20 @@ let _heartbeatTimer = null;
 
 function startTokenHeartbeat(){
   stopTokenHeartbeat();
-  _heartbeatTimer = setInterval(() => {
-    if(!_TOKEN || !sessionStorage.getItem(SESSION_KEY)){ stopTokenHeartbeat(); return; }
-    const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
-    if(!loginTime) return;
-    if(Date.now() - loginTime >= SESSION_TTL_MS){ stopTokenHeartbeat(); _handleTokenExpiry(); }
-  }, 30000);
+  const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
+  if(!loginTime) return;
+  const elapsed = Date.now() - loginTime;
+  const remaining = SESSION_TTL_MS - elapsed;
+  if(remaining <= 0){ _handleTokenExpiry(); return; }
+  // 精確計時：剩餘時間到時直接登出
+  _heartbeatTimer = setTimeout(() => {
+    if(!_TOKEN || !sessionStorage.getItem(SESSION_KEY)) return;
+    _handleTokenExpiry();
+  }, remaining);
 }
-function stopTokenHeartbeat(){ if(_heartbeatTimer){ clearInterval(_heartbeatTimer); _heartbeatTimer=null; } }
+function stopTokenHeartbeat(){
+  if(_heartbeatTimer){ clearTimeout(_heartbeatTimer); _heartbeatTimer=null; }
+}
 
 function _handleTokenExpiry(){
   if(_expiryHandled) return;
@@ -1247,18 +1257,18 @@ function _handleTokenExpiry(){
   sessionStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem('pv6_token');
   sessionStorage.removeItem('pv6_login_time');
-  // 直接顯示登入畫面
+  // 顯示登入畫面、隱藏 app
   const ls = document.getElementById('loginScreen');
-  if(ls) ls.style.display = 'flex';
+  if(ls){ ls.style.cssText='display:flex!important'; }
   const app = document.getElementById('app');
-  if(app) app.style.display = 'none';
+  if(app){ app.style.display='none'; }
   const pw = document.getElementById('pwInput');
   const err = document.getElementById('loginErr');
   if(err) err.textContent = '登入已過期，請重新登入';
   setTimeout(() => {
-    if(pw) pw.focus();
+    if(pw){ pw.value=''; pw.focus(); }
     _expiryHandled = false;
-  }, 300);
+  }, 100);
 }
 function lc(k,v){try{localStorage.setItem('pv6_'+k,JSON.stringify(v));}catch(e){}}
 function lr(k){try{const s=localStorage.getItem('pv6_'+k);return s?JSON.parse(s):null;}catch(e){return null;}}
@@ -2319,7 +2329,7 @@ function openDet(idOrNew){
   document.getElementById('detDelBtn').style.display=eid?'block':'none';
   refreshModelSelect(r.model||'');  // pass model value so it's pre-selected correctly
   refreshSels();
-  ['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'].forEach(f=>{
+  ['plant','dept','pr','vendorCode','vendor','agent','model','name','quoteNo','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'].forEach(f=>{
     const el=document.getElementById('f-'+f);if(el)el.value=r[f]||'';
   });
   // 清除所有欄位的手動旗標
@@ -2530,7 +2540,7 @@ function getDPsM(){
 }
 
 async function saveRec(){
-  const sf=['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'];
+  const sf=['plant','dept','pr','vendorCode','vendor','agent','model','name','quoteNo','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'];
   const rec={};
   sf.forEach(f=>{const el=document.getElementById('f-'+f);if(el)rec[f]=el.value;});
   // Save custom textarea heights
@@ -2610,8 +2620,8 @@ async function importJSON(e){
 function exportExcel(){
   if(typeof XLSX==='undefined'){toast('套件載入中');return;}
   const wb=XLSX.utils.book_new();
-  const h1=['廠區','部門','PO號','廠商','代理商','設備型號','設備名稱','數量','幣別','報價(原幣)','成交金額(原幣)','成交金額(台幣)','料號','LT','Line','TT','CEA','PO日期','無產證','國家','產地','付款','貨代','運送方式','吊掛','狀態','備註','ETD','ETA','訂金%','交機%','驗收%'];
-  const r1=data.map(r=>[r.plant,r.dept,r.pr,r.vendor,r.agent,r.model,r.name,r.qty,r.currency,r.quote,r.amount,r.amountNTD||calcNTDv(r.amount,r.currency),r.partno,r.lt,r.line,r.tt,r.cea,r.podate,r.noCert,r.country,r.city,r.payment,r.forwarder,r.shipMode,r.rigging,r.status,r.remark,r.deliveries&&r.deliveries[0]?r.deliveries[0].etd:'',r.deliveries&&r.deliveries[0]?r.deliveries[0].eta:'',r.pctD,r.pctM,r.pctA]);
+  const h1=['廠區','部門','PO號','廠商','代理商','設備型號','設備名稱','報價單號','數量','幣別','報價(原幣)','成交金額(原幣)','成交金額(台幣)','料號','LT','Line','TT','CEA','PO日期','無產證','國家','產地','付款','貨代','運送方式','吊掛','狀態','備註','ETD','ETA','訂金%','交機%','驗收%'];
+  const r1=data.map(r=>[r.plant,r.dept,r.pr,r.vendor,r.agent,r.model,r.name,r.quoteNo||'',r.qty,r.currency,r.quote,r.amount,r.amountNTD||calcNTDv(r.amount,r.currency),r.partno,r.lt,r.line,r.tt,r.cea,r.podate,r.noCert,r.country,r.city,r.payment,r.forwarder,r.shipMode,r.rigging,r.status,r.remark,r.deliveries&&r.deliveries[0]?r.deliveries[0].etd:'',r.deliveries&&r.deliveries[0]?r.deliveries[0].eta:'',r.pctD,r.pctM,r.pctA]);
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([h1,...r1]),'設備歷程');
   XLSX.writeFile(wb,'設備採購管理_'+new Date().toLocaleDateString('zh-TW').replace(/\//g,'')+'.xlsx');
   toast('✓ Excel已匯出');

@@ -1034,6 +1034,8 @@ tbody tr{will-change:auto;contain:layout style}
         <!-- Row 3: 數量 + 設備名稱 -->
         <div class="fg"><label>數量（總）<span id="qtyWarnHd" style="color:var(--rtx);font-size:9px"></span></label><input id="f-qty" type="number" value="1" min="1" oninput="recalcAll();updateQtyInfo()"></div>
         <div class="fg full s3"><label>設備名稱</label><input id="f-name" placeholder="設備完整名稱"></div>
+        <!-- Row 3b: 報價單號 -->
+        <div class="fg full"><label>報價單號</label><input id="f-quoteNo" placeholder="報價單號（手動輸入）"></div>
         <!-- Row 4: PO日期 CEA LT TT -->
         <div class="fg"><label>PO日期</label><input id="f-podate" type="date"></div>
         <div class="fg"><label>CEA</label><input id="f-cea" oninput="setValPreserveCursor(this,this.value.toUpperCase()" style="text-transform:uppercase"></div>
@@ -1255,15 +1257,21 @@ let _heartbeatTimer = null;
 
 function startTokenHeartbeat(){
   stopTokenHeartbeat();
-  _heartbeatTimer = setInterval(() => {
-    if(!_TOKEN || !sessionStorage.getItem(SESSION_KEY)){ stopTokenHeartbeat(); return; }
-    const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
-    if(!loginTime) return;
-    const elapsed = Date.now() - loginTime;
-    if(elapsed >= SESSION_TTL_MS){ stopTokenHeartbeat(); _handleTokenExpiry(); }
-  }, 30000); // 每 30 秒檢查一次
+  const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
+  if(!loginTime){ console.warn('[Auth] no login_time, skip heartbeat'); return; }
+  const elapsed = Date.now() - loginTime;
+  const remaining = SESSION_TTL_MS - elapsed;
+  if(remaining <= 0){ _handleTokenExpiry(); return; }
+  console.log('[Auth] 將在', Math.round(remaining/60000), '分鐘後自動登出');
+  // 精確計時：剩餘時間到時直接登出，不用輪詢
+  _heartbeatTimer = setTimeout(() => {
+    if(!_TOKEN || !sessionStorage.getItem(SESSION_KEY)) return;
+    _handleTokenExpiry();
+  }, remaining);
 }
-function stopTokenHeartbeat(){ if(_heartbeatTimer){ clearInterval(_heartbeatTimer); _heartbeatTimer=null; } }
+function stopTokenHeartbeat(){
+  if(_heartbeatTimer){ clearTimeout(_heartbeatTimer); _heartbeatTimer=null; }
+}
 
 function _handleTokenExpiry(){
   if(_expiryHandled) return;
@@ -1273,16 +1281,20 @@ function _handleTokenExpiry(){
   sessionStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem('pv6_token');
   sessionStorage.removeItem('pv6_login_time'); // 清除登入時間
-  // 直接顯示登入畫面
+  // 顯示登入畫面、隱藏桌機主介面
   const ls = document.getElementById('ls');
-  if(ls) ls.style.display = 'flex';
+  if(ls){ ls.style.cssText='display:flex!important'; } // !important 確保蓋過任何其他樣式
+  // 隱藏桌機介面（topbar, toolbar, pageArea 等）
+  document.querySelectorAll('.topbar,.toolbar,#pageArea,[id^="tab-"]').forEach(el=>{
+    el.style.display='none';
+  });
   const pw = document.getElementById('pwInput');
   const err = document.getElementById('lerr');
   if(err) err.textContent = '登入已過期，請重新登入';
   setTimeout(() => {
-    if(pw) pw.focus();
-    _expiryHandled = false; // 重置旗標，讓下次過期可以再觸發
-  }, 300);
+    if(pw){ pw.value=''; pw.focus(); }
+    _expiryHandled = false;
+  }, 100);
 }
 
 // 使用者手動修改欄位時，標記 data-manual="1"
@@ -2110,7 +2122,7 @@ function openDet(idOrNew){
   refreshModelSelectDesk(r.model||'');
   refreshSels();
 
-  ['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'].forEach(f=>{
+  ['plant','dept','pr','vendorCode','vendor','agent','model','name','quoteNo','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'].forEach(f=>{
     const el=document.getElementById('f-'+f);if(el)el.value=r[f]||'';
   });
   // 清除所有欄位的手動旗標（開啟記錄時不算手動修改）
@@ -2304,7 +2316,7 @@ async function saveRec(){
   const total=Number(document.getElementById('f-qty').value)||0;
   const used=getUsedQty();
   if(total>0&&used>total){if(!confirm(`批次數量合計(${used})超過總數(${total})，確定儲存？`))return;}
-  const sf=['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'];
+  const sf=['plant','dept','pr','vendorCode','vendor','agent','model','name','quoteNo','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'];
   const rec={};
   sf.forEach(f=>{const el=document.getElementById('f-'+f);if(el)rec[f]=el.value;});
   // Save custom textarea heights
@@ -2438,8 +2450,8 @@ function closeHol(){document.getElementById('holMod').classList.remove('open');}
 function exportExcel(){
   if(typeof XLSX==='undefined'){alert('套件載入中');return;}
   const wb=XLSX.utils.book_new();
-  const h1=['廠區','部門','PO號','廠商','代理商','設備型號','設備名稱','數量','幣別','報價(原幣)','成交金額(原幣)','成交金額(台幣)','料號','LT','Line','備註','CEA','S/N','無產證','PO日期','付款','貨代','狀態','ETD','ETA','訂金%','交機%','驗收%'];
-  const r1=data.map(r=>[r.plant,r.dept,r.pr,r.vendor,r.agent,r.model,r.name,r.qty,r.currency,r.quote,r.amount,r.amountNTD||calcNTDv(r.amount,r.currency),r.partno,r.lt,r.line,r.remark,r.cea,r.sn,r.noCert,r.podate,r.payment,r.forwarder,r.status,
+  const h1=['廠區','部門','PO號','廠商','代理商','設備型號','設備名稱','報價單號','數量','幣別','報價(原幣)','成交金額(原幣)','成交金額(台幣)','料號','LT','Line','備註','CEA','S/N','無產證','PO日期','付款','貨代','狀態','ETD','ETA','訂金%','交機%','驗收%'];
+  const r1=data.map(r=>[r.plant,r.dept,r.pr,r.vendor,r.agent,r.model,r.name,r.quoteNo||'',r.qty,r.currency,r.quote,r.amount,r.amountNTD||calcNTDv(r.amount,r.currency),r.partno,r.lt,r.line,r.remark,r.cea,r.sn,r.noCert,r.podate,r.payment,r.forwarder,r.status,
     r.deliveries&&r.deliveries[0]?r.deliveries[0].etd:'',r.deliveries&&r.deliveries[0]?r.deliveries[0].eta:'',r.pctD,r.pctM,r.pctA]);
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([h1,...r1]),'設備歷程');
   const h2=['廠區','部門','PO號','廠商','設備型號','幣別','成交金額(原幣)','成交金額(台幣)','付款','貨代','批次','ETD','ETA','發票日','發票號','實際到廠日','到廠數量','期別','比例%','付款金額(原幣)','請款方式','請款時間','付款日'];
