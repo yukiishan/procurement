@@ -1829,9 +1829,11 @@ function renderCal(){
         const stg=p.stageLabel||`P${pi+1}`;
         const pctVal=p.pct||'';
         const cur=r.currency||'NTD';
-        const amt=p.payAmt||p.payAmtManual||'';
+        // payAmt 可能是 0（falsy），需用 !== '' !== null !== undefined 判斷
+        const amtRaw=(p.payAmt!==''&&p.payAmt!==null&&p.payAmt!==undefined)?p.payAmt:(p.payAmtManual!==''&&p.payAmtManual!==null&&p.payAmtManual!==undefined?p.payAmtManual:'');
+        const amtClean=String(amtRaw).replace(/,/g,''); // 去千分位逗號，統一存純數字
         const inv=p.invoice||'';
-        const lbl=`(PAY)${batchLabel}/${stg}/${pctVal}/${cur}/${r.vendor}/${r.model}/${inv}/${amt}`;
+        const lbl=`(PAY)${batchLabel}/${stg}/${pctVal}/${cur}/${r.vendor}/${r.model}/${inv}/${amtClean}`;
         if(!evs[p.payDate])evs[p.payDate]=[];
         evs[p.payDate].push({cls:'evpay',lbl});
       });

@@ -2049,19 +2049,21 @@ function renderCal(){
       const qty=Number(d.qty)||Number(r.qty)||1;
       const lbl=`${r.pr}-${di+1}/${r.vendor}/${r.model}/${qty}`;
       if(d.etd){if(!evs[d.etd])evs[d.etd]=[];evs[d.etd].push({cls:'evetd',lbl:`(ETD)${lbl}`});}
-      if(d.eta){if(!evs[d.eta])evs[d.eta]=[];const c=fc==='L'?'evetaL':fc==='F'?'evetaF':'evetaO';evs[d.eta].push({cls:c,lbl:`(ETA)${lbl}`});
-      // Payment events
+      if(d.eta){if(!evs[d.eta])evs[d.eta]=[];const c=fc==='L'?'evetaL':fc==='F'?'evetaF':'evetaO';evs[d.eta].push({cls:c,lbl:`(ETA)${lbl}`});}
+      // Payment events（獨立於 eta 之外，有無 eta 都要抓）
       (d.payments||[]).forEach((p,pi)=>{
         if(!p.payDate)return;
         const stg=p.stageLabel||`P${pi+1}`;
         const pctVal=p.pct||'';
         const cur=r.currency||'NTD';
-        const amt=p.payAmt||'';
+        // payAmt 可能是 0（falsy），需用嚴格判斷
+        const amtRaw=(p.payAmt!==''&&p.payAmt!==null&&p.payAmt!==undefined)?p.payAmt:(p.payAmtManual!==''&&p.payAmtManual!==null&&p.payAmtManual!==undefined?p.payAmtManual:'');
+        const amtClean=String(amtRaw).replace(/,/g,'');
         const inv=p.invoice||'';
-        const payLbl=`(PAY)${r.pr}-${di+1}/${stg}/${pctVal}/${cur}/${r.vendor}/${r.model}/${inv}/${amt}`;
+        const payLbl=`(PAY)${r.pr}-${di+1}/${stg}/${pctVal}/${cur}/${r.vendor}/${r.model}/${inv}/${amtClean}`;
         if(!evs[p.payDate])evs[p.payDate]=[];
         evs[p.payDate].push({cls:'evpay',lbl:payLbl});
-      });}
+      });
     });
   });
   const fd=new Date(y,m-1,1),ld=new Date(y,m,0);
