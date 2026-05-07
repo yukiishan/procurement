@@ -1433,6 +1433,7 @@ async function manualSync(){
     if(ok){
       migrateModelsFromOpts();
       refreshSels();
+      bindManualFlags();
       renderCards();renderPayCards();renderCal();renderStatsPreview();
       toast('✓ 資料已同步');
     }else{
@@ -1576,6 +1577,18 @@ function saveTextareaHMob(field, el){
   data[idx][field]=h;
 }
 
+function bindManualFlags(){
+  const watchIds=['f-vendor','f-agent','f-forwarder','f-name','f-country',
+                  'f-city','f-currency','f-pctD','f-pctM','f-pctA',
+                  'f-shipMode','f-rigging','f-noCert'];
+  watchIds.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    const ev=el.tagName==='SELECT'?'change':'input';
+    el.addEventListener(ev,function(){this.dataset.manual='1';},{passive:true});
+  });
+}
+
 function getPayCodeData(code){
   if(!code)return null;
   // Exact match - /08, J04, T1 etc. used as-is
@@ -1586,16 +1599,16 @@ function getPayCodeData(code){
   return typeof raw==='object'?raw:null;
 }
 
-function autoFillPayCodeMob(code){
+function autoFillPayCodeMob(code, force=false){
   if(!code)return;
   const cd=getPayCodeData(code);
   if(!cd)return;
   const elD=document.getElementById('f-pctD');
   const elM=document.getElementById('f-pctM');
   const elA=document.getElementById('f-pctA');
-  if(elD&&cd.pctD!==undefined)elD.value=cd.pctD;
-  if(elM&&cd.pctM!==undefined)elM.value=cd.pctM;
-  if(elA&&cd.pctA!==undefined)elA.value=cd.pctA;
+  if(elD&&(force||elD.dataset.manual!=='1')&&cd.pctD!==undefined)elD.value=cd.pctD;
+  if(elM&&(force||elM.dataset.manual!=='1')&&cd.pctM!==undefined)elM.value=cd.pctM;
+  if(elA&&(force||elA.dataset.manual!=='1')&&cd.pctA!==undefined)elA.value=cd.pctA;
 
   // 根據新比例依順序分配各期 stageLabel
   function defaultStage(pi){
@@ -2162,35 +2175,33 @@ function calcNTD(){
 function recalcAll(){calcNTD();detDeliveries.forEach((d,ci)=>d.payments.forEach((p,pi)=>recalcPayRow(ci,pi)));}
 function checkQty(){}
 
-function autoFillModel(){
+function autoFillModel(force=false){
   const m=document.getElementById('f-model').value;
-  // Find model in models array
-  const md=models.find(x=>x.model===m);
+  const md=models.find(x=>x.model===m||( x.model&&String(x.model).toUpperCase()===String(m).toUpperCase()));
   if(md){
     const fields={name:'f-name',country:'f-country',city:'f-city',rigging:'f-rigging',noCert:'f-noCert',currency:'f-currency'};
     Object.entries(fields).forEach(([k,id])=>{
       const el=document.getElementById(id);
-      if(el&&md[k]!==undefined&&md[k]!=='')el.value=md[k];
+      if(el&&(force||el.dataset.manual!=='1')&&md[k]!==undefined&&md[k]!=='')el.value=md[k];
     });
   } else {
-    // Fallback to modelNames dict
     const n=modelNames[m];
     const el=document.getElementById('f-name');
-    if(el&&n!==undefined)el.value=n;
+    if(el&&(force||el.dataset.manual!=='1')&&n!==undefined)el.value=n;
   }
 }
 
-function autoFillVendor(code){
+function autoFillVendor(code, force=false){
   if(!code||code.length<2)return;
   const v=vendors.find(x=>x.vendorCode&&x.vendorCode.toLowerCase()===code.toLowerCase());
   if(!v)return;
   const fields={vendor:'f-vendor',agent:'f-agent',shipMode:'f-shipMode',forwarder:'f-forwarder',payment:'f-payment'};
   Object.entries(fields).forEach(([k,id])=>{
     const el=document.getElementById(id);
-    if(el&&v[k]!==undefined&&v[k]!=='')el.value=v[k];
+    if(el&&(force||el.dataset.manual!=='1')&&v[k]!==undefined&&v[k]!=='')el.value=v[k];
   });
-  // 帶入付款代號後，自動連動填入付款比例
-  if(v.payment)autoFillPayCodeMob(v.payment);
+  const epay=document.getElementById('f-payment');
+  if(v.payment&&(force||!epay||epay.dataset.manual!=='1'))autoFillPayCodeMob(v.payment,force);
 }
 
 function pickVendorMob(code){pickVendor(code);}
@@ -2264,13 +2275,22 @@ function renderModelPickerListMob(){
 
 function pickModelMob(modelCode){
   const el=document.getElementById('f-model');
-  if(el)el.value=modelCode;
-  autoFillModel();
+  if(el){
+    el.value=modelCode;
+    ['f-name','f-country','f-city','f-currency','f-rigging','f-noCert']
+      .forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});
+    autoFillModel(true);
+  }
 }
 
 function pickVendor(code){
   const el=document.getElementById('f-vendorCode');
-  if(el){el.value=code;autoFillVendor(code);}
+  if(el){
+    el.value=code;
+    ['f-vendor','f-agent','f-shipMode','f-forwarder','f-payment','f-pctD','f-pctM','f-pctA']
+      .forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});
+    autoFillVendor(code, true);
+  }
 }
 
 function refreshSels(){
@@ -2302,6 +2322,10 @@ function openDet(idOrNew){
   ['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'].forEach(f=>{
     const el=document.getElementById('f-'+f);if(el)el.value=r[f]||'';
   });
+  // 清除所有欄位的手動旗標
+  ['f-vendor','f-agent','f-forwarder','f-name','f-country','f-city','f-currency',
+   'f-pctD','f-pctM','f-pctA','f-shipMode','f-rigging','f-noCert','f-payment']
+    .forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});
   // Restore custom textarea heights
   const _elR=document.getElementById('f-remark');if(_elR&&r.remarkH)_elR.style.height=r.remarkH+'px';
   const _elS=document.getElementById('f-signNote');if(_elS&&r.signNoteH)_elS.style.height=r.signNoteH+'px';

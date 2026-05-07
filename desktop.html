@@ -1052,7 +1052,7 @@ tbody tr{will-change:auto;contain:layout style}
         <!-- Row 7: 付款 貨代 運送方式 吊掛 -->
         <div class="fg"><label>付款代號</label>
           <div style="display:flex;gap:4px">
-            <input id="f-payment" placeholder="如 J04" style="flex:1;text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s);autoFillPayCodeDesk(this.value)">
+            <input id="f-payment" placeholder="如 J04" style="flex:1;text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s);autoFillPayCodeDesk(this.value,true)" onchange="['f-pctD','f-pctM','f-pctA'].forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});autoFillPayCodeDesk(this.value,true)">
             <button class="btn xs" type="button" onclick="openPayCodePickerDesk()">選擇</button>
           </div>
         </div>
@@ -1285,6 +1285,19 @@ function _handleTokenExpiry(){
   }, 300);
 }
 
+// 使用者手動修改欄位時，標記 data-manual="1"
+function bindManualFlags(){
+  const watchIds=['f-vendor','f-agent','f-forwarder','f-name','f-country',
+                  'f-city','f-currency','f-pctD','f-pctM','f-pctA',
+                  'f-shipMode','f-rigging','f-noCert'];
+  watchIds.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    const ev=el.tagName==='SELECT'?'change':'input';
+    el.addEventListener(ev,function(){this.dataset.manual='1';},{passive:true});
+  });
+}
+
 // 本地快取寫入（備援）
 function localCache(key,val){try{localStorage.setItem('pv6_'+key,JSON.stringify(val));}catch(e){}}
 function localRead(key){try{const s=localStorage.getItem('pv6_'+key);return s?JSON.parse(s):null;}catch(e){return null;}}
@@ -1428,42 +1441,50 @@ function refreshSels(){
   if(cs){const v=cs.value;cs.innerHTML=Object.keys(rates).filter(k=>k!=='NTD').map(k=>`<option>${k}</option>`).join('')+'<option>NTD</option>';cs.value=v;}
 }
 
-// FIX 1: autoFillName always updates (no guard), triggered on every change
-function autoFillModelDesk(){
+function autoFillModelDesk(force=false){
   const m=document.getElementById('f-model').value;
   if(!m)return;
-  // Search in models array first
   const md=models.find(x=>x.model!=null&&String(x.model).toUpperCase()===String(m).toUpperCase());
   if(md){
-    // Auto-fill text fields
     const fld={name:'f-name',rigging:'f-rigging',noCert:'f-noCert'};
     Object.entries(fld).forEach(([k,id])=>{
       const el=document.getElementById(id);
-      if(el&&md[k]!==undefined&&md[k]!=='')el.value=md[k];
+      if(el&&(force||el.dataset.manual!=='1')&&md[k]!==undefined&&md[k]!=='')el.value=md[k];
     });
-    // Auto-fill country/city/currency inputs
-    if(md.country){const ec=document.getElementById('f-country');if(ec)ec.value=md.country;}
-    if(md.city){const eci=document.getElementById('f-city');if(eci)eci.value=md.city;}
-    if(md.currency){const ecur=document.getElementById('f-currency');if(ecur)ecur.value=md.currency;}
+    const geoFld={country:'f-country',city:'f-city',currency:'f-currency'};
+    Object.entries(geoFld).forEach(([k,id])=>{
+      const el=document.getElementById(id);
+      if(el&&(force||el.dataset.manual!=='1')&&md[k]!==undefined&&md[k]!=='')el.value=md[k];
+    });
   } else if(modelNames[m]){
-    // Fallback: modelNames dict
     const el=document.getElementById('f-name');
-    if(el)el.value=modelNames[m];
+    if(el&&(force||el.dataset.manual!=='1'))el.value=modelNames[m];
   }
 }
 
-function autoFillVendorDesk(code){
+function autoFillVendorDesk(code, force=false){
   if(!code||code.length<1)return;
   const v=vendors.find(x=>x.vendorCode!=null&&String(x.vendorCode).toUpperCase()===String(code).toUpperCase());
   if(!v)return;
   const fields={vendor:'f-vendor',agent:'f-agent',shipMode:'f-shipMode',forwarder:'f-forwarder',payment:'f-payment'};
   Object.entries(fields).forEach(([k,id])=>{
     const el=document.getElementById(id);
-    if(el&&v[k]!==undefined&&v[k]!=='')el.value=v[k];
+    if(!el)return;
+    // force=true（使用者主動選廠商）或未手動改過才帶入
+    if((force||el.dataset.manual!=='1')&&v[k]!==undefined&&v[k]!==''){
+      el.value=v[k];
+    }
   });
-  if(v.shipMode){bSel('f-shipMode','shipMode',true);document.getElementById('f-shipMode').value=v.shipMode;}
-  // 帶入付款代號後，自動連動填入付款比例
-  if(v.payment)autoFillPayCodeDesk(v.payment);
+  if(v.shipMode){
+    const eSM=document.getElementById('f-shipMode');
+    if(force||!eSM||eSM.dataset.manual!=='1'){
+      bSel('f-shipMode','shipMode',true);
+      if(eSM)eSM.value=v.shipMode;
+    }
+  }
+  // 付款代號連動比例（只在 payment 欄未手動改過、或 force 時）
+  const epay=document.getElementById('f-payment');
+  if(v.payment&&(force||!epay||epay.dataset.manual!=='1'))autoFillPayCodeDesk(v.payment,force);
 }
 
 function renderVendorPickerList(){
@@ -1510,8 +1531,13 @@ function openModelPickerDesk(){
 
 function pickModelDesk(modelCode){
   const el=document.getElementById('f-model');
-  if(el)el.value=modelCode;
-  autoFillModelDesk();
+  if(el){
+    el.value=modelCode;
+    // picker 主動選擇：清除型號相關欄位的手動旗標，強制帶入
+    ['f-name','f-country','f-city','f-currency','f-rigging','f-noCert']
+      .forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});
+    autoFillModelDesk(true);
+  }
 }
 
 function openVendorPickerDesk(){
@@ -1538,7 +1564,13 @@ function openVendorPickerDesk(){
 
 function pickVendorDesk(code){
   const el=document.getElementById('f-vendorCode');
-  if(el){el.value=code;autoFillVendorDesk(code);}
+  if(el){
+    el.value=code;
+    // picker 主動選擇：清除所有廠商相關欄位的手動旗標，強制帶入
+    ['f-vendor','f-agent','f-shipMode','f-forwarder','f-payment','f-pctD','f-pctM','f-pctA']
+      .forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});
+    autoFillVendorDesk(code, true);
+  }
 }
 
 function autoFillName(){
@@ -2081,6 +2113,10 @@ function openDet(idOrNew){
   ['plant','dept','pr','vendorCode','vendor','agent','model','name','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'].forEach(f=>{
     const el=document.getElementById('f-'+f);if(el)el.value=r[f]||'';
   });
+  // 清除所有欄位的手動旗標（開啟記錄時不算手動修改）
+  ['f-vendor','f-agent','f-forwarder','f-name','f-country','f-city','f-currency',
+   'f-pctD','f-pctM','f-pctA','f-shipMode','f-rigging','f-noCert','f-payment']
+    .forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});
   // Restore custom textarea heights
   const elR=document.getElementById('f-remark');if(elR&&r.remarkH)elR.style.height=r.remarkH+'px';
   const elS=document.getElementById('f-signNote');if(elS&&r.signNoteH)elS.style.height=r.signNoteH+'px';
@@ -3012,6 +3048,7 @@ window.addEventListener('resize',()=>{
     document.getElementById('mobNav').style.display='none';
     document.getElementById('mobFab').style.display='none';
     renderList();
+  bindManualFlags();
   }
 });
 
@@ -3438,16 +3475,16 @@ function saveTextareaH(field, el){
   data[idx][field]=h;
 }
 
-function autoFillPayCodeDesk(code){
+function autoFillPayCodeDesk(code, force=false){
   if(!code)return;
   const cd=getPayCodeData(code);
   if(!cd)return;
   const elD=document.getElementById('f-pctD');
   const elM=document.getElementById('f-pctM');
   const elA=document.getElementById('f-pctA');
-  if(elD)elD.value=cd.pctD!==undefined?cd.pctD:elD.value;
-  if(elM)elM.value=cd.pctM!==undefined?cd.pctM:elM.value;
-  if(elA)elA.value=cd.pctA!==undefined?cd.pctA:elA.value;
+  if(elD&&(force||elD.dataset.manual!=='1'))elD.value=cd.pctD!==undefined?cd.pctD:elD.value;
+  if(elM&&(force||elM.dataset.manual!=='1'))elM.value=cd.pctM!==undefined?cd.pctM:elM.value;
+  if(elA&&(force||elA.dataset.manual!=='1'))elA.value=cd.pctA!==undefined?cd.pctA:elA.value;
 
   // 根據新比例依順序分配各期 stageLabel
   function defaultStage(pi){
