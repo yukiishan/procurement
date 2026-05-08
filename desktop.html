@@ -1833,7 +1833,7 @@ function renderCal(){
         const amtRaw=(p.payAmt!==''&&p.payAmt!==null&&p.payAmt!==undefined)?p.payAmt:(p.payAmtManual!==''&&p.payAmtManual!==null&&p.payAmtManual!==undefined?p.payAmtManual:'');
         const amtClean=String(amtRaw).replace(/,/g,''); // 去千分位逗號，統一存純數字
         const inv=p.invoice||'';
-        const lbl=`(PAY)${batchLabel}/${stg}/${pctVal}/${cur}/${r.vendor}/${r.model}/${inv}/${amtClean}`;
+        const lbl=`(PAY)${batchLabel}§${stg}§${pctVal}§${cur}§${r.vendor}§${r.model}§${inv}§${amtClean}`;
         if(!evs[p.payDate])evs[p.payDate]=[];
         evs[p.payDate].push({cls:'evpay',lbl});
       });
@@ -3357,7 +3357,7 @@ function showDayPopup(ds, evList, holName){
       if(ev.cls==='evpay'){
         // Payment event: (PAY)batchLabel/stageLabel/vendor/model/invoice/amount
         const raw=ev.lbl.replace(/^\(PAY\)/,'');
-        const pts=raw.split('/');
+        const pts=raw.split('§');
         const pr=pts[0]||'';const stg=pts[1]||'';const pct=pts[2]||'';const cur=pts[3]||'NTD';const vendor=pts[4]||'';const model=pts[5]||'';const inv=pts[6]||'';const amtRaw=pts[7]||'';
         const amtNum=Number(String(amtRaw).replace(/,/g,''));
         const amtStr=amtNum?`${cur} ${amtNum.toLocaleString()}`:'';
