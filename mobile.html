@@ -1870,7 +1870,7 @@ function renderCards(){
       <div class="rec-card-bottom">
         <div class="rec-card-amount">${amt}</div>
         <div class="rec-card-tags">
-          ${deptTag(r.dept)}
+          ${r.podate?`<span class="tag tag-cur">${fD(r.podate)}</span>`:''}
           ${etd?`<span class="tag tag-cur">ETD ${fD(etd)}</span>`:''}
         </div>
       </div>
