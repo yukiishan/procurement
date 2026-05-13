@@ -1286,11 +1286,9 @@ function _handleTokenExpiry(){
   sessionStorage.removeItem('pv6_login_time'); // 清除登入時間
   // 顯示登入畫面、隱藏桌機主介面
   const ls = document.getElementById('ls');
-  if(ls){ ls.style.cssText='display:flex!important'; } // !important 確保蓋過任何其他樣式
-  // 隱藏桌機介面（topbar, toolbar, pageArea 等）
-  document.querySelectorAll('.topbar,.toolbar,#pageArea,[id^="tab-"]').forEach(el=>{
-    el.style.display='none';
-  });
+  if(ls){ ls.style.cssText='display:flex!important'; } // !important + z-index:1000 蓋在最上層
+  // 注意：不用 display:none 隱藏 topbar/toolbar，避免重新登入後要還原
+  // ls 的 z-index:1000 已足夠蓋住所有下層元素
   const pw = document.getElementById('pwInput');
   const err = document.getElementById('lerr');
   if(err) err.textContent = '登入已過期，請重新登入';
@@ -2680,6 +2678,10 @@ async function doLogin(){
       sessionStorage.setItem('pv6_login_time', String(Date.now())); // 記錄登入時間
       startTokenHeartbeat(); // 啟動計時器
       document.getElementById('ls').style.display='none';
+      // 還原被 _handleTokenExpiry 隱藏的元素
+      document.querySelectorAll('.topbar,.toolbar,#pageArea,[id^="tab-"]').forEach(el=>{
+        el.style.display='';
+      });
       startApp().catch(e=>{
         console.error('login startApp error:',e);
         document.getElementById('ls').style.display='flex';
