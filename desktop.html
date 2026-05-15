@@ -1258,6 +1258,17 @@ const SESSION_TTL_MS = 4 * 60 * 60 * 1000; // 4 小時（毫秒）
 let _expiryHandled = false;
 let _heartbeatTimer = null;
 
+function _checkSessionExpiry(){
+  if(!_TOKEN || !sessionStorage.getItem(SESSION_KEY)) return;
+  const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
+  if(!loginTime) return;
+  const elapsed = Date.now() - loginTime;
+  if(elapsed >= SESSION_TTL_MS){
+    console.log('[Auth] 登入逾時，自動登出');
+    _handleTokenExpiry();
+  }
+}
+
 function startTokenHeartbeat(){
   stopTokenHeartbeat();
   const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
@@ -1266,14 +1277,17 @@ function startTokenHeartbeat(){
   const remaining = SESSION_TTL_MS - elapsed;
   if(remaining <= 0){ _handleTokenExpiry(); return; }
   console.log('[Auth] 將在', Math.round(remaining/60000), '分鐘後自動登出');
-  // 精確計時：剩餘時間到時直接登出，不用輪詢
-  _heartbeatTimer = setTimeout(() => {
-    if(!_TOKEN || !sessionStorage.getItem(SESSION_KEY)) return;
-    _handleTokenExpiry();
-  }, remaining);
+  // setInterval 每分鐘檢查一次（setTimeout 在瀏覽器背景/睡眠時會被節流）
+  _heartbeatTimer = setInterval(_checkSessionExpiry, 60 * 1000);
+  // 分頁重新可見時立即檢查（電腦從睡眠喚醒時補漏）
+  document.addEventListener('visibilitychange', _onVisibilityChange);
 }
 function stopTokenHeartbeat(){
-  if(_heartbeatTimer){ clearTimeout(_heartbeatTimer); _heartbeatTimer=null; }
+  if(_heartbeatTimer){ clearInterval(_heartbeatTimer); _heartbeatTimer=null; }
+  document.removeEventListener('visibilitychange', _onVisibilityChange);
+}
+function _onVisibilityChange(){
+  if(document.visibilityState === 'visible') _checkSessionExpiry();
 }
 
 function _handleTokenExpiry(){

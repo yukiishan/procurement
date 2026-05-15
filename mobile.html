@@ -1236,6 +1236,15 @@ const SESSION_TTL_MS = 4 * 60 * 60 * 1000;
 let _expiryHandled = false;
 let _heartbeatTimer = null;
 
+function _checkSessionExpiry(){
+  if(!_TOKEN || !sessionStorage.getItem(SESSION_KEY)) return;
+  const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
+  if(!loginTime) return;
+  if(Date.now() - loginTime >= SESSION_TTL_MS){
+    _handleTokenExpiry();
+  }
+}
+
 function startTokenHeartbeat(){
   stopTokenHeartbeat();
   const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
@@ -1243,14 +1252,17 @@ function startTokenHeartbeat(){
   const elapsed = Date.now() - loginTime;
   const remaining = SESSION_TTL_MS - elapsed;
   if(remaining <= 0){ _handleTokenExpiry(); return; }
-  // 精確計時：剩餘時間到時直接登出
-  _heartbeatTimer = setTimeout(() => {
-    if(!_TOKEN || !sessionStorage.getItem(SESSION_KEY)) return;
-    _handleTokenExpiry();
-  }, remaining);
+  // setInterval 每分鐘檢查（setTimeout 在背景/睡眠時會被節流）
+  _heartbeatTimer = setInterval(_checkSessionExpiry, 60 * 1000);
+  // 分頁重新可見時立即檢查
+  document.addEventListener('visibilitychange', _onVisibilityChange);
 }
 function stopTokenHeartbeat(){
-  if(_heartbeatTimer){ clearTimeout(_heartbeatTimer); _heartbeatTimer=null; }
+  if(_heartbeatTimer){ clearInterval(_heartbeatTimer); _heartbeatTimer=null; }
+  document.removeEventListener('visibilitychange', _onVisibilityChange);
+}
+function _onVisibilityChange(){
+  if(document.visibilityState === 'visible') _checkSessionExpiry();
 }
 
 function _handleTokenExpiry(){
