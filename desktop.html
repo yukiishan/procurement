@@ -1263,6 +1263,12 @@ function _checkSessionExpiry(){
   const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
   if(!loginTime) return;
   const elapsed = Date.now() - loginTime;
+  const remaining = SESSION_TTL_MS - elapsed;
+  // 每分鐘顯示剩餘時間，確認計時器正常運作
+  const nowStr = new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  if(remaining > 0){
+    console.log('[Auth]', nowStr, '剩餘', Math.ceil(remaining/60000), '分鐘');
+  }
   if(elapsed >= SESSION_TTL_MS){
     console.log('[Auth] 登入逾時，自動登出');
     _handleTokenExpiry();
@@ -1276,10 +1282,12 @@ function startTokenHeartbeat(){
   const elapsed = Date.now() - loginTime;
   const remaining = SESSION_TTL_MS - elapsed;
   if(remaining <= 0){ _handleTokenExpiry(); return; }
-  console.log('[Auth] 將在', Math.round(remaining/60000), '分鐘後自動登出');
-  // setInterval 每分鐘檢查一次（setTimeout 在瀏覽器背景/睡眠時會被節流）
+  const loginStr = new Date(loginTime).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  const expireStr = new Date(loginTime + SESSION_TTL_MS).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  console.log('[Auth] 登入時間', loginStr, '→ 預計登出', expireStr, '（剩', Math.ceil(remaining/60000), '分鐘）');
+  // setInterval 每分鐘核對系統時間（不依賴 setTimeout 計時，避免睡眠節流）
   _heartbeatTimer = setInterval(_checkSessionExpiry, 60 * 1000);
-  // 分頁重新可見時立即檢查（電腦從睡眠喚醒時補漏）
+  // 分頁重新可見時立即檢查（電腦從睡眠喚醒補漏）
   document.addEventListener('visibilitychange', _onVisibilityChange);
 }
 function stopTokenHeartbeat(){

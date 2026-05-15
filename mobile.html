@@ -1240,7 +1240,9 @@ function _checkSessionExpiry(){
   if(!_TOKEN || !sessionStorage.getItem(SESSION_KEY)) return;
   const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
   if(!loginTime) return;
-  if(Date.now() - loginTime >= SESSION_TTL_MS){
+  const elapsed = Date.now() - loginTime;
+  const remaining = SESSION_TTL_MS - elapsed;
+  if(elapsed >= SESSION_TTL_MS){
     _handleTokenExpiry();
   }
 }
@@ -1252,7 +1254,7 @@ function startTokenHeartbeat(){
   const elapsed = Date.now() - loginTime;
   const remaining = SESSION_TTL_MS - elapsed;
   if(remaining <= 0){ _handleTokenExpiry(); return; }
-  // setInterval 每分鐘檢查（setTimeout 在背景/睡眠時會被節流）
+  // setInterval 每分鐘核對系統時間（不依賴 setTimeout，避免睡眠節流）
   _heartbeatTimer = setInterval(_checkSessionExpiry, 60 * 1000);
   // 分頁重新可見時立即檢查
   document.addEventListener('visibilitychange', _onVisibilityChange);
