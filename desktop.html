@@ -72,6 +72,12 @@ html{height:100%}body{font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif
 .mlbl{font-size:9px;color:var(--tx3);margin-bottom:2px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 .mval{font-size:17px;font-weight:700}.msub{font-size:10px;color:var(--tx3);margin-top:2px}
 .twrap{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rl);overflow:auto;height:100%;box-sizing:border-box;contain:strict}
+/* ── 可排序表頭 ── */
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+th.sortable:hover{background:var(--sf3)}
+th.sortable::after{content:' ⇅';opacity:.3;font-size:9px}
+th.sort-asc::after{content:' ↑';opacity:1;color:var(--blue)}
+th.sort-desc::after{content:' ↓';opacity:1;color:var(--blue)}
 table{width:100%;border-collapse:collapse;font-size:11px}
 thead th{padding:6px 7px;text-align:left;font-size:10px;font-weight:700;color:var(--tx2);background:var(--sf2);border-bottom:1px solid var(--bd);white-space:nowrap;position:sticky;top:0;z-index:2;letter-spacing:.03em}
 tbody tr{border-bottom:1px solid var(--bd)}
@@ -742,10 +748,23 @@ tbody tr{will-change:auto;contain:layout style}
   <!-- Table area (flex:1 scrollable) -->
   <div class="content" style="padding:0">
     <div class="twrap" style="border-radius:0;border-left:0;border-right:0;border-bottom:0"><table>
-      <thead><tr>
-        <th>廠區</th><th>PO日期</th><th>PO號</th><th>廠商</th><th>代理商</th><th>設備型號</th><th>設備名稱</th>
-        <th>幣別</th><th>報價(原幣)</th><th>成交金額(原幣)</th>
-        <th>ETD</th><th>ETA</th><th>狀態</th><th>LT</th><th>無產證</th><th>付款</th><th>貨代</th><th>國家</th><th>產地</th><th>操作</th>
+      <thead id="list-thead"><tr>
+        <th class="sortable" data-col="plant" onclick="_thSort('tab-list','plant',renderList)">廠區</th>
+        <th class="sortable" data-col="podate" onclick="_thSort('tab-list','podate',renderList)">PO日期</th>
+        <th class="sortable" data-col="pr" onclick="_thSort('tab-list','pr',renderList)">PO號</th>
+        <th class="sortable" data-col="vendor" onclick="_thSort('tab-list','vendor',renderList)">廠商</th>
+        <th>代理商</th>
+        <th class="sortable" data-col="model" onclick="_thSort('tab-list','model',renderList)">設備型號</th>
+        <th class="sortable" data-col="name" onclick="_thSort('tab-list','name',renderList)">設備名稱</th>
+        <th>幣別</th>
+        <th class="sortable" data-col="quote" onclick="_thSort('tab-list','quote',renderList)">報價(原幣)</th>
+        <th class="sortable" data-col="amount" onclick="_thSort('tab-list','amount',renderList)">成交金額(原幣)</th>
+        <th class="sortable" data-col="etd" onclick="_thSort('tab-list','etd',renderList)">ETD</th>
+        <th class="sortable" data-col="eta" onclick="_thSort('tab-list','eta',renderList)">ETA</th>
+        <th class="sortable" data-col="status" onclick="_thSort('tab-list','status',renderList)">狀態</th>
+        <th>LT</th><th>無產證</th><th>付款</th><th>貨代</th>
+        <th class="sortable" data-col="country" onclick="_thSort('tab-list','country',renderList)">國家</th>
+        <th>產地</th><th>操作</th>
       </tr></thead>
       <tbody id="tb"></tbody>
     </table></div>
@@ -768,10 +787,15 @@ tbody tr{will-change:auto;contain:layout style}
   </div>
   <div class="content" style="padding:0"><div class="twrap" style="height:100%;border-radius:0;border-left:0;border-right:0;border-bottom:0"><table>
     <thead><tr>
-      <th>PO號</th><th>廠商</th><th>設備型號</th>
-      <th>幣別</th><th>成交金額(原幣)</th><th>付款</th>
-      <th>發票日</th><th>發票號</th><th>實際到廠日</th><th>批/數量</th>
-      <th>期別</th><th>比例%</th><th>付款金額(原幣)</th><th>請款方式</th><th>憑證時間</th><th>請款時間</th><th>付款日</th>
+      <th class="sortable" data-col="pr" onclick="_thSort('tab-payment','pr',renderPay)">PO號</th>
+      <th class="sortable" data-col="vendor" onclick="_thSort('tab-payment','vendor',renderPay)">廠商</th>
+      <th class="sortable" data-col="model" onclick="_thSort('tab-payment','model',renderPay)">設備型號</th>
+      <th>幣別</th>
+      <th class="sortable" data-col="amount" onclick="_thSort('tab-payment','amount',renderPay)">成交金額(原幣)</th>
+      <th>付款</th>
+      <th class="sortable" data-col="invoiceDate" onclick="_thSort('tab-payment','invoiceDate',renderPay)">發票日</th>
+      <th>發票號</th><th>實際到廠日</th><th>批/數量</th><th>期別</th><th>比例%</th><th>付款金額(原幣)</th><th>請款方式</th><th>憑證時間</th><th>請款時間</th>
+      <th class="sortable" data-col="payDate" onclick="_thSort('tab-payment','payDate',renderPay)">付款日</th>
       <th>備註</th><th>付款狀態</th><th>操作</th>
     </tr></thead>
     <tbody id="ptb"></tbody>
@@ -786,7 +810,7 @@ tbody tr{will-change:auto;contain:layout style}
   </div>
   <div class="content" style="padding:0">
     <div class="twrap" style="height:100%;border-radius:0;border-left:0;border-right:0;border-bottom:0"><table>
-      <thead><tr><th>付款代號</th><th style="text-align:center;width:60px">訂金%</th><th style="text-align:center;width:60px">交機%</th><th style="text-align:center;width:60px">驗收%</th><th>簡要備註</th><th>操作</th></tr></thead>
+      <thead id="paycode-thead"><tr><th class="sortable" data-col="code" onclick="_thSort('tab-paycode','code',()=>renderCodeTab('payCode'))">付款代號</th><th style="text-align:center;width:60px">訂金%</th><th style="text-align:center;width:60px">交機%</th><th style="text-align:center;width:60px">驗收%</th><th>簡要備註</th><th>操作</th></tr></thead>
       <tbody id="paycodeBody"></tbody>
     </table></div>
   </div>
@@ -799,7 +823,7 @@ tbody tr{will-change:auto;contain:layout style}
   </div>
   <div class="content" style="padding:0">
     <div class="twrap" style="height:100%;border-radius:0;border-left:0;border-right:0;border-bottom:0"><table>
-      <thead><tr><th>貨代代號</th><th>運送方式</th><th>簡要備註</th><th>操作</th></tr></thead>
+      <thead id="fwdcode-thead"><tr><th class="sortable" data-col="code" onclick="_thSort('tab-fwdcode','code',()=>renderCodeTab('fwdCode'))">貨代代號</th><th class="sortable" data-col="shipMode" onclick="_thSort('tab-fwdcode','shipMode',()=>renderCodeTab('fwdCode'))">運送方式</th><th>簡要備註</th><th>操作</th></tr></thead>
       <tbody id="fwdcodeBody"></tbody>
     </table></div>
   </div>
@@ -855,7 +879,7 @@ tbody tr{will-change:auto;contain:layout style}
   </div>
   <div class="content" style="padding:0">
     <div class="twrap" style="height:100%;border-radius:0;border-left:0;border-right:0;border-bottom:0"><table>
-      <thead><tr><th>廠商代號</th><th>廠商名稱</th><th>代理商</th><th>國家</th><th>運送方式</th><th>付款</th><th>貨代</th><th>聯絡人</th><th>電話</th><th>操作</th></tr></thead>
+      <thead id="vendors-thead"><tr><th class="sortable" data-col="vendorCode" onclick="_thSort('tab-vendors','vendorCode',renderVendorTab)">廠商代號</th><th class="sortable" data-col="vendor" onclick="_thSort('tab-vendors','vendor',renderVendorTab)">廠商名稱</th><th class="sortable" data-col="agent" onclick="_thSort('tab-vendors','agent',renderVendorTab)">代理商</th><th class="sortable" data-col="country" onclick="_thSort('tab-vendors','country',renderVendorTab)">國家</th><th>運送方式</th><th>付款</th><th>貨代</th><th>聯絡人</th><th>電話</th><th>操作</th></tr></thead>
       <tbody id="vendorTb"></tbody>
     </table></div>
   </div>
@@ -869,7 +893,7 @@ tbody tr{will-change:auto;contain:layout style}
   </div>
   <div class="content" style="padding:0">
     <div class="twrap" style="height:100%;border-radius:0;border-left:0;border-right:0;border-bottom:0"><table>
-      <thead><tr><th>設備型號</th><th>設備名稱</th><th>國家</th><th>產地城市</th><th>吊掛</th><th>無產證</th><th>備註</th><th>操作</th></tr></thead>
+      <thead id="models-thead"><tr><th class="sortable" data-col="model" onclick="_thSort('tab-models','model',renderModelTab)">設備型號</th><th class="sortable" data-col="name" onclick="_thSort('tab-models','name',renderModelTab)">設備名稱</th><th class="sortable" data-col="country" onclick="_thSort('tab-models','country',renderModelTab)">國家</th><th class="sortable" data-col="city" onclick="_thSort('tab-models','city',renderModelTab)">產地城市</th><th>吊掛</th><th>無產證</th><th>備註</th><th>操作</th></tr></thead>
       <tbody id="modelTb"></tbody>
     </table></div>
   </div>
@@ -1150,6 +1174,38 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxEwmi0ZihkIAbutNJ_hA9l
 // localStorage fallback key (離線備援用)
 const SK='pv6_local';
 let data=[],nid=1,eid=null,curTab='list',curOptCat='plant';
+// ── 排序狀態 ──
+const _sortState = {}; // { tableId: { col, dir } }
+function _thSort(tableId, col, renderFn){
+  const s = _sortState[tableId] || {col:null, dir:'asc'};
+  if(s.col === col){ s.dir = s.dir==='asc'?'desc':'asc'; }
+  else { s.col = col; s.dir = 'asc'; }
+  _sortState[tableId] = s;
+  // 更新表頭箭頭
+  document.querySelectorAll(`#${tableId} thead th.sortable`).forEach(th=>{
+    th.classList.remove('sort-asc','sort-desc');
+    if(th.dataset.col === col) th.classList.add(s.dir==='asc'?'sort-asc':'sort-desc');
+  });
+  renderFn();
+}
+function _sortData(arr, col, dir){
+  if(!col) return arr;
+  return [...arr].sort((a,b)=>{
+    let av = a[col], bv = b[col];
+    // 特殊欄位處理
+    if(col==='etd'||col==='eta'){
+      av = (a.deliveries?.find(d=>d[col==='etd'?'etd':'eta'])?.[col==='etd'?'etd':'eta'])||'';
+      bv = (b.deliveries?.find(d=>d[col==='etd'?'etd':'eta'])?.[col==='etd'?'etd':'eta'])||'';
+    }
+    if(col==='amount'||col==='quote'||col==='amountNTD'){
+      av = Number(String(av||0).replace(/,/g,''))||0;
+      bv = Number(String(bv||0).replace(/,/g,''))||0;
+      return dir==='asc'?av-bv:bv-av;
+    }
+    av = String(av||''); bv = String(bv||'');
+    return dir==='asc'?av.localeCompare(bv,'zh-TW'):bv.localeCompare(av,'zh-TW');
+  });
+}
 let vendors=[],models=[]; // 廠商維護 & 設備型號維護
 
 const DO={
@@ -1660,6 +1716,8 @@ function renderList(){
   document.getElementById('rc').textContent=`顯示${f.length}/${data.length}筆`;
   const tb=document.getElementById('tb');if(!tb)return;
   if(!f.length){tb.innerHTML=`<tr><td colspan="20"><div class="empty">無符合條件資料</div></td></tr>`;return;}
+  const {col:_sc,dir:_sd}=_sortState['tab-list']||{col:null,dir:'asc'};
+  const fs=_sortData(f,_sc,_sd);
   // ── 效能優化：預建 payCode / fwdCode 查找 Map，避免每列重複查找 ──
   const payMap=new Map(Object.entries(codeDesc.payCode||{}));
   const payShortMap=new Map(Object.entries(codeDesc.payCodeShort||{}));
@@ -1667,7 +1725,7 @@ function renderList(){
   const fwdShortMap=new Map(Object.entries(codeDesc.fwdCodeShort||{}));
   const getPayPct=(code)=>{const cd=payMap.get(String(code||''));return cd&&typeof cd==='object'?` (${Number(cd.pctD)||0}/${Number(cd.pctM)||0}/${Number(cd.pctA)||0}%)`:''};
   const getFwdDesc=(code)=>{const f=fwdMap.get(String(code||''));const s=fwdShortMap.get(String(code||''))||'';return s||(f&&typeof f==='object'?f.desc||'':String(f||''));};
-  tb.innerHTML=f.map(r=>{
+  tb.innerHTML=fs.map(r=>{
     const ntd=r.amountNTD||calcNTDv(r.amount,r.currency);
     const etd=r.deliveries&&r.deliveries[0]?r.deliveries[0].etd:'';
     const eta=r.deliveries&&r.deliveries[0]?r.deliveries[0].eta:'';
@@ -1771,7 +1829,8 @@ function renderPay(){
       .some(v=>v&&String(v).toLowerCase().includes(q));
   }
 
-  data.filter(matchRec).forEach(r=>{
+  const {col:_psc,dir:_psd}=_sortState['tab-payment']||{col:null,dir:'asc'};
+  _sortData(data.filter(matchRec),_psc,_psd).forEach(r=>{
     const delivs=r.deliveries&&r.deliveries.length?r.deliveries:[{payments:[{}]}];
     const allPays=delivs.flatMap(d=>d.payments||[{}]);
     const allPaid=allPays.every(p=>p.payDate&&p.payDate<=today);
@@ -2517,14 +2576,18 @@ function renderCodeTab(key){
   const tb=document.getElementById(tbId);if(!tb)return;
   const srchEl=document.getElementById(key==='payCode'?'paycodeSrch':'fwdcodeSrch');
   const q=(srchEl?.value||'').toLowerCase();
+  const tabId=key==='payCode'?'tab-paycode':'tab-fwdcode';
+  const {col:_csc,dir:_csd}=_sortState[tabId]||{col:null,dir:'asc'};
   const allCodes=opts[key]||[];
-  const codes=q?allCodes.filter(c=>{
+  const filteredCodes=q?allCodes.filter(c=>{
     const short=String(codeDesc[key+'Short']&&codeDesc[key+'Short'][c]||'').toLowerCase();
     let rawCd=codeDesc[key]&&codeDesc[key][c];
     if(typeof rawCd==='string'){try{rawCd=JSON.parse(rawCd);}catch(e){rawCd={desc:rawCd};}}
     const desc=rawCd&&typeof rawCd==='object'?String(rawCd.desc||'').toLowerCase():String(rawCd||'').toLowerCase();
     return String(c).toLowerCase().includes(q)||short.includes(q)||desc.includes(q);
   }):allCodes;
+  // 排序（code 欄位排序）
+  const codes=_csc?[...filteredCodes].sort((a,b)=>_csd==='asc'?String(a).localeCompare(String(b),'zh-TW'):String(b).localeCompare(String(a),'zh-TW')):filteredCodes;
   if(!codes.length){tb.innerHTML=`<tr><td colspan="6"><div class="empty">${q?'找不到符合的代號':'尚無資料，請新增'}</div></td></tr>`;return;}
   // Issue1: column order = 代號 | 訂金% | 交機% | 驗收% | 簡要備註
   tb.innerHTML=codes.map((c,i)=>{
@@ -3116,7 +3179,8 @@ let vendorDetIdx=-1;
 function renderVendorTab(){
   const q=(document.getElementById('vendorSrch')||{value:''}).value.toLowerCase();
   const tb=document.getElementById('vendorTb');if(!tb)return;
-  const f=vendors.filter(v=>!q||JSON.stringify(v).toLowerCase().includes(q));
+  const {col:_vsc,dir:_vsd}=_sortState['tab-vendors']||{col:null,dir:'asc'};
+  const f=_sortData(vendors.filter(v=>!q||JSON.stringify(v).toLowerCase().includes(q)),_vsc,_vsd);
   if(!f.length){tb.innerHTML=`<tr><td colspan="10"><div class="empty">尚無廠商資料</div></td></tr>`;return;}
   tb.innerHTML=f.map((v,fi)=>{const ri=vendors.indexOf(v);return`<tr onclick="openVendorEdit(${ri})" style="cursor:pointer">
     <td style="font-weight:700;font-family:monospace">${safe(v.vendorCode||'')}</td>
@@ -3190,7 +3254,8 @@ let modelDetIdx=-1;
 function renderModelTab(){
   const q=(document.getElementById('modelSrch')||{value:''}).value.toLowerCase();
   const tb=document.getElementById('modelTb');if(!tb)return;
-  const f=models.filter(m=>!q||JSON.stringify(m).toLowerCase().includes(q));
+  const {col:_msc,dir:_msd}=_sortState['tab-models']||{col:null,dir:'asc'};
+  const f=_sortData(models.filter(m=>!q||JSON.stringify(m).toLowerCase().includes(q)),_msc,_msd);
   if(!f.length){tb.innerHTML=`<tr><td colspan="8"><div class="empty">尚無型號資料</div></td></tr>`;return;}
   tb.innerHTML=f.map((m,fi)=>{const ri=models.indexOf(m);return`<tr onclick="openModelEdit(${ri})" style="cursor:pointer">
     <td style="font-weight:700">${safe(m.model||'')}</td>
