@@ -759,6 +759,7 @@ tbody tr{will-change:auto;contain:layout style}
         <th>幣別</th>
         <th class="sortable" data-col="quote" onclick="_thSort('tab-list','quote',renderList)">報價(原幣)</th>
         <th class="sortable" data-col="amount" onclick="_thSort('tab-list','amount',renderList)">成交金額(原幣)</th>
+        <th class="sortable" data-col="qty" onclick="_thSort('tab-list','qty',renderList)">數量</th>
         <th class="sortable" data-col="etd" onclick="_thSort('tab-list','etd',renderList)">ETD</th>
         <th class="sortable" data-col="eta" onclick="_thSort('tab-list','eta',renderList)">ETA</th>
         <th class="sortable" data-col="status" onclick="_thSort('tab-list','status',renderList)">狀態</th>
@@ -1715,7 +1716,7 @@ function renderList(){
   const f=getFilt();renderSG(f,'sg');
   document.getElementById('rc').textContent=`顯示${f.length}/${data.length}筆`;
   const tb=document.getElementById('tb');if(!tb)return;
-  if(!f.length){tb.innerHTML=`<tr><td colspan="20"><div class="empty">無符合條件資料</div></td></tr>`;return;}
+  if(!f.length){tb.innerHTML=`<tr><td colspan="21"><div class="empty">無符合條件資料</div></td></tr>`;return;}
   const {col:_sc,dir:_sd}=_sortState['tab-list']||{col:null,dir:'asc'};
   const fs=_sortData(f,_sc,_sd);
   // ── 效能優化：預建 payCode / fwdCode 查找 Map，避免每列重複查找 ──
@@ -1739,6 +1740,7 @@ function renderList(){
       <td>${cBdg(r.currency)}</td>
       <td class="ar">${fN(r.quote)}</td>
       <td class="ar" style="font-weight:600">${fN(r.amount)}</td>
+      <td style="text-align:center;font-weight:600">${r.qty||'—'}</td>
       <td style="font-size:10px;white-space:nowrap">${etd?'ETD '+fD(etd):'—'}</td>
       <td style="font-size:10px;white-space:nowrap">${eta?'ETA '+fD(eta):'—'}</td>
       <td>${sBdg(r.status)}</td>

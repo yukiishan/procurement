@@ -1885,6 +1885,7 @@ function renderCards(){
         <div class="rec-card-amount">${amt}</div>
         <div class="rec-card-tags">
           ${r.podate?`<span class="tag tag-cur">${fD(r.podate)}</span>`:''}
+          ${r.qty?`<span class="tag tag-cur">${r.qty}台</span>`:''}
           ${etd?`<span class="tag tag-cur">ETD ${fD(etd)}</span>`:''}
         </div>
       </div>
