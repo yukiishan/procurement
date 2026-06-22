@@ -1927,8 +1927,8 @@ function renderCal(){
       const batchLabel=`${r.pr}-${di+1}`;
       const fc=(r.pr||'').charAt(0).toUpperCase();
       const qty=Number(d.qty)||Number(r.qty)||1;
-      if(d.etd){if(!evs[d.etd])evs[d.etd]=[];evs[d.etd].push({cls:'evetd',lbl:`(ETD)${batchLabel}/${r.vendor}/${r.model}/${qty}`});}
-      if(d.eta){if(!evs[d.eta])evs[d.eta]=[];const c=fc==='L'?'evetaL':fc==='F'?'evetaF':'evetaO';evs[d.eta].push({cls:c,lbl:`(ETA)${batchLabel}/${r.vendor}/${r.model}/${qty}`});}
+      if(d.etd){if(!evs[d.etd])evs[d.etd]=[];const vlbl=r.agent?`${r.vendor}·${r.agent}`:r.vendor;evs[d.etd].push({cls:'evetd',lbl:`(ETD)${batchLabel}/${vlbl}/${r.model}/${qty}`});}
+      if(d.eta){if(!evs[d.eta])evs[d.eta]=[];const c=fc==='L'?'evetaL':fc==='F'?'evetaF':'evetaO';const vlbl2=r.agent?`${r.vendor}·${r.agent}`:r.vendor;evs[d.eta].push({cls:c,lbl:`(ETA)${batchLabel}/${vlbl2}/${r.model}/${qty}`});}
       // Payment events
       (d.payments||[]).forEach((p,pi)=>{
         if(!p.payDate)return;
@@ -1939,7 +1939,7 @@ function renderCal(){
         const amtRaw=(p.payAmt!==''&&p.payAmt!==null&&p.payAmt!==undefined)?p.payAmt:(p.payAmtManual!==''&&p.payAmtManual!==null&&p.payAmtManual!==undefined?p.payAmtManual:'');
         const amtClean=String(amtRaw).replace(/,/g,''); // 去千分位逗號，統一存純數字
         const inv=p.invoice||'';
-        const lbl=`(PAY)${batchLabel}§${stg}§${pctVal}§${cur}§${r.vendor}§${r.model}§${inv}§${amtClean}`;
+        const vlblPay=r.agent?`${r.vendor}·${r.agent}`:r.vendor;const lbl=`(PAY)${batchLabel}§${stg}§${pctVal}§${cur}§${vlblPay}§${r.model}§${inv}§${amtClean}`;
         if(!evs[p.payDate])evs[p.payDate]=[];
         evs[p.payDate].push({cls:'evpay',lbl});
       });
@@ -3514,7 +3514,7 @@ function showDayPopup(ds, evList, holName){
         // Payment event: (PAY)batchLabel/stageLabel/vendor/model/invoice/amount
         const raw=ev.lbl.replace(/^\(PAY\)/,'');
         const pts=raw.split('§');
-        const pr=pts[0]||'';const stg=pts[1]||'';const pct=pts[2]||'';const cur=pts[3]||'NTD';const vendor=pts[4]||'';const model=pts[5]||'';const inv=pts[6]||'';const amtRaw=pts[7]||'';
+        const pr=pts[0]||'';const stg=pts[1]||'';const pct=pts[2]||'';const cur=pts[3]||'NTD';const vendorRaw=pts[4]||'';const vendor=vendorRaw.includes('·')?(vendorRaw.split('·')[0]+'('+vendorRaw.split('·')[1]+')'):vendorRaw;const model=pts[5]||'';const inv=pts[6]||'';const amtRaw=pts[7]||'';
         const amtNum=Number(String(amtRaw).replace(/,/g,''));
         const amtStr=amtNum?`${cur} ${amtNum.toLocaleString()}`:'';
         const stgStr=stg+(pct?` ${pct}%`:'');
@@ -3530,7 +3530,7 @@ function showDayPopup(ds, evList, holName){
       const type=isEtd?'ETD 確認交期':'ETA 預計到廠';
       const raw=ev.lbl.replace(/^\(ET[DA]\)/,'');
       const parts=raw.split('/');
-      const pr=parts[0]||'';const vendor=parts[1]||'';const model=parts[2]||'';const qty=Number(parts[3])||'';
+      const pr=parts[0]||'';const vendorRaw2=parts[1]||'';const vendor=vendorRaw2.includes('·')?(vendorRaw2.split('·')[0]+'('+vendorRaw2.split('·')[1]+')'):vendorRaw2;const model=parts[2]||'';const qty=Number(parts[3])||'';
       body+=`<div class="cal-ev-item ${cls}">
         <div class="cal-ev-title">${isEtd?'📦':'✈️'} ${safe(type)}</div>
         <div class="cal-ev-detail">PO：${safe(pr)}<br>廠商：${safe(vendor)}<br>型號：${safe(model)}<br>數量：${qty?safe(String(qty))+' 台':'—'}</div>
