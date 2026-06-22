@@ -2663,13 +2663,8 @@ async function saveRec(){
   rec.pctM=Number(document.getElementById('f-pctM').value)||0;
   rec.pctA=Number(document.getElementById('f-pctA').value)||0;
   rec.deliveries=getDPsM();
-  // Auto-status
-  const today=new Date().toISOString().slice(0,10);
-  if(rec.deliveries&&rec.deliveries.length){
-    const lastD=rec.deliveries[rec.deliveries.length-1];
-    const pays=lastD.payments||[];
-    if(pays.length){const lastP=pays[pays.length-1];if(lastP.arrivalDate&&lastP.arrivalDate<=today)rec.status='已交貨';}
-  }
+  // 注意：已交貨狀態改為透過「儀表板 ETA 追蹤」的審核機制手動確認，
+  // 不在儲存時自動覆蓋 status（避免跳過審核步驟）。
   if(eid){const idx=data.findIndex(x=>x.id===eid);data[idx]={...data[idx],...rec};}
   else{rec.id=nid++;data.push(rec);}
   showLoading(true);
