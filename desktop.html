@@ -89,7 +89,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .badge{display:inline-block;padding:2px 6px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
 .b-smt{background:var(--bbg);color:var(--btx)}.b-lga{background:var(--gbg);color:var(--gtx)}.b-qfn{background:var(--abg);color:var(--atx)}
 .b-jpy,.b-ntd{background:var(--sf2);color:var(--tx2)}.b-usd{background:var(--pbg);color:var(--ptx)}.b-eur{background:var(--abg);color:var(--atx)}
-.b-p1{background:var(--pbg);color:var(--ptx)}.b-p2{background:var(--bbg);color:var(--btx)}.b-p3{background:var(--abg);color:var(--atx)}.b-p4{background:var(--gbg);color:var(--gtx)}
+.b-p1{background:var(--pbg);color:var(--ptx)}.b-p2{background:var(--bbg);color:var(--btx)}.b-p3{background:var(--abg);color:var(--atx)}.b-p4{background:var(--gbg);color:var(--gtx)}.b-p5{background:var(--rbg);color:var(--rtx);text-decoration:line-through}
 .b-y{background:var(--rbg);color:var(--rtx)}.b-n{background:var(--sf2);color:var(--tx3)}
 .b-pf{background:var(--gbg);color:var(--gtx)}.b-pp{background:var(--abg);color:var(--atx)}.b-pn{background:var(--rbg);color:var(--rtx)}.b-sch{background:var(--sf2);color:var(--tx2)}
 /* Detail */
@@ -552,12 +552,35 @@ tbody tr{will-change:auto;contain:layout style}
   <div class="lb">
     <h1>設備採購管理系統</h1>
     <p>Buyer &amp; Sourcer 專用系統<br>請輸入密碼以繼續</p>
-    <input type="password" id="pwInput" placeholder="● ● ● ● ● ●" maxlength="20"
-      onkeydown="if(event.key==='Enter')doLogin()">
+    <!-- 真實密碼輸入框（隱藏，承載實際輸入） -->
+    <input type="password" id="pwInput" maxlength="20" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px"
+      onkeydown="if(event.key==='Enter')doLogin()" oninput="_updatePwDots()">
+    <!-- 視覺裝飾：固定顯示 4 個圓點，不隨密碼長度變化 -->
+    <div id="pwDotsBox" onclick="document.getElementById('pwInput').focus()"
+      style="display:flex;justify-content:center;gap:14px;padding:14px;background:rgba(255,255,255,.15);
+             border-radius:10px;cursor:text;margin:8px 0">
+      <span class="pw-dot" id="pwDot0">●</span>
+      <span class="pw-dot" id="pwDot1">●</span>
+      <span class="pw-dot" id="pwDot2">●</span>
+      <span class="pw-dot" id="pwDot3">●</span>
+    </div>
     <button onclick="doLogin()">登　入</button>
     <div class="lerr" id="lerr"></div>
   </div>
 </div>
+<style>
+.pw-dot{font-size:22px;color:rgba(255,255,255,.3);transition:color .15s}
+.pw-dot.filled{color:#fff}
+</style>
+<script>
+function _updatePwDots(){
+  const len = document.getElementById('pwInput').value.length;
+  for(let i=0;i<4;i++){
+    const dot = document.getElementById('pwDot'+i);
+    if(dot) dot.classList.toggle('filled', len>0); // 只要有輸入，4 點固定全亮（不反映實際長度）
+  }
+}
+</script>
 
 
 <!-- ══ 手機 App 介面 ══════════════════════════════════ -->
@@ -734,6 +757,7 @@ tbody tr{will-change:auto;contain:layout style}
     <button class="btn sm fst-btn" data-st="處理中" onclick="setFSt('處理中',this)">處理中</button>
     <button class="btn sm fst-btn" data-st="待交貨" onclick="setFSt('待交貨',this)">待交貨</button>
     <button class="btn sm fst-btn" data-st="已交貨" onclick="setFSt('已交貨',this)">已交貨</button>
+    <button class="btn sm fst-btn" data-st="作廢" onclick="setFSt('作廢',this)">作廢</button>
     <input type="hidden" id="fSt" value="">
   </div>
     <div class="spacer"></div><span style="font-size:11px;color:var(--tx3)" id="rc"></span>
@@ -866,7 +890,7 @@ tbody tr{will-change:auto;contain:layout style}
         </div>
       </div>
       <div class="fgg" style="grid-template-columns:1fr;margin-top:8px">
-        <div class="fg full"><label>備註</label><textarea id="codeDetDesc" rows="5" placeholder="詳細備註內容..." style="width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;resize:vertical;outline:none;overflow-y:auto;min-height:120px"></textarea></div>
+        <div class="fg full"><label>備註</label><textarea id="codeDetDesc" rows="5" placeholder="詳細備註內容..." style="width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);font-family:inherit;resize:vertical;outline:none;overflow-y:auto;min-height:120px" onmouseup="saveCodeDescH(this)" ontouchend="saveCodeDescH(this)"></textarea></div>
       </div>
     </div>
   </div>
@@ -1015,7 +1039,7 @@ tbody tr{will-change:auto;contain:layout style}
 <div id="tab-dashboard" style="display:none">
   <div class="content">
     <div id="dsg"></div>
-    <div class="cc" style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">交期追蹤 ETD（未交貨）</div><div class="dvgrid" id="dt"></div></div>
+    <div class="cc" style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">交期追蹤 ETA（未交貨）<span id="dtAutoCount" style="margin-left:8px;font-weight:400;text-transform:none;color:var(--amber-tx,#6B4A28)"></span></div><div class="dvgrid" id="dt"></div></div>
     <div class="dashgrid">
       <div class="cc"><h3>依廠商台幣金額</h3><div id="vc"></div></div>
       <div class="cc"><h3>依部門台幣金額</h3><div id="dc"></div></div>
@@ -1044,7 +1068,7 @@ tbody tr{will-change:auto;contain:layout style}
           <input id="f-pr" placeholder="PO號碼" oninput="setValPreserveCursor(this,this.value.toUpperCase());checkPrDupDesk(this.value)" style="text-transform:uppercase">
           <div id="prDupWarnDesk" style="color:var(--red,#c0392b);font-size:10px;margin-top:2px;min-height:12px;font-weight:600"></div>
         </div>
-        <div class="fg"><label>狀態</label><select id="f-status"><option>處理中</option><option>待交貨</option><option>已交貨</option></select></div>
+        <div class="fg"><label>狀態</label><select id="f-status"><option>處理中</option><option>待交貨</option><option>已交貨</option><option>作廢</option></select></div>
         <!-- Row 2: 廠商代號 廠商 代理商 設備型號 -->
         <div class="fg"><label>廠商代號 <span style="font-size:9px;color:var(--tx3);font-weight:400">輸入後自動帶入廠商資料</span></label>
           <div style="display:flex;gap:4px">
@@ -1503,7 +1527,7 @@ const safe=s=>{const str=s===null||s===undefined?'':String(s);return str.replace
 function bdg(t,c){return`<span class="badge ${c}">${safe(t)}</span>`}
 function dBdg(d){const m={'SMT':'b-smt','LGA FC':'b-lga','QFN FC':'b-qfn'};return bdg(d,m[d]||'b-smt')}
 function cBdg(c){return bdg(c,'b-'+(c||'').toLowerCase())}
-function sBdg(s){const m={'處理中':'b-p1','待交貨':'b-p3','已交貨':'b-p4'};return bdg(s,m[s]||'b-p1')}
+function sBdg(s){const m={'處理中':'b-p1','待交貨':'b-p3','已交貨':'b-p4','作廢':'b-p5'};return bdg(s,m[s]||'b-p1')}
 function ntf(m){const el=document.getElementById('ntf');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200);}
 function showLoading(on){const el=document.getElementById('loadingOverlay');if(el)el.style.display=on?'flex':'none';}
 function getRate(c){return rates[c]||1;}
@@ -1945,6 +1969,24 @@ function renderCal(){
 }
 
 // FIX 4&5&6: Dashboard with per-currency qty + amount rows, clickable no-cert
+// 審核「系統建議已交貨」：確認後才真正改寫 status，不會自動覆蓋
+async function reviewAutoClose(recId, batchIdx){
+  const r = data.find(x=>x.id===recId);
+  if(!r) return;
+  if(!confirm(`確認將「${r.pr}」標記為已交貨？`)) return;
+  r.status = '已交貨';
+  if(r.deliveries && r.deliveries[batchIdx]) r.deliveries[batchIdx].autoCloseReviewed = true;
+  showLoading(true);
+  try{
+    await save();
+    ntf('✓ 已確認交貨');
+    renderDash();
+    if(curTab==='list') renderList();
+  } finally {
+    showLoading(false);
+  }
+}
+
 function renderDash(){
   const allCurs=Object.keys(rates);
   const today=new Date().toISOString().slice(0,10);
@@ -1992,20 +2034,44 @@ function renderDash(){
       </div>
     </div>`;
 
-  // ETD tracking
-  const up=data.filter(r=>r.status!=='已交貨'&&r.deliveries&&r.deliveries.length&&r.deliveries.some(d=>d.etd))
-    .sort((a,b)=>{const aE=a.deliveries.find(d=>d.etd)?.etd||'';const bE=b.deliveries.find(d=>d.etd)?.etd||'';return aE>bE?1:-1;});
+  // ETA tracking：每筆採購的「每個批次」各自獨立展開顯示
+  const batchCards=[]; // {r, di, d, isLastBatch, isOverdue, suggestClose}
+  data.filter(r=>r.status!=='已交貨'&&r.status!=='作廢'&&r.deliveries&&r.deliveries.length)
+    .forEach(r=>{
+      const dels=r.deliveries;
+      dels.forEach((d,di)=>{
+        if(!d.eta) return; // 沒填 ETA 的批次不顯示
+        const isLastBatch = di===dels.length-1;
+        const isOverdue = d.eta < today; // 今天已超過此批 ETA
+        // 系統建議已交貨條件：狀態仍待交貨 + 是最後一批 + 已超過 ETA + 尚未審核過
+        const suggestClose = r.status==='待交貨' && isLastBatch && isOverdue && !d.autoCloseReviewed;
+        batchCards.push({r, di, d, isLastBatch, isOverdue, suggestClose});
+      });
+    });
+  batchCards.sort((a,b)=> a.d.eta > b.d.eta ? 1 : -1);
+
+  const suggestCount = batchCards.filter(b=>b.suggestClose).length;
+  const cntEl=document.getElementById('dtAutoCount');
+  if(cntEl) cntEl.textContent = suggestCount>0 ? `（${suggestCount} 筆系統建議已交貨，待審核）` : '';
+
   const dtEl=document.getElementById('dt');
-  if(dtEl){dtEl.innerHTML=up.length?up.map(r=>{
-    const fd=r.deliveries.find(d=>d.etd);const etd=fd?fd.etd:'';const isPast=etd&&etd<today;
-    return`<div class="dvcard" style="${isPast?'border-color:var(--red);':''}">
-      <div style="font-size:10px;color:var(--tx3)">${r.pr}</div>
-      <div style="font-size:12px;font-weight:600;margin:2px 0">${safe(r.vendor)} · ${safe(r.model)}</div>
-      <div style="font-size:11px;color:${isPast?'var(--rtx)':'var(--tx2)'}">ETD:${fD(etd)}${isPast?' ⚠':''}</div>
-      ${fd&&fd.eta?`<div style="font-size:11px;color:var(--tx2)">ETA:${fD(fd.eta)}</div>`:''}
-      <div style="margin-top:4px">${sBdg(r.status)}</div>
-    </div>`;
-  }).join(''):`<div class="empty" style="padding:16px">無待交貨ETD資料</div>`;}
+  if(dtEl){
+    dtEl.innerHTML = batchCards.length ? batchCards.map(({r,di,d,isOverdue,suggestClose})=>{
+      const batchTag = r.deliveries.length>1 ? `-${di+1}` : '';
+      const qtyTxt = d.qty ? `${d.qty}台` : '';
+      return`<div class="dvcard" style="${suggestClose?'border-color:var(--amber,#B8906A);background:var(--amber-bg,#F0E6D8)':isOverdue?'border-color:var(--red);':''}">
+        <div style="font-size:10px;color:var(--tx3)">${safe(r.pr)}${batchTag}${qtyTxt?` · ${qtyTxt}`:''}</div>
+        <div style="font-size:12px;font-weight:600;margin:2px 0">${safe(r.vendor)} · ${safe(r.model)}</div>
+        ${d.etd?`<div style="font-size:11px;color:var(--tx2)">ETD:${fD(d.etd)}</div>`:''}
+        <div style="font-size:11px;color:${isOverdue?'var(--rtx)':'var(--tx2)'}">ETA:${fD(d.eta)}${isOverdue?' ⚠':''}</div>
+        <div style="margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          ${sBdg(r.status)}
+          ${suggestClose?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--amber,#B8906A);color:#fff">系統建議：已交貨</span>`:''}
+          ${suggestClose?`<button class="btn xs" style="background:var(--green,#7A9E84);color:#fff;border:none" onclick="event.stopPropagation();reviewAutoClose(${r.id},${di})">✓ 審核確認</button>`:''}
+        </div>
+      </div>`;
+    }).join('') : `<div class="empty" style="padding:16px">無待交貨ETA資料</div>`;
+  }
 
   const vm={};data.forEach(r=>{vm[r.vendor]=(vm[r.vendor]||0)+(r.amountNTD||calcNTDv(r.amount,r.currency))});
   const vs=Object.entries(vm).sort((a,b)=>b[1]-a[1]).slice(0,7),mx=vs[0]?vs[0][1]:1;
@@ -2623,7 +2689,8 @@ function openNewCodeDet(key){
   document.getElementById('codeDetCodeLbl').textContent=key==='payCode'?'付款代號':'貨代代號';
   document.getElementById('codeDetCode').value='';
   document.getElementById('codeDetShort').value='';
-  document.getElementById('codeDetDesc').value='';
+  const _cd=document.getElementById('codeDetDesc');
+  if(_cd){_cd.value='';_cd.style.height='';}
   const dw=document.getElementById('codeDetDupWarn');if(dw)dw.textContent='';
   const pctRow=document.getElementById('payPctRow');
   const fwdRow2=document.getElementById('fwdShipRow');
@@ -2674,7 +2741,11 @@ function openCodeDet(key,i){
   let cd=codeDesc[key]&&codeDesc[key][code];
   if(typeof cd==='string'){try{cd=JSON.parse(cd);}catch(e){cd={desc:cd,pctD:0,pctM:0,pctA:0};}}
   if(!cd||typeof cd!=='object')cd={desc:'',pctD:0,pctM:0,pctA:0};
-  document.getElementById('codeDetDesc').value=cd.desc||'';
+  const _cdEl=document.getElementById('codeDetDesc');
+  if(_cdEl){
+    _cdEl.value=cd.desc||'';
+    _cdEl.style.height=cd.descH?cd.descH+'px':'';
+  }
   const pctRow=document.getElementById('payPctRow');
   const fwdRow=document.getElementById('fwdShipRow');
   if(pctRow)pctRow.style.display=key==='payCode'?'block':'none';
@@ -2701,7 +2772,9 @@ function closeCodeDet(){document.getElementById('codeDetOv').classList.remove('o
 async function saveCodeDet(){
   const newCode=document.getElementById('codeDetCode').value.trim().toUpperCase();
   const shortVal=document.getElementById('codeDetShort').value.trim();
-  const descVal=document.getElementById('codeDetDesc').value.trim();
+  const _dEl=document.getElementById('codeDetDesc');
+  const descVal=_dEl?_dEl.value.trim():'';
+  const _descH=_dEl&&_dEl.style.height?parseInt(_dEl.style.height)||null:null;
   if(!newCode){ntf('⚠ 代號不能為空');return;}
   const codeStr=String(newCode);
   if(!opts[codeDetKey])opts[codeDetKey]=[];
@@ -2724,11 +2797,14 @@ async function saveCodeDet(){
     const pctD=Number(document.getElementById('codeDetPctD')?.value||0);
     const pctM=Number(document.getElementById('codeDetPctM')?.value||0);
     const pctA=Number(document.getElementById('codeDetPctA')?.value||0);
-    codeDesc[codeDetKey][codeStr]={desc:descVal,pctD,pctM,pctA};
+    const _obj={desc:descVal,pctD,pctM,pctA};
+    if(_descH)_obj.descH=_descH;
+    codeDesc[codeDetKey][codeStr]=_obj;
   }else{
-    // fwdCode: store {desc, shipMode} as object
     const shipModeVal=document.getElementById('codeDetShipMode')?.value||'';
-    codeDesc[codeDetKey][codeStr]=shipModeVal?{desc:descVal,shipMode:shipModeVal}:descVal;
+    const _obj=shipModeVal?{desc:descVal,shipMode:shipModeVal}:{desc:descVal};
+    if(_descH)_obj.descH=_descH;
+    codeDesc[codeDetKey][codeStr]=_obj;
   }
   codeDesc[sk][codeStr]=shortVal;
   showLoading(true);await saveO();showLoading(false);
@@ -2778,6 +2854,7 @@ async function doLogin(){
     } else {
       err.textContent = json.error || '密碼錯誤，請重試';
       input.value = '';
+      _updatePwDots();
       input.focus();
       setTimeout(()=>err.textContent='', 3000);
     }
@@ -2848,7 +2925,7 @@ function mobSwTab(t){
 // 狀態對應莫蘭迪色
 function mobStatusBadge(s){
   const m={
-    '處理中':'mb-brown','待交貨':'mb-blue','已交貨':'mb-green'
+    '處理中':'mb-brown','待交貨':'mb-blue','已交貨':'mb-green','作廢':'mb-red'
   };
   return `<span class="mob-badge ${m[s]||'mb-gray'}">${s||'—'}</span>`;
 }
@@ -3595,6 +3672,21 @@ function getDefaultStageByOrder(pi, cd){
   if(Number(cd.pctA)>0) ordered.push('驗收款');
   if(!ordered.length) return '訂金款'; // 全為0時預設訂金款
   return ordered[Math.min(pi, ordered.length-1)];
+}
+
+function saveCodeDescH(el){
+  const h=el.offsetHeight;
+  if(!h||h<80) return;
+  el.style.height=h+'px';
+  if(!codeDetKey||codeDetIdx<0) return;
+  const code=opts[codeDetKey]&&opts[codeDetKey][codeDetIdx];
+  if(!code) return;
+  if(!codeDesc[codeDetKey]) codeDesc[codeDetKey]={};
+  let cd=codeDesc[codeDetKey][code];
+  if(typeof cd==='string'){try{cd=JSON.parse(cd);}catch(e){cd={desc:cd};}}
+  if(!cd||typeof cd!=='object') cd={desc:String(cd||'')};
+  cd.descH=h;
+  codeDesc[codeDetKey][code]=cd;
 }
 
 function saveTextareaH(field, el){

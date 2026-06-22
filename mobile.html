@@ -180,6 +180,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .tag-status-0{background:#F0E8D8;color:#9A7040}
 .tag-status-2{background:#E8EDF5;color:#3A5480}
 .tag-status-3{background:#E8EDE9;color:#5A7A62}
+.tag-status-void{background:#EEE0DF;color:#96544A;text-decoration:line-through}
 .tag-cur{background:var(--sf2);color:var(--tx2)}
 .tag-dept-smt{background:#e8f0fb;color:#0c3d70}
 .tag-dept-lga{background:var(--green-bg);color:var(--green)}
@@ -480,10 +481,25 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
   </div>
   <h1>設備採購管理</h1>
   <p>Buyer &amp; Sourcer 專用系統</p>
-  <input type="password" class="login-input" id="pwInput" placeholder="輸入密碼" maxlength="20" onkeydown="if(event.key==='Enter')doLogin()">
+  <!-- 真實密碼輸入框（隱藏，承載實際輸入） -->
+  <input type="password" id="pwInput" maxlength="20" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px"
+    onkeydown="if(event.key==='Enter')doLogin()" oninput="_updatePwDots()">
+  <!-- 視覺裝飾：固定顯示 4 個圓點 -->
+  <div id="pwDotsBox" onclick="document.getElementById('pwInput').focus()"
+    style="display:flex;justify-content:center;gap:14px;padding:14px;background:rgba(255,255,255,.15);
+           border-radius:10px;cursor:text;margin:10px 0">
+    <span class="pw-dot" id="pwDot0">●</span>
+    <span class="pw-dot" id="pwDot1">●</span>
+    <span class="pw-dot" id="pwDot2">●</span>
+    <span class="pw-dot" id="pwDot3">●</span>
+  </div>
   <button class="login-btn" onclick="doLogin()">登　入</button>
   <div class="login-err" id="loginErr"></div>
 </div>
+<style>
+.pw-dot{font-size:22px;color:rgba(255,255,255,.3);transition:color .15s}
+.pw-dot.filled{color:#fff}
+</style>
 
 <!-- Main App -->
 <div id="app" style="display:none">
@@ -517,6 +533,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
           <div class="pill" onclick="setFilter('status:處理中',this)">處理中</div>
           <div class="pill" onclick="setFilter('status:待交貨',this)">待交貨</div>
           <div class="pill" onclick="setFilter('status:已交貨',this)">已交貨</div>
+          <div class="pill" onclick="setFilter('status:作廢',this)">作廢</div>
           <div class="pill" onclick="setFilter('cur:JPY',this)">JPY</div>
           <div class="pill" onclick="setFilter('cur:USD',this)">USD</div>
           <div class="pill" onclick="setFilter('cur:NTD',this)">NTD</div>
@@ -625,7 +642,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
       <div style="padding:14px 14px calc(var(--tab-h)+var(--safe-bot)+20px)">
         <div id="dashCards" style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px"></div>
         <div class="stat-card" style="margin-bottom:10px">
-          <div class="stat-card-title">交期追蹤 ETD（未交貨）</div>
+          <div class="stat-card-title">交期追蹤 ETA（未交貨）<span id="etaAutoCount" style="font-weight:400;color:var(--amber-tx,#6B4A28)"></span></div>
           <div id="etdList" style="display:flex;flex-direction:column;gap:7px;margin-top:8px"></div>
         </div>
         <div class="stat-card" style="margin-bottom:10px">
@@ -987,7 +1004,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
           <div class="form-input-box"><input id="f-pr" class="form-input" placeholder="PO號碼" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s);checkPrDupMob(this.value)" style="text-transform:uppercase"></div>
           <div id="prDupWarnMob" style="color:var(--red,#B87070);font-size:11px;margin-top:4px;min-height:14px;font-weight:600"></div>
         </div>
-        <div><div class="form-label">狀態</div><div class="form-input-box"><select id="f-status" class="form-select"><option>處理中</option><option>待交貨</option><option>已交貨</option></select></div></div>
+        <div><div class="form-label">狀態</div><div class="form-input-box"><select id="f-status" class="form-select"><option>處理中</option><option>待交貨</option><option>已交貨</option><option>作廢</option></select></div></div>
       </div>
       <!-- Row2: 廠商代號 廠商 代理商 設備型號 -->
       <div class="form-row">
@@ -1416,6 +1433,14 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 // ══════════════════════════════════════════════════
 //  AUTH
 // ══════════════════════════════════════════════════
+function _updatePwDots(){
+  const len = document.getElementById('pwInput').value.length;
+  for(let i=0;i<4;i++){
+    const dot = document.getElementById('pwDot'+i);
+    if(dot) dot.classList.toggle('filled', len>0);
+  }
+}
+
 async function doLogin(){
   const input=document.getElementById('pwInput');
   const err=document.getElementById('loginErr');
@@ -1437,7 +1462,7 @@ async function doLogin(){
       startApp();
     } else {
       err.textContent=json.error||'密碼錯誤';
-      input.value='';input.focus();
+      input.value='';_updatePwDots();input.focus();
       setTimeout(()=>err.textContent='',3000);
     }
   } catch(e){
@@ -1593,6 +1618,19 @@ function getDefaultStageByOrder(pi, cd){
   if(Number(cd.pctA)>0) ordered.push('驗收款');
   if(!ordered.length) return '訂金款';
   return ordered[Math.min(pi, ordered.length-1)];
+}
+
+function saveCodeDescHMob(el){
+  const h=el.offsetHeight;
+  if(!h||h<80) return;
+  el.style.height=h+'px';
+  if(!codeEditType||!codeEditKey) return;
+  if(!codeDesc[codeEditType]) codeDesc[codeEditType]={};
+  let cd=codeDesc[codeEditType][codeEditKey];
+  if(typeof cd==='string'){try{cd=JSON.parse(cd);}catch(e){cd={desc:cd};}}
+  if(!cd||typeof cd!=='object') cd={desc:String(cd||'')};
+  cd.descH=h;
+  codeDesc[codeEditType][codeEditKey]=cd;
 }
 
 function saveTextareaHMob(field, el){
@@ -1851,7 +1889,7 @@ function getFiltered(){
 }
 
 function statusTag(s){
-  const m={'處理中':'tag-status-0','待交貨':'tag-status-2','已交貨':'tag-status-3'};
+  const m={'處理中':'tag-status-0','待交貨':'tag-status-2','已交貨':'tag-status-3','作廢':'tag-status-void'};
   return`<span class="tag ${m[s]||'tag-status-0'}">${safe(s)}</span>`;
 }
 function deptTag(d){
@@ -2131,6 +2169,24 @@ function renderStatsPreview(){
     </div>
   </div>`;
 }
+// 審核「系統建議已交貨」：確認後才真正改寫 status
+async function reviewAutoCloseMob(recId, batchIdx){
+  const r = data.find(x=>x.id===recId);
+  if(!r) return;
+  if(!confirm(`確認將「${r.pr}」標記為已交貨？`)) return;
+  r.status = '已交貨';
+  if(r.deliveries && r.deliveries[batchIdx]) r.deliveries[batchIdx].autoCloseReviewed = true;
+  showLoading(true);
+  try{
+    await save();
+    toast('✓ 已確認交貨');
+    renderDashboard();
+    renderCards();
+  } finally {
+    showLoading(false);
+  }
+}
+
 function renderDashboard(){
   const totNTD=data.reduce((s,r)=>s+(r.amountNTD||calcNTDv(r.amount,r.currency)),0);
   const bs={};data.forEach(r=>{bs[r.status]=(bs[r.status]||0)+1});
@@ -2157,20 +2213,41 @@ function renderDashboard(){
     ${allCurs.filter(c=>curQty[c]>0).map(c=>`<div class="dash-card"><div class="dc-lbl">${c}</div><div class="dc-val">${curQty[c]}</div><div class="dc-sub" style="font-size:10px">${fN(Math.round(curAmt[c]))}</div></div>`).join('')}
   `;}
 
-  // ETD tracking
+  // ETA tracking：每筆採購的「每個批次」各自獨立展開顯示
   const etdEl=document.getElementById('etdList');
   if(etdEl){
-    const up=data.filter(r=>r.status!=='已交貨'&&r.deliveries&&r.deliveries.some(d=>d.etd))
-      .sort((a,b)=>{const ae=a.deliveries.find(d=>d.etd)?.etd||'';const be=b.deliveries.find(d=>d.etd)?.etd||'';return ae>be?1:-1;});
-    etdEl.innerHTML=up.length?up.map(r=>{
-      const fd=r.deliveries.find(d=>d.etd);const etd=fd?fd.etd:'';const past=etd&&etd<today;
-      return`<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--bd)">
-        <div style="width:6px;height:6px;border-radius:50%;background:${past?'var(--red)':'var(--green)'}"></div>
+    const batchCards=[];
+    data.filter(r=>r.status!=='已交貨'&&r.status!=='作廢'&&r.deliveries&&r.deliveries.length)
+      .forEach(r=>{
+        const dels=r.deliveries;
+        dels.forEach((d,di)=>{
+          if(!d.eta) return;
+          const isLastBatch = di===dels.length-1;
+          const isOverdue = d.eta < today;
+          const suggestClose = r.status==='待交貨' && isLastBatch && isOverdue && !d.autoCloseReviewed;
+          batchCards.push({r, di, d, isOverdue, suggestClose});
+        });
+      });
+    batchCards.sort((a,b)=> a.d.eta > b.d.eta ? 1 : -1);
+
+    const suggestCount = batchCards.filter(b=>b.suggestClose).length;
+    const cntEl=document.getElementById('etaAutoCount');
+    if(cntEl) cntEl.textContent = suggestCount>0 ? `（${suggestCount} 筆待審核）` : '';
+
+    etdEl.innerHTML=batchCards.length?batchCards.map(({r,di,d,isOverdue,suggestClose})=>{
+      const batchTag = r.deliveries.length>1 ? `-${di+1}` : '';
+      const qtyTxt = d.qty ? `${d.qty}台` : '';
+      return`<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--bd);${suggestClose?'background:var(--amber-bg,#F0E6D8);border-radius:8px;padding:8px 8px':''}">
+        <div style="width:6px;height:6px;border-radius:50%;background:${suggestClose?'var(--amber,#B8906A)':isOverdue?'var(--red)':'var(--green)'};flex-shrink:0"></div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${safe(r.vendor)} · ${safe(r.model)}</div>
-          <div style="font-size:11px;color:var(--tx3)">ETD ${fD(etd)}${past?' ⚠ 已逾期':''}</div>
+          <div style="font-size:11px;color:var(--tx3)">ETA ${fD(d.eta)}${isOverdue?' ⚠ 已逾期':''}${qtyTxt?` · ${qtyTxt}`:''}</div>
+          ${suggestClose?`<div style="margin-top:4px;display:flex;align-items:center;gap:6px">
+            <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--amber,#B8906A);color:#fff">系統建議：已交貨</span>
+            <button onclick="event.stopPropagation();reviewAutoCloseMob(${r.id},${di})" style="font-size:10px;font-weight:600;padding:3px 10px;border-radius:8px;background:var(--green,#7A9E84);color:#fff;border:none">✓ 審核</button>
+          </div>`:''}
         </div>
-        <div style="font-size:11px;color:var(--tx2);flex-shrink:0">${safe(r.pr)}</div>
+        <div style="font-size:11px;color:var(--tx2);flex-shrink:0">${safe(r.pr)}${batchTag}</div>
       </div>`;
     }).join(''):'<div style="text-align:center;padding:16px;font-size:13px;color:var(--tx3)">無待交貨資料</div>';}
 
@@ -2962,7 +3039,7 @@ function openCodeEdit(type, code){
       ${pctBlock}
       <div class="form-row">
         <div class="form-label">備註</div>
-        <textarea id="ceDesc" class="form-textarea" placeholder="詳細備註..." style="min-height:135px;overflow-y:auto;resize:vertical">${safe(descVal)}</textarea>
+        <textarea id="ceDesc" class="form-textarea" placeholder="詳細備註..." style="min-height:135px;overflow-y:auto;resize:vertical${cd.descH?`;height:${cd.descH}px`:''}" onmouseup="saveCodeDescHMob(this)" ontouchend="saveCodeDescHMob(this)">${safe(descVal)}</textarea>
       </div>
       <div class="form-row">
         <button onclick="delCodeItem()" style="width:100%;padding:11px;background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">刪除此代號</button>
@@ -2973,7 +3050,9 @@ function openCodeEdit(type, code){
 async function saveCodeEdit(){
   const newCode = String(document.getElementById('ceCode').value.trim().toUpperCase());
   const short = document.getElementById('ceShort').value.trim();
-  const desc = document.getElementById('ceDesc').value.trim();
+  const _ceEl=document.getElementById('ceDesc');
+  const desc=_ceEl?_ceEl.value.trim():'';
+  const _ceH=_ceEl&&_ceEl.style.height?parseInt(_ceEl.style.height)||null:null;
   if(!newCode){toast('代號不能為空');return;}
   // Duplicate check: if editing existing code, skip if code unchanged
   const isNewEntry=!codeEditKey||(String(codeEditKey).toUpperCase()!==newCode);
@@ -2994,12 +3073,16 @@ async function saveCodeEdit(){
   // Save pct+desc as object for payCode, plain string for fwdCode
   if(codeEditType==='fwdCode'){
     const shipMode=document.getElementById('ceShipMode')?.value||'';
-    codeDesc[codeEditType][newCode]=shipMode?{desc,shipMode}:desc;
+    const _fo=shipMode?{desc,shipMode}:{desc};
+    if(_ceH)_fo.descH=_ceH;
+    codeDesc[codeEditType][newCode]=_fo;
   }else if(codeEditType==='payCode'){
     const pctD=Number(document.getElementById('cePctD')?.value||0);
     const pctM=Number(document.getElementById('cePctM')?.value||0);
     const pctA=Number(document.getElementById('cePctA')?.value||0);
-    codeDesc[codeEditType][newCode]={desc,pctD,pctM,pctA};
+    const _po={desc,pctD,pctM,pctA};
+    if(_ceH)_po.descH=_ceH;
+    codeDesc[codeEditType][newCode]=_po;
   }else{
     codeDesc[codeEditType][newCode]=desc;
   }
