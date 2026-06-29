@@ -117,7 +117,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .dphd{display:flex;align-items:center;margin-bottom:8px}
 .dphd strong{font-size:12px;font-weight:700;flex:1}
 .qty-warn{font-size:10px;color:var(--rtx);font-weight:600;margin-left:8px}
-.dpdeliv{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:6px}
+.dpdeliv{display:grid;grid-template-columns:1fr 1fr .55fr 1fr .75fr;gap:5px;margin-bottom:6px}
 .dppayh{font-size:10px;font-weight:700;color:var(--tx2);padding:5px 0 4px;border-top:1px dashed var(--bd2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
 .payrow{display:grid;gap:4px 6px;margin-bottom:5px;background:var(--sf);border-radius:6px;padding:6px 8px;border:1px solid var(--bd)}
 .pf{display:flex;flex-direction:column;gap:2px}
@@ -1970,16 +1970,31 @@ function renderCal(){
 
 // FIX 4&5&6: Dashboard with per-currency qty + amount rows, clickable no-cert
 // 審核「系統建議已交貨」：確認後才真正改寫 status，不會自動覆蓋
+// 審核「系統建議部分到貨/已交貨」：確認後才真正改寫，不會自動覆蓋
 async function reviewAutoClose(recId, batchIdx){
   const r = data.find(x=>x.id===recId);
-  if(!r) return;
-  if(!confirm(`確認將「${r.pr}」標記為已交貨？`)) return;
-  r.status = '已交貨';
-  if(r.deliveries && r.deliveries[batchIdx]) r.deliveries[batchIdx].autoCloseReviewed = true;
+  if(!r || !r.deliveries || !r.deliveries[batchIdx]) return;
+  const totalBatches = r.deliveries.length;
+  const isOnlyBatch = totalBatches===1;
+  const confirmMsg = isOnlyBatch
+    ? `確認將「${r.pr}」標記為已交貨？`
+    : `確認將「${r.pr}-${batchIdx+1}」標記為已交貨（部分到貨）？`;
+  if(!confirm(confirmMsg)) return;
+
+  // 標記該批次為已交貨
+  r.deliveries[batchIdx].partialStatus = '已交貨';
+  r.deliveries[batchIdx].autoCloseReviewed = true;
+
+  // 檢查是否所有批次都已交貨 → 才將整張單改為已交貨
+  const allBatchesDone = r.deliveries.every(d=>d.partialStatus==='已交貨');
+  if(allBatchesDone){
+    r.status = '已交貨';
+  }
+
   showLoading(true);
   try{
     await save();
-    ntf('✓ 已確認交貨');
+    ntf(allBatchesDone ? '✓ 已確認交貨（整張完成）' : '✓ 已確認部分到貨');
     renderDash();
     if(curTab==='list') renderList();
   } finally {
@@ -2034,31 +2049,35 @@ function renderDash(){
       </div>
     </div>`;
 
-  // ETA tracking：每筆採購的「每個批次」各自獨立展開顯示
-  const batchCards=[]; // {r, di, d, isLastBatch, isOverdue, suggestClose}
+  // ETA tracking：每筆採購的「每個批次」各自獨立展開顯示，各批次可獨立審核部分到貨
+  const batchCards=[]; // {r, di, d, isOverdue, suggestClose}
   data.filter(r=>r.status!=='已交貨'&&r.status!=='作廢'&&r.deliveries&&r.deliveries.length)
     .forEach(r=>{
       const dels=r.deliveries;
       dels.forEach((d,di)=>{
         if(!d.eta) return; // 沒填 ETA 的批次不顯示
-        const isLastBatch = di===dels.length-1;
+        const isBatchDelivered = d.partialStatus==='已交貨';
+        if(isBatchDelivered) return; // 此批次已審核完成，不再顯示於待處理清單
         const isOverdue = d.eta < today; // 今天已超過此批 ETA
-        // 系統建議已交貨條件：狀態仍待交貨 + 是最後一批 + 已超過 ETA + 尚未審核過
-        const suggestClose = r.status==='待交貨' && isLastBatch && isOverdue && !d.autoCloseReviewed;
-        batchCards.push({r, di, d, isLastBatch, isOverdue, suggestClose});
+        // 系統建議條件：此批次尚未交貨 + 已超過 ETA（不限是否為最後一批）
+        const suggestClose = isOverdue && !d.autoCloseReviewed;
+        batchCards.push({r, di, d, isOverdue, suggestClose});
       });
     });
   batchCards.sort((a,b)=> a.d.eta > b.d.eta ? 1 : -1);
 
   const suggestCount = batchCards.filter(b=>b.suggestClose).length;
   const cntEl=document.getElementById('dtAutoCount');
-  if(cntEl) cntEl.textContent = suggestCount>0 ? `（${suggestCount} 筆系統建議已交貨，待審核）` : '';
+  if(cntEl) cntEl.textContent = suggestCount>0 ? `（${suggestCount} 筆待審核）` : '';
 
   const dtEl=document.getElementById('dt');
   if(dtEl){
     dtEl.innerHTML = batchCards.length ? batchCards.map(({r,di,d,isOverdue,suggestClose})=>{
       const batchTag = r.deliveries.length>1 ? `-${di+1}` : '';
       const qtyTxt = d.qty ? `${d.qty}台` : '';
+      const isOnlyBatch = r.deliveries.length===1;
+      const reviewLabel = isOnlyBatch ? '系統建議：已交貨' : '系統建議：部分到貨';
+      const btnLabel = isOnlyBatch ? '✓ 審核確認' : '✓ 審核部分到貨';
       return`<div class="dvcard" style="${suggestClose?'border-color:var(--amber,#B8906A);background:var(--amber-bg,#F0E6D8)':isOverdue?'border-color:var(--red);':''}">
         <div style="font-size:10px;color:var(--tx3)">${safe(r.pr)}${batchTag}${qtyTxt?` · ${qtyTxt}`:''}</div>
         <div style="font-size:12px;font-weight:600;margin:2px 0">${safe(r.vendor)} · ${safe(r.model)}</div>
@@ -2066,8 +2085,8 @@ function renderDash(){
         <div style="font-size:11px;color:${isOverdue?'var(--rtx)':'var(--tx2)'}">ETA:${fD(d.eta)}${isOverdue?' ⚠':''}</div>
         <div style="margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           ${sBdg(r.status)}
-          ${suggestClose?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--amber,#B8906A);color:#fff">系統建議：已交貨</span>`:''}
-          ${suggestClose?`<button class="btn xs" style="background:var(--green,#7A9E84);color:#fff;border:none" onclick="event.stopPropagation();reviewAutoClose(${r.id},${di})">✓ 審核確認</button>`:''}
+          ${suggestClose?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--amber,#B8906A);color:#fff">${reviewLabel}</span>`:''}
+          ${suggestClose?`<button class="btn xs" style="background:var(--green,#7A9E84);color:#fff;border:none" onclick="event.stopPropagation();reviewAutoClose(${r.id},${di})">${btnLabel}</button>`:''}
         </div>
       </div>`;
     }).join('') : `<div class="empty" style="padding:16px">無待交貨ETA資料</div>`;
@@ -2302,6 +2321,7 @@ function openDet(idOrNew){
     detDeliveries=r.deliveries.map(d=>({
       etd:d.etd||'',eta:d.eta||'',qty:d.qty||'',sn:d.sn||'',
       etdUpdated:d.etdUpdated||'',etaUpdated:d.etaUpdated||'',
+      partialStatus:d.partialStatus||'待交貨',
       payments:(d.payments||[]).map((p,pi)=>({
         ...p,
         // Default invoiceDate to today if empty
@@ -2353,8 +2373,12 @@ function renderDPCard(ci){
       <div class="pf"><label>ETA預計到廠
           <span class="dp-ts" id="eta-ts-${ci}" style="font-size:9px;color:var(--tx3);font-weight:400;display:block;margin-top:1px;min-height:13px">${d.etaUpdated?'更新 '+d.etaUpdated:''}</span>
         </label><input type="date" value="${d.eta}" oninput="onETAChange(${ci},this.value)"></div>
-      <div class="pf"><label>本批數量<span style="display:block;min-height:13px;font-size:9px"></span></label><input type="number" class="batch-qty-inp" value="${d.qty}" placeholder="台" min="0" oninput="onBatchQtyChange(${ci},this.value)"></div>
+      <div class="pf"><label>本批數量<span style="display:block;min-height:13px;font-size:9px"></span></label><input type="number" class="batch-qty-inp" value="${d.qty}" placeholder="台" min="0" style="max-width:70px" oninput="onBatchQtyChange(${ci},this.value)"></div>
       <div class="pf"><label>S/N<span style="display:block;min-height:13px;font-size:9px"></span></label><input value="${safe(d.sn||'')}" style="text-transform:uppercase" oninput="detDeliveries[${ci}].sn=this.value.toUpperCase()"></div>
+      <div class="pf"><label>部分到貨<span style="display:block;min-height:13px;font-size:9px"></span></label><select onchange="detDeliveries[${ci}].partialStatus=this.value">
+        <option value="待交貨"${(!d.partialStatus||d.partialStatus==='待交貨')?' selected':''}>待交貨</option>
+        <option value="已交貨"${d.partialStatus==='已交貨'?' selected':''}>已交貨</option>
+      </select></div>
     </div>
     <div class="dppayh">付款明細 <button class="addbtn" style="display:inline-block;width:auto;padding:2px 8px;margin-left:8px" onclick="addPayRow(${ci})">＋ 新增付款筆</button></div>
     <div class="pay-rows-container"></div>`;
@@ -2420,7 +2444,7 @@ function addDP(){
   const stageLabel=getDefaultStageByOrder(0,cdObj);
   // 批次索引（新批次是第幾個）
   const newCi=detDeliveries.length;
-  detDeliveries.push({etd:'',eta:'',qty:'',sn:'',payments:[{invoiceDate:todayDP,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel,pct:'',payAmt:'',claimType:'',claimDate:'',payDate:'',voucherDate:'',payRemark:'',pctManual:false,payAmtManual:false,stageManual:false}]});
+  detDeliveries.push({etd:'',eta:'',qty:'',sn:'',partialStatus:'待交貨',payments:[{invoiceDate:todayDP,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel,pct:'',payAmt:'',claimType:'',claimDate:'',payDate:'',voucherDate:'',payRemark:'',pctManual:false,payAmtManual:false,stageManual:false}]});
   const ci=detDeliveries.length-1;
   renderDPCard(ci);
   // 帶入比例（非手動改過）
@@ -2498,6 +2522,7 @@ async function saveRec(){
   rec.deliveries=detDeliveries.map(d=>({
     etd:d.etd,eta:d.eta,qty:d.qty,sn:d.sn||'',
     etdUpdated:d.etdUpdated||'',etaUpdated:d.etaUpdated||'',
+    partialStatus:d.partialStatus||'待交貨',
     payments:d.payments.map(p=>({
       invoiceDate:p.invoiceDate,invoice:p.invoice,arrivalDate:p.arrivalDate,
       arrivalQty:p.arrivalQty,stageLabel:p.stageLabel,pct:p.pct,

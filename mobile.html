@@ -235,6 +235,8 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .batch-field label{font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase}
 .batch-field input{font-size:14px;padding:7px 9px;border:1px solid var(--bd);border-radius:8px;background:var(--sf);color:var(--tx);font-family:inherit;-webkit-appearance:none;outline:none}
 .batch-field input:focus{border-color:var(--rose)}
+.batch-field select{font-size:14px;padding:7px 9px;border:1px solid var(--bd);border-radius:8px;background:var(--sf);color:var(--tx);font-family:inherit;width:100%;outline:none}
+.batch-field select:focus{border-color:var(--rose)}
 .pay-row-m{background:var(--sf);border-radius:8px;padding:9px 10px;margin-bottom:7px;border:1px solid var(--bd)}
 .pay-row-m-hd{display:flex;align-items:center;margin-bottom:8px}
 .pay-row-m-num{font-size:12px;color:var(--tx2);flex:1}
@@ -2171,16 +2173,28 @@ function renderStatsPreview(){
   </div>`;
 }
 // 審核「系統建議已交貨」：確認後才真正改寫 status
+// 審核「系統建議部分到貨/已交貨」：確認後才真正改寫
 async function reviewAutoCloseMob(recId, batchIdx){
   const r = data.find(x=>x.id===recId);
-  if(!r) return;
-  if(!confirm(`確認將「${r.pr}」標記為已交貨？`)) return;
-  r.status = '已交貨';
-  if(r.deliveries && r.deliveries[batchIdx]) r.deliveries[batchIdx].autoCloseReviewed = true;
+  if(!r || !r.deliveries || !r.deliveries[batchIdx]) return;
+  const isOnlyBatch = r.deliveries.length===1;
+  const confirmMsg = isOnlyBatch
+    ? `確認將「${r.pr}」標記為已交貨？`
+    : `確認將「${r.pr}-${batchIdx+1}」標記為已交貨（部分到貨）？`;
+  if(!confirm(confirmMsg)) return;
+
+  r.deliveries[batchIdx].partialStatus = '已交貨';
+  r.deliveries[batchIdx].autoCloseReviewed = true;
+
+  const allBatchesDone = r.deliveries.every(d=>d.partialStatus==='已交貨');
+  if(allBatchesDone){
+    r.status = '已交貨';
+  }
+
   showLoading(true);
   try{
     await save();
-    toast('✓ 已確認交貨');
+    toast(allBatchesDone ? '✓ 已確認交貨（整張完成）' : '✓ 已確認部分到貨');
     renderDashboard();
     renderCards();
   } finally {
@@ -2214,7 +2228,7 @@ function renderDashboard(){
     ${allCurs.filter(c=>curQty[c]>0).map(c=>`<div class="dash-card"><div class="dc-lbl">${c}</div><div class="dc-val">${curQty[c]}</div><div class="dc-sub" style="font-size:10px">${fN(Math.round(curAmt[c]))}</div></div>`).join('')}
   `;}
 
-  // ETA tracking：每筆採購的「每個批次」各自獨立展開顯示
+  // ETA tracking：每筆採購的「每個批次」各自獨立展開顯示，各批次可獨立審核部分到貨
   const etdEl=document.getElementById('etdList');
   if(etdEl){
     const batchCards=[];
@@ -2223,9 +2237,10 @@ function renderDashboard(){
         const dels=r.deliveries;
         dels.forEach((d,di)=>{
           if(!d.eta) return;
-          const isLastBatch = di===dels.length-1;
+          const isBatchDelivered = d.partialStatus==='已交貨';
+          if(isBatchDelivered) return; // 此批次已審核完成
           const isOverdue = d.eta < today;
-          const suggestClose = r.status==='待交貨' && isLastBatch && isOverdue && !d.autoCloseReviewed;
+          const suggestClose = isOverdue && !d.autoCloseReviewed;
           batchCards.push({r, di, d, isOverdue, suggestClose});
         });
       });
@@ -2238,14 +2253,17 @@ function renderDashboard(){
     etdEl.innerHTML=batchCards.length?batchCards.map(({r,di,d,isOverdue,suggestClose})=>{
       const batchTag = r.deliveries.length>1 ? `-${di+1}` : '';
       const qtyTxt = d.qty ? `${d.qty}台` : '';
+      const isOnlyBatch = r.deliveries.length===1;
+      const reviewLabel = isOnlyBatch ? '系統建議：已交貨' : '系統建議：部分到貨';
+      const btnLabel = isOnlyBatch ? '✓ 審核' : '✓ 審核部分到貨';
       return`<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--bd);${suggestClose?'background:var(--amber-bg,#F0E6D8);border-radius:8px;padding:8px 8px':''}">
         <div style="width:6px;height:6px;border-radius:50%;background:${suggestClose?'var(--amber,#B8906A)':isOverdue?'var(--red)':'var(--green)'};flex-shrink:0"></div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${safe(r.vendor)} · ${safe(r.model)}</div>
           <div style="font-size:11px;color:var(--tx3)">ETA ${fD(d.eta)}${isOverdue?' ⚠ 已逾期':''}${qtyTxt?` · ${qtyTxt}`:''}</div>
           ${suggestClose?`<div style="margin-top:4px;display:flex;align-items:center;gap:6px">
-            <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--amber,#B8906A);color:#fff">系統建議：已交貨</span>
-            <button onclick="event.stopPropagation();reviewAutoCloseMob(${r.id},${di})" style="font-size:10px;font-weight:600;padding:3px 10px;border-radius:8px;background:var(--green,#7A9E84);color:#fff;border:none">✓ 審核</button>
+            <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--amber,#B8906A);color:#fff">${reviewLabel}</span>
+            <button onclick="event.stopPropagation();reviewAutoCloseMob(${r.id},${di})" style="font-size:10px;font-weight:600;padding:3px 10px;border-radius:8px;background:var(--green,#7A9E84);color:#fff;border:none">${btnLabel}</button>
           </div>`:''}
         </div>
         <div style="font-size:11px;color:var(--tx2);flex-shrink:0">${safe(r.pr)}${batchTag}</div>
@@ -2453,6 +2471,7 @@ function openDet(idOrNew){
     detDeliveries=r.deliveries.map(d=>({
       etd:d.etd||'',eta:d.eta||'',qty:d.qty||'',sn:d.sn||'',
       etdUpdated:d.etdUpdated||'',etaUpdated:d.etaUpdated||'',
+      partialStatus:d.partialStatus||'待交貨',
       payments:(d.payments||[]).map((p,pi)=>({
         ...p,
         invoiceDate:p.invoiceDate||todayDet,
@@ -2495,8 +2514,12 @@ function renderDPCardM(ci,container){
         <label>ETA預計到廠<span id="mob-eta-ts-${ci}" style="display:block;font-size:10px;color:var(--tx3);font-weight:400;min-height:14px">${d.etaUpdated?'更新 '+d.etaUpdated:''}</span></label>
         <input type="date" value="${d.eta}" oninput="onMobETAChange(${ci},this.value)">
       </div>
-      <div class="batch-field"><label>本批數量</label><input type="number" value="${d.qty}" placeholder="台" oninput="detDeliveries[${ci}].qty=this.value;syncQtyToPayments(${ci},this.value)"></div>
+      <div class="batch-field"><label>本批數量</label><input type="number" value="${d.qty}" placeholder="台" style="max-width:90px" oninput="detDeliveries[${ci}].qty=this.value;syncQtyToPayments(${ci},this.value)"></div>
       <div class="batch-field"><label>S/N</label><input value="${safe(d.sn||'')}" style="text-transform:uppercase" oninput="detDeliveries[${ci}].sn=this.value.toUpperCase()"></div>
+      <div class="batch-field" style="grid-column:1/-1"><label>部分到貨</label><select onchange="detDeliveries[${ci}].partialStatus=this.value">
+        <option value="待交貨"${(!d.partialStatus||d.partialStatus==='待交貨')?' selected':''}>待交貨</option>
+        <option value="已交貨"${d.partialStatus==='已交貨'?' selected':''}>已交貨</option>
+      </select></div>
     </div>
     <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;padding-top:8px;border-top:1px dashed var(--bd2)">付款明細</div>
     <div id="pays-m-${ci}"></div>
@@ -2599,7 +2622,7 @@ function addDP(){
   if(cd&&typeof cd==='string'){try{cdObj=JSON.parse(cd);}catch(e){}}
   else if(cd&&typeof cd==='object'){cdObj=cd;}
   const stageLabel=getDefaultStageByOrder(0,cdObj);
-  detDeliveries.push({etd:'',eta:'',qty:'',sn:'',payments:[{invoiceDate:todayDP,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel,pct:'',payAmt:'',claimType:'',claimDate:'',payDate:'',pctManual:false,payAmtManual:false,stageManual:false}]});
+  detDeliveries.push({etd:'',eta:'',qty:'',sn:'',partialStatus:'待交貨',payments:[{invoiceDate:todayDP,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel,pct:'',payAmt:'',claimType:'',claimDate:'',payDate:'',pctManual:false,payAmtManual:false,stageManual:false}]});
   const ci=detDeliveries.length-1;
   const con=document.getElementById('dpListM');
   renderDPCardM(ci,con);
@@ -2640,6 +2663,7 @@ function getDPsM(){
   return detDeliveries.map(d=>({
     etd:d.etd,eta:d.eta,qty:d.qty,sn:d.sn||'',
     etdUpdated:d.etdUpdated||'',etaUpdated:d.etaUpdated||'',
+    partialStatus:d.partialStatus||'待交貨',
     payments:d.payments.map(p=>({
       invoiceDate:p.invoiceDate,invoice:p.invoice,arrivalDate:p.arrivalDate,
       arrivalQty:p.arrivalQty,stageLabel:p.stageLabel,pct:p.pct,
