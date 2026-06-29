@@ -117,7 +117,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .dphd{display:flex;align-items:center;margin-bottom:8px}
 .dphd strong{font-size:12px;font-weight:700;flex:1}
 .qty-warn{font-size:10px;color:var(--rtx);font-weight:600;margin-left:8px}
-.dpdeliv{display:grid;grid-template-columns:1fr 1fr .8fr 1fr .85fr;gap:5px;margin-bottom:6px}
+.dpdeliv{display:grid;grid-template-columns:1fr 1fr .9fr 1fr .85fr;gap:5px;margin-bottom:6px;align-items:start}
 .dppayh{font-size:10px;font-weight:700;color:var(--tx2);padding:5px 0 4px;border-top:1px dashed var(--bd2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
 .payrow{display:grid;gap:4px 6px;margin-bottom:5px;background:var(--sf);border-radius:6px;padding:6px 8px;border:1px solid var(--bd)}
 .pf{display:flex;flex-direction:column;gap:2px}
@@ -1736,6 +1736,7 @@ function renderSG(f,id){
     <div class="metric"><div class="mlbl">台幣合計</div><div class="mval">NT$${(tot/1e6).toFixed(2)}M</div><div class="msub">${Number(tot).toLocaleString()}</div></div>
     <div class="metric"><div class="mlbl">處理中</div><div class="mval">${bs['處理中']||0}</div><div class="msub">件</div></div>
     <div class="metric"><div class="mlbl">待交貨</div><div class="mval">${bs['待交貨']||0}</div><div class="msub">件</div></div>
+    <div class="metric"><div class="mlbl">部分交貨</div><div class="mval">${bs['部分交貨']||0}</div><div class="msub">件</div></div>
     <div class="metric"><div class="mlbl">已交貨</div><div class="mval">${bs['已交貨']||0}</div><div class="msub">件</div></div>`;
 }
 
@@ -1877,8 +1878,10 @@ function renderPay(){
           const payDates=[p.payDate,p.invoiceDate,p.arrivalDate,p.voucherDate,p.claimDate];
           if(!payDates.some(d=>d&&d===dFilter)) return;
         }
-        const batchTag=`<span style="display:inline-block;padding:1px 5px;border-radius:3px;background:var(--sf3);color:var(--tx2);font-size:10px;margin-right:3px">B${di+1}</span>`;
         const pSt=payStatus(p);
+        // 篩選「部分付款」時，此訂單已混合付清/未付清，只顯示尚未付清的列（排定中/付款中）
+        if(ps==='部分付款' && pSt.label==='已付清') return;
+        const batchTag=`<span style="display:inline-block;padding:1px 5px;border-radius:3px;background:var(--sf3);color:var(--tx2);font-size:10px;margin-right:3px">B${di+1}</span>`;
         const showRec=firstShown; // 只有第一筆顯示 PO/廠商/型號
         firstShown=false;
         rows.push(`<tr onclick="openDet(${r.id})" style="${dFilter&&(p.payDate===dFilter||p.voucherDate===dFilter||p.claimDate===dFilter)?'background:#fffbe6':'' }">
@@ -2375,14 +2378,14 @@ function renderDPCard(ci){
     </div>
     <div class="dpdeliv">
       <div class="pf"><label>ETD確認交期
-          <span class="dp-ts" id="etd-ts-${ci}" style="font-size:9px;color:var(--tx3);font-weight:400;display:block;margin-top:1px;min-height:13px">${d.etdUpdated?'更新 '+d.etdUpdated:''}</span>
+          <span class="dp-ts" id="etd-ts-${ci}" style="font-size:9px;color:var(--tx3);font-weight:400;display:block;margin-top:1px;min-height:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.etdUpdated?'更新 '+d.etdUpdated:''}</span>
         </label><input type="date" value="${d.etd}" oninput="onETDChange(${ci},this.value)"></div>
       <div class="pf"><label>ETA預計到廠
-          <span class="dp-ts" id="eta-ts-${ci}" style="font-size:9px;color:var(--tx3);font-weight:400;display:block;margin-top:1px;min-height:13px">${d.etaUpdated?'更新 '+d.etaUpdated:''}</span>
+          <span class="dp-ts" id="eta-ts-${ci}" style="font-size:9px;color:var(--tx3);font-weight:400;display:block;margin-top:1px;min-height:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.etaUpdated?'更新 '+d.etaUpdated:''}</span>
         </label><input type="date" value="${d.eta}" oninput="onETAChange(${ci},this.value)"></div>
-      <div class="pf"><label>本批數量<span style="display:block;min-height:13px;font-size:9px"></span></label><input type="number" class="batch-qty-inp" value="${d.qty}" placeholder="台" min="0" style="max-width:100px" oninput="onBatchQtyChange(${ci},this.value)"></div>
-      <div class="pf"><label>S/N<span style="display:block;min-height:13px;font-size:9px"></span></label><input value="${safe(d.sn||'')}" style="text-transform:uppercase" oninput="detDeliveries[${ci}].sn=this.value.toUpperCase()"></div>
-      <div class="pf"><label>部分到貨<span style="display:block;min-height:13px;font-size:9px"></span></label><select onchange="detDeliveries[${ci}].partialStatus=this.value">
+      <div class="pf"><label>本批數量<span style="display:block;min-height:13px;font-size:9px;margin-top:1px"></span></label><input type="number" class="batch-qty-inp" value="${d.qty}" placeholder="台" min="0" oninput="onBatchQtyChange(${ci},this.value)"></div>
+      <div class="pf"><label>S/N<span style="display:block;min-height:13px;font-size:9px;margin-top:1px"></span></label><input value="${safe(d.sn||'')}" style="text-transform:uppercase" oninput="detDeliveries[${ci}].sn=this.value.toUpperCase()"></div>
+      <div class="pf"><label>部分到貨<span style="display:block;min-height:13px;font-size:9px;margin-top:1px"></span></label><select onchange="detDeliveries[${ci}].partialStatus=this.value">
         <option value="待交貨"${(!d.partialStatus||d.partialStatus==='待交貨')?' selected':''}>待交貨</option>
         <option value="已交貨"${d.partialStatus==='已交貨'?' selected':''}>已交貨</option>
       </select></div>

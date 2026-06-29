@@ -2024,7 +2024,11 @@ function renderPayCards(){
         pays=pays.filter(p=>[p.payDate,p.invoiceDate,p.arrivalDate,p.voucherDate,p.claimDate].some(dt=>dt&&dt===dFilter));
         if(!pays.length)return'';
       }
-      const payRows=pays.map((p,pi)=>{
+      const payRows=pays.filter(p=>{
+        // 篩選「付款中」時，跳過此訂單已付清的列，只顯示排定中/付款中
+        if(curPayFilter==='付款中' && pRowStatus(p).label==='已付清') return false;
+        return true;
+      }).map((p,pi)=>{
         const pst=pRowStatus(p);
         const isHit=dFilter&&[p.payDate,p.invoiceDate,p.arrivalDate,p.voucherDate,p.claimDate].some(dt=>dt===dFilter);
         const payDateHl=dFilter&&p.payDate===dFilter?`style="font-weight:700;color:#854F0B"`:'';
@@ -2048,6 +2052,7 @@ function renderPayCards(){
           </div>
         </div>`;
       }).join('');
+      if(!payRows) return ''; // 此批次過濾後沒有任何付款列，不顯示整個批次區塊
 
       const batchInfo=[d.etd?`ETD ${fD(d.etd)}`:null,d.eta?`ETA ${fD(d.eta)}`:null,
         d.qty?`${d.qty}台`:null].filter(Boolean).join(' · ');
