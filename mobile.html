@@ -179,6 +179,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
 .tag-status-0{background:#F0E8D8;color:#9A7040}
 .tag-status-2{background:#E8EDF5;color:#3A5480}
+.tag-status-partial{background:#EEEDF8;color:#4A4780}
 .tag-status-3{background:#E8EDE9;color:#5A7A62}
 .tag-status-void{background:#EEE0DF;color:#96544A;text-decoration:line-through}
 .tag-cur{background:var(--sf2);color:var(--tx2)}
@@ -534,6 +535,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
           <div class="pill active" onclick="setFilter('all',this)">全部</div>
           <div class="pill" onclick="setFilter('status:處理中',this)">處理中</div>
           <div class="pill" onclick="setFilter('status:待交貨',this)">待交貨</div>
+          <div class="pill" onclick="setFilter('status:部分交貨',this)">部分交貨</div>
           <div class="pill" onclick="setFilter('status:已交貨',this)">已交貨</div>
           <div class="pill" onclick="setFilter('status:作廢',this)">作廢</div>
           <div class="pill" onclick="setFilter('cur:JPY',this)">JPY</div>
@@ -1006,7 +1008,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
           <div class="form-input-box"><input id="f-pr" class="form-input" placeholder="PO號碼" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s);checkPrDupMob(this.value)" style="text-transform:uppercase"></div>
           <div id="prDupWarnMob" style="color:var(--red,#B87070);font-size:11px;margin-top:4px;min-height:14px;font-weight:600"></div>
         </div>
-        <div><div class="form-label">狀態</div><div class="form-input-box"><select id="f-status" class="form-select"><option>處理中</option><option>待交貨</option><option>已交貨</option><option>作廢</option></select></div></div>
+        <div><div class="form-label">狀態</div><div class="form-input-box"><select id="f-status" class="form-select"><option>處理中</option><option>待交貨</option><option>部分交貨</option><option>已交貨</option><option>作廢</option></select></div></div>
       </div>
       <!-- Row2: 廠商代號 廠商 代理商 設備型號 -->
       <div class="form-row">
@@ -1891,7 +1893,7 @@ function getFiltered(){
 }
 
 function statusTag(s){
-  const m={'處理中':'tag-status-0','待交貨':'tag-status-2','已交貨':'tag-status-3','作廢':'tag-status-void'};
+  const m={'處理中':'tag-status-0','待交貨':'tag-status-2','部分交貨':'tag-status-partial','已交貨':'tag-status-3','作廢':'tag-status-void'};
   return`<span class="tag ${m[s]||'tag-status-0'}">${safe(s)}</span>`;
 }
 function deptTag(d){
@@ -2187,8 +2189,11 @@ async function reviewAutoCloseMob(recId, batchIdx){
   r.deliveries[batchIdx].autoCloseReviewed = true;
 
   const allBatchesDone = r.deliveries.every(d=>d.partialStatus==='已交貨');
+  const anyBatchDone = r.deliveries.some(d=>d.partialStatus==='已交貨');
   if(allBatchesDone){
     r.status = '已交貨';
+  } else if(anyBatchDone && r.status!=='作廢'){
+    r.status = '部分交貨';
   }
 
   showLoading(true);
@@ -2224,6 +2229,7 @@ function renderDashboard(){
     <div class="dash-card" onclick="showPage('page-list');curFilter='noCert:是';renderCards();" style="cursor:pointer;border:1.5px solid var(--red-bg)"><div class="dc-lbl">無產證 ↗</div><div class="dc-val" style="color:var(--red)">${noCert}</div><div class="dc-sub">件</div></div>
     <div class="dash-card"><div class="dc-lbl">處理中</div><div class="dc-val" style="color:var(--blue)">${bs['處理中']||0}</div><div class="dc-sub">筆</div></div>
     <div class="dash-card"><div class="dc-lbl">待交貨</div><div class="dc-val" style="color:var(--amber)">${bs['待交貨']||0}</div><div class="dc-sub">筆</div></div>
+    <div class="dash-card"><div class="dc-lbl">部分交貨</div><div class="dc-val" style="color:var(--blue)">${bs['部分交貨']||0}</div><div class="dc-sub">筆</div></div>
     <div class="dash-card"><div class="dc-lbl">已交貨</div><div class="dc-val" style="color:var(--green)">${bs['已交貨']||0}</div><div class="dc-sub">筆</div></div>
     ${allCurs.filter(c=>curQty[c]>0).map(c=>`<div class="dash-card"><div class="dc-lbl">${c}</div><div class="dc-val">${curQty[c]}</div><div class="dc-sub" style="font-size:10px">${fN(Math.round(curAmt[c]))}</div></div>`).join('')}
   `;}

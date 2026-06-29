@@ -89,7 +89,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .badge{display:inline-block;padding:2px 6px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
 .b-smt{background:var(--bbg);color:var(--btx)}.b-lga{background:var(--gbg);color:var(--gtx)}.b-qfn{background:var(--abg);color:var(--atx)}
 .b-jpy,.b-ntd{background:var(--sf2);color:var(--tx2)}.b-usd{background:var(--pbg);color:var(--ptx)}.b-eur{background:var(--abg);color:var(--atx)}
-.b-p1{background:var(--pbg);color:var(--ptx)}.b-p2{background:var(--bbg);color:var(--btx)}.b-p3{background:var(--abg);color:var(--atx)}.b-p4{background:var(--gbg);color:var(--gtx)}.b-p5{background:var(--rbg);color:var(--rtx);text-decoration:line-through}
+.b-p1{background:var(--pbg);color:var(--ptx)}.b-p2{background:var(--bbg);color:var(--btx)}.b-p3{background:var(--abg);color:var(--atx)}.b-p4{background:var(--gbg);color:var(--gtx)}.b-p5{background:var(--rbg);color:var(--rtx);text-decoration:line-through}.b-p6{background:var(--tbg);color:var(--ttx)}
 .b-y{background:var(--rbg);color:var(--rtx)}.b-n{background:var(--sf2);color:var(--tx3)}
 .b-pf{background:var(--gbg);color:var(--gtx)}.b-pp{background:var(--abg);color:var(--atx)}.b-pn{background:var(--rbg);color:var(--rtx)}.b-sch{background:var(--sf2);color:var(--tx2)}
 /* Detail */
@@ -117,7 +117,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .dphd{display:flex;align-items:center;margin-bottom:8px}
 .dphd strong{font-size:12px;font-weight:700;flex:1}
 .qty-warn{font-size:10px;color:var(--rtx);font-weight:600;margin-left:8px}
-.dpdeliv{display:grid;grid-template-columns:1fr 1fr .55fr 1fr .75fr;gap:5px;margin-bottom:6px}
+.dpdeliv{display:grid;grid-template-columns:1fr 1fr .8fr 1fr .85fr;gap:5px;margin-bottom:6px}
 .dppayh{font-size:10px;font-weight:700;color:var(--tx2);padding:5px 0 4px;border-top:1px dashed var(--bd2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
 .payrow{display:grid;gap:4px 6px;margin-bottom:5px;background:var(--sf);border-radius:6px;padding:6px 8px;border:1px solid var(--bd)}
 .pf{display:flex;flex-direction:column;gap:2px}
@@ -261,6 +261,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
     --m-green:#A8B5A2;
     --m-green-bg:#EBF0E9;
     --m-amber:#C4AA8F;
+    --m-amber-bg:#F5F0E8;
     --m-red:#C4968B;
     --m-red-bg:#F5EDEB;
     --m-tx:#4A4540;
@@ -384,6 +385,7 @@ tbody td{padding:8px 7px;vertical-align:middle}
   .mb-brown{background:var(--m-brown-bg);color:var(--m-brown)}
   .mb-green{background:var(--m-green-bg);color:var(--m-green)}
   .mb-red{background:var(--m-red-bg);color:var(--m-red)}
+  .mb-amber{background:var(--m-amber-bg);color:var(--m-amber)}
   .mb-gray{background:#F0EDEA;color:#8A857F}
   .mob-card-etd{font-size:11px;color:var(--m-tx3);margin-top:7px}
 
@@ -756,6 +758,7 @@ function _updatePwDots(){
     <button class="btn sm fst-btn active" data-st="" onclick="setFSt('',this)">全部</button>
     <button class="btn sm fst-btn" data-st="處理中" onclick="setFSt('處理中',this)">處理中</button>
     <button class="btn sm fst-btn" data-st="待交貨" onclick="setFSt('待交貨',this)">待交貨</button>
+    <button class="btn sm fst-btn" data-st="部分交貨" onclick="setFSt('部分交貨',this)">部分交貨</button>
     <button class="btn sm fst-btn" data-st="已交貨" onclick="setFSt('已交貨',this)">已交貨</button>
     <button class="btn sm fst-btn" data-st="作廢" onclick="setFSt('作廢',this)">作廢</button>
     <input type="hidden" id="fSt" value="">
@@ -1068,7 +1071,7 @@ function _updatePwDots(){
           <input id="f-pr" placeholder="PO號碼" oninput="setValPreserveCursor(this,this.value.toUpperCase());checkPrDupDesk(this.value)" style="text-transform:uppercase">
           <div id="prDupWarnDesk" style="color:var(--red,#c0392b);font-size:10px;margin-top:2px;min-height:12px;font-weight:600"></div>
         </div>
-        <div class="fg"><label>狀態</label><select id="f-status"><option>處理中</option><option>待交貨</option><option>已交貨</option><option>作廢</option></select></div>
+        <div class="fg"><label>狀態</label><select id="f-status"><option>處理中</option><option>待交貨</option><option>部分交貨</option><option>已交貨</option><option>作廢</option></select></div>
         <!-- Row 2: 廠商代號 廠商 代理商 設備型號 -->
         <div class="fg"><label>廠商代號 <span style="font-size:9px;color:var(--tx3);font-weight:400">輸入後自動帶入廠商資料</span></label>
           <div style="display:flex;gap:4px">
@@ -1527,7 +1530,7 @@ const safe=s=>{const str=s===null||s===undefined?'':String(s);return str.replace
 function bdg(t,c){return`<span class="badge ${c}">${safe(t)}</span>`}
 function dBdg(d){const m={'SMT':'b-smt','LGA FC':'b-lga','QFN FC':'b-qfn'};return bdg(d,m[d]||'b-smt')}
 function cBdg(c){return bdg(c,'b-'+(c||'').toLowerCase())}
-function sBdg(s){const m={'處理中':'b-p1','待交貨':'b-p3','已交貨':'b-p4','作廢':'b-p5'};return bdg(s,m[s]||'b-p1')}
+function sBdg(s){const m={'處理中':'b-p1','待交貨':'b-p3','部分交貨':'b-p6','已交貨':'b-p4','作廢':'b-p5'};return bdg(s,m[s]||'b-p1')}
 function ntf(m){const el=document.getElementById('ntf');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200);}
 function showLoading(on){const el=document.getElementById('loadingOverlay');if(el)el.style.display=on?'flex':'none';}
 function getRate(c){return rates[c]||1;}
@@ -1985,10 +1988,13 @@ async function reviewAutoClose(recId, batchIdx){
   r.deliveries[batchIdx].partialStatus = '已交貨';
   r.deliveries[batchIdx].autoCloseReviewed = true;
 
-  // 檢查是否所有批次都已交貨 → 才將整張單改為已交貨
+  // 檢查所有批次的完成狀況，決定整張單的狀態
   const allBatchesDone = r.deliveries.every(d=>d.partialStatus==='已交貨');
+  const anyBatchDone = r.deliveries.some(d=>d.partialStatus==='已交貨');
   if(allBatchesDone){
     r.status = '已交貨';
+  } else if(anyBatchDone && r.status!=='作廢'){
+    r.status = '部分交貨';
   }
 
   showLoading(true);
@@ -2034,6 +2040,7 @@ function renderDash(){
       <div class="metric"><div class="mlbl">採購筆數</div><div class="mval">${data.length}</div><div style="font-size:10px;color:var(--tx3);margin-top:2px">${data.reduce((s,r)=>s+(r.qty||1),0)} 台</div></div>
       <div class="metric"><div class="mlbl">處理中</div><div class="mval">${bs['處理中']||0}</div></div>
       <div class="metric"><div class="mlbl">待交貨</div><div class="mval">${bs['待交貨']||0}</div></div>
+      <div class="metric"><div class="mlbl">部分交貨</div><div class="mval">${bs['部分交貨']||0}</div></div>
       <div class="metric"><div class="mlbl">已交貨</div><div class="mval">${bs['已交貨']||0}</div></div>
       <div class="metric" style="cursor:pointer;border-color:var(--red)" onclick="showNoCertTab()">
         <div class="mlbl" style="color:var(--rtx)">無產證 ↗</div>
@@ -2373,7 +2380,7 @@ function renderDPCard(ci){
       <div class="pf"><label>ETA預計到廠
           <span class="dp-ts" id="eta-ts-${ci}" style="font-size:9px;color:var(--tx3);font-weight:400;display:block;margin-top:1px;min-height:13px">${d.etaUpdated?'更新 '+d.etaUpdated:''}</span>
         </label><input type="date" value="${d.eta}" oninput="onETAChange(${ci},this.value)"></div>
-      <div class="pf"><label>本批數量<span style="display:block;min-height:13px;font-size:9px"></span></label><input type="number" class="batch-qty-inp" value="${d.qty}" placeholder="台" min="0" style="max-width:70px" oninput="onBatchQtyChange(${ci},this.value)"></div>
+      <div class="pf"><label>本批數量<span style="display:block;min-height:13px;font-size:9px"></span></label><input type="number" class="batch-qty-inp" value="${d.qty}" placeholder="台" min="0" style="max-width:100px" oninput="onBatchQtyChange(${ci},this.value)"></div>
       <div class="pf"><label>S/N<span style="display:block;min-height:13px;font-size:9px"></span></label><input value="${safe(d.sn||'')}" style="text-transform:uppercase" oninput="detDeliveries[${ci}].sn=this.value.toUpperCase()"></div>
       <div class="pf"><label>部分到貨<span style="display:block;min-height:13px;font-size:9px"></span></label><select onchange="detDeliveries[${ci}].partialStatus=this.value">
         <option value="待交貨"${(!d.partialStatus||d.partialStatus==='待交貨')?' selected':''}>待交貨</option>
@@ -2937,7 +2944,7 @@ function mobSwTab(t){
 // 狀態對應莫蘭迪色
 function mobStatusBadge(s){
   const m={
-    '處理中':'mb-brown','待交貨':'mb-blue','已交貨':'mb-green','作廢':'mb-red'
+    '處理中':'mb-brown','待交貨':'mb-blue','部分交貨':'mb-amber','已交貨':'mb-green','作廢':'mb-red'
   };
   return `<span class="mob-badge ${m[s]||'mb-gray'}">${s||'—'}</span>`;
 }
