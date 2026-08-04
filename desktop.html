@@ -2693,13 +2693,13 @@ function renderCodeTab(key){
       const sm=cd&&typeof cd==='object'&&cd.shipMode?safe(cd.shipMode):'';
       pctCols=`<td style="color:var(--tx2)">${sm}</td>`;
     }
-    return`<tr style="cursor:pointer" onclick="openCodeDet('${key}',${i})">
+    return`<tr style="cursor:pointer" onclick="openCodeDet('${key}','${safe(String(c))}')">
     <td style="font-weight:700;font-family:monospace">${safe(String(c))}</td>
     ${pctCols}
     <td>${shortTxt}</td>
     <td onclick="event.stopPropagation()"><div class="ac">
-      <button class="btn xs" onclick="openCodeDet('${key}',${i})">編輯</button>
-      <button class="btn xs danger" onclick="delCode('${key}',${i})">刪除</button>
+      <button class="btn xs" onclick="openCodeDet('${key}','${safe(String(c))}')">編輯</button>
+      <button class="btn xs danger" onclick="delCode('${key}','${safe(String(c))}')">刪除</button>
     </div></td>
   </tr>`;
   }).join('');
@@ -2741,7 +2741,9 @@ function syncPayPct(){
   const warn=document.getElementById('pctSumWarn');
   if(warn)warn.textContent=sum>0&&sum!==100?`⚠ 合計 ${sum}%（應為 100%）`:'';
 }
-function delCode(key,i){
+function delCode(key,code){
+  const i=(opts[key]||[]).findIndex(x=>String(x)===String(code));
+  if(i<0){ntf('⚠ 找不到此代號，請重新整理');return;}
   if(!confirm('確定刪除此代號？'))return;
   const c=opts[key][i];
   opts[key].splice(i,1);
@@ -2750,7 +2752,9 @@ function delCode(key,i){
   saveO();refreshSels();renderCodeTab(key);
 }
 let codeDetKey='',codeDetIdx=-1;
-function openCodeDet(key,i){
+function openCodeDet(key,codeArg){
+  const i=(opts[key]||[]).findIndex(x=>String(x)===String(codeArg));
+  if(i<0){ntf('⚠ 找不到此代號，請重新整理');return;}
   codeDetKey=key; codeDetIdx=i;
   const code=String(opts[key][i]||'');
   const lbl=key==='payCode'?'付款代號':'貨代代號';
@@ -3085,7 +3089,7 @@ function renderMobCode(key){
     return;
   }
   el.innerHTML=`<div style="background:#fff;border-radius:14px;border:1px solid var(--m-border,#E8E2DB);overflow:hidden">`+
-    codes.map((c,i)=>`<div style="padding:13px 16px;border-bottom:1px solid var(--m-border,#E8E2DB);display:flex;align-items:center;cursor:pointer" onclick="openCodeDet('${key}',${i})">
+    codes.map((c,i)=>`<div style="padding:13px 16px;border-bottom:1px solid var(--m-border,#E8E2DB);display:flex;align-items:center;cursor:pointer" onclick="openCodeDet('${key}','${safe(String(c))}')">
       <div style="flex:1">
         <div style="font-size:14px;font-weight:700;font-family:monospace;color:var(--m-tx,#4A4540)">${safe(c)}</div>
         ${(codeDesc[key+'Short']&&codeDesc[key+'Short'][c])?`<div style="font-size:12px;color:var(--m-tx2,#7A7370);margin-top:2px">${safe(codeDesc[key+'Short'][c])}</div>`:''}
