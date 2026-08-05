@@ -1400,6 +1400,28 @@ async function load(){
   showLoading(false);
 }
 async function save(){try{await apiPost('saveData',{records:data,nextId:nid});lc('data',{records:data,nextId:nid});}catch(e){console.error(e);toast('❌ 儲存失敗');}}
+// 單筆新增/更新：只送這一筆，後端只覆寫對應那一列（比整包 save() 快）；若後端尚未支援自動退回整包儲存
+async function saveOneRecord(rec){
+  try{
+    const res=await apiPost('upsertRecord',rec);
+    if(res&&res.error)throw new Error(res.error);
+    lc('data',{records:data,nextId:nid});
+  }catch(err){
+    console.warn('單筆儲存失敗，改用整包儲存：',err);
+    await save();
+  }
+}
+// 單筆刪除：只送 id，後端只刪對應那一列
+async function deleteOneRecord(id){
+  try{
+    const res=await apiPost('deleteRecordById',{id});
+    if(res&&res.error)throw new Error(res.error);
+    lc('data',{records:data,nextId:nid});
+  }catch(err){
+    console.warn('單筆刪除失敗，改用整包儲存：',err);
+    await save();
+  }
+}
 async function saveO(){try{await Promise.all([apiPost('saveOptions',opts),apiPost('saveCodes',{opts,payCode:codeDesc.payCode,payCodeShort:{},fwdCode:codeDesc.fwdCode,fwdCodeShort:{}})]);lc('opts',{opts,modelNames});}catch(e){console.error(e);}}
 async function saveVendors(){await apiPost('saveVendors',vendors);lc('vendors',vendors);}
 async function saveModels(){await apiPost('saveModels',models);lc('models',models);}
@@ -2203,7 +2225,7 @@ async function reviewAutoCloseMob(recId, batchIdx){
 
   showLoading(true);
   try{
-    await save();
+    await saveOneRecord(r);
     toast(allBatchesDone ? '✓ 已確認交貨（整張完成）' : '✓ 已確認部分到貨');
     renderDashboard();
     renderCards();
@@ -2701,10 +2723,11 @@ async function saveRec(){
   rec.deliveries=getDPsM();
   // 注意：已交貨狀態改為透過「儀表板 ETA 追蹤」的審核機制手動確認，
   // 不在儲存時自動覆蓋 status（避免跳過審核步驟）。
-  if(eid){const idx=data.findIndex(x=>x.id===eid);data[idx]={...data[idx],...rec};}
-  else{rec.id=nid++;data.push(rec);}
+  let savedRec;
+  if(eid){const idx=data.findIndex(x=>x.id===eid);data[idx]={...data[idx],...rec};savedRec=data[idx];}
+  else{rec.id=nid++;data.push(rec);savedRec=rec;}
   showLoading(true);
-  await save();
+  await saveOneRecord(savedRec);
   showLoading(false);
   closeDet();
   toast(eid?'✓ 已更新':'✓ 已新增');
@@ -2713,8 +2736,9 @@ async function saveRec(){
 
 async function deleteCurRec(){
   if(!eid||!confirm('確定刪除此筆採購？'))return;
-  data=data.filter(r=>r.id!==eid);
-  showLoading(true);await save();showLoading(false);
+  const delId=eid;
+  data=data.filter(r=>r.id!==delId);
+  showLoading(true);await deleteOneRecord(delId);showLoading(false);
   closeDet();toast('✓ 已刪除');renderCards();renderPayCards();
 }
 

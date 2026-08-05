@@ -1422,55 +1422,107 @@ function bindManualFlags(){
 function localCache(key,val){try{localStorage.setItem('pv6_'+key,JSON.stringify(val));}catch(e){}}
 function localRead(key){try{const s=localStorage.getItem('pv6_'+key);return s?JSON.parse(s):null;}catch(e){return null;}}
 
-// ── 載入所有資料（從 Google Sheets）─────────────────────
-async function load(){
-  showLoading(true);
+// ── 從本地快取還原狀態（供「快取優先渲染」與離線備援共用）────
+function loadFromCache(){
+  const d=localRead('data');if(d){data=d.records||[];nid=d.nextId||data.length+1;}else{data=DEF;nid=2;}
+  const o=localRead('opts');if(o){opts={...DO,...(o.opts||{})};modelNames=o.modelNames||{...DN_DEF};}else{opts={...DO};modelNames={...DN_DEF};}
+  const r=localRead('rates');rates=r?{...DR,...r}:{...DR};
+  const h=localRead('hols');hols=h||[...DH];
+  const c=localRead('codes');
+  if(c){
+    const normCD=(obj)=>{const rr={};Object.entries(obj||{}).forEach(([k,v])=>rr[String(k)]=v);return rr;};
+    codeDesc.payCode=normCD(c.payCode);
+    codeDesc.fwdCode=normCD(c.fwdCode);
+    codeDesc.payCodeShort=normCD(c.payCodeShort);
+    codeDesc.fwdCodeShort=normCD(c.fwdCodeShort);
+  }
+  const vv=localRead('vendors');vendors=vv||[];
+  const mm=localRead('models');models=mm||[];
+}
+
+// ── 向後端取得最新資料：優先用單一 getAll，若後端尚未支援則退回 7 個個別呼叫 ──
+async function fetchFromAPI(){
+  let dataRes,optsRes,ratesRes,holsRes,codesRes,vendorsRes,modelsRes;
   try{
-    // 並行載入所有資料
-    const [dataRes,optsRes,ratesRes,holsRes,codesRes,vendorsRes,modelsRes]=await Promise.all([
+    // 嘗試 getAll（1 次請求，最快）
+    const all=await apiGet('getAll');
+    if(all&&all.data&&all.data.records!==undefined){
+      dataRes=all.data;optsRes=all.opts;ratesRes=all.rates;holsRes=all.hols;
+      codesRes=all.codes;vendorsRes=all.vendors;modelsRes=all.models;
+    }else{
+      throw new Error('getAll not available');
+    }
+  }catch(e){
+    // Fallback：7 個個別呼叫（舊版 Apps Script 相容）
+    [dataRes,optsRes,ratesRes,holsRes,codesRes,vendorsRes,modelsRes]=await Promise.all([
       apiGet('getData'),apiGet('getOptions'),apiGet('getRates'),apiGet('getHols'),apiGet('getCodes'),
       apiGet('getVendors'),apiGet('getModels')
     ]);
-    // 採購資料
-    data=dataRes.records||[];nid=dataRes.nextId||data.length+1;
-    // 選單設定
-    opts={...DO,...(optsRes||{})};
-    Object.keys(DO).forEach(k=>{if(!opts[k]||!opts[k].length)opts[k]=[...DO[k]];});
-    modelNames={...DN_DEF};
-    // 匯率
-    rates={...DR,...(ratesRes||{})};
-    Object.keys(DR).forEach(k=>{if(rates[k]==null)rates[k]=DR[k];});
-    // 假日
-    hols=holsRes||[...DH];
-    // 代號描述
-    const normCD=(obj)=>{const r={};Object.entries(obj||{}).forEach(([k,v])=>r[String(k)]=v);return r;};
-    codeDesc.payCode=normCD(codesRes&&codesRes.payCode);
-    codeDesc.fwdCode=normCD(codesRes&&codesRes.fwdCode);
-    codeDesc.payCodeShort=normCD(codesRes&&codesRes.payCodeShort);
-    codeDesc.fwdCodeShort=normCD(codesRes&&codesRes.fwdCodeShort);
-    // Normalize payment/forwarder codes in data to match codeDesc keys
-    data.forEach(r=>{
-      if(r.payment)r.payment=normalizePaymentCode(r.payment);
-      if(r.forwarder)r.forwarder=normalizePaymentCode(r.forwarder);
+  }
+  // 採購資料
+  data=dataRes.records||[];nid=dataRes.nextId||data.length+1;
+  // 選單設定
+  opts={...DO,...(optsRes||{})};
+  Object.keys(DO).forEach(k=>{if(!opts[k]||!opts[k].length)opts[k]=[...DO[k]];});
+  modelNames={...DN_DEF};
+  // 匯率
+  rates={...DR,...(ratesRes||{})};
+  Object.keys(DR).forEach(k=>{if(rates[k]==null)rates[k]=DR[k];});
+  // 假日
+  hols=holsRes||[...DH];
+  // 代號描述
+  const normCD=(obj)=>{const r={};Object.entries(obj||{}).forEach(([k,v])=>r[String(k)]=v);return r;};
+  codeDesc.payCode=normCD(codesRes&&codesRes.payCode);
+  codeDesc.fwdCode=normCD(codesRes&&codesRes.fwdCode);
+  codeDesc.payCodeShort=normCD(codesRes&&codesRes.payCodeShort);
+  codeDesc.fwdCodeShort=normCD(codesRes&&codesRes.fwdCodeShort);
+  // Normalize payment/forwarder codes in data to match codeDesc keys
+  data.forEach(r=>{
+    if(r.payment)r.payment=normalizePaymentCode(r.payment);
+    if(r.forwarder)r.forwarder=normalizePaymentCode(r.forwarder);
+  });
+  // 本地快取
+  vendors=vendorsRes||[];models=modelsRes||[];
+  localCache('data',{records:data,nextId:nid});
+  localCache('opts',{opts,modelNames});
+  localCache('rates',rates);
+  localCache('hols',hols);
+  localCache('codes',codesRes);
+  localCache('vendors',vendors);localCache('models',models);
+}
+
+// 重新整理目前畫面（背景更新完成後呼叫，桌機/手機各自對應的畫面）
+function _refreshCurrentView(){
+  migrateModelsFromOpts();
+  refreshSels();
+  if(IS_MOB()){
+    if(typeof mobSwTab==='function')mobSwTab(mobCurTab||'list');
+  }else{
+    sw(curTab||'list');
+  }
+}
+
+// ── 載入所有資料（從 Google Sheets）─────────────────────
+async function load(){
+  const hasCache=!!localRead('data')&&!!localRead('opts');
+  if(hasCache){
+    // 有本地快取：先用快取立即渲染，不顯示 loading，API 完成後在背景刷新畫面
+    loadFromCache();
+    fetchFromAPI().then(()=>{
+      _refreshCurrentView();
+    }).catch(err=>{
+      console.warn('背景更新失敗，沿用快取資料：',err);
+      ntf('⚠ 無法連線，目前顯示先前的快取資料');
     });
-    // 本地快取
-    vendors=vendorsRes||[];models=modelsRes||[];
-    localCache('data',{records:data,nextId:nid});
-    localCache('opts',{opts,modelNames});
-    localCache('rates',rates);
-    localCache('hols',hols);
-    localCache('codes',codesRes);
-    localCache('vendors',vendors);localCache('models',models);
+    return;
+  }
+  // 沒有快取（第一次使用）：顯示 loading，等待 API 完成
+  showLoading(true);
+  try{
+    await fetchFromAPI();
   }catch(err){
     console.warn('API 載入失敗，嘗試使用本地快取：',err);
-    // 離線備援：讀取本地快取
-    const d=localRead('data');if(d){data=d.records||[];nid=d.nextId||data.length+1;}else{data=DEF;nid=2;}
-    const o=localRead('opts');if(o){opts={...DO,...(o.opts||{})};modelNames=o.modelNames||{...DN_DEF};}else{opts={...DO};modelNames={...DN_DEF};}
-    const r=localRead('rates');rates=r?{...DR,...r}:{...DR};
-    const h=localRead('hols');hols=h||[...DH];
-    const c=localRead('codes');if(c){codeDesc.payCode=c.payCode||{};codeDesc.fwdCode=c.fwdCode||{};}
-    const vv=localRead('vendors');vendors=vv||[];
-    const mm=localRead('models');models=mm||[];
+    loadFromCache();
     ntf('⚠ 離線模式：顯示本地快取資料');
   }
   showLoading(false);
@@ -1481,6 +1533,29 @@ async function save(){
     await apiPost('saveData',{records:data,nextId:nid});
     localCache('data',{records:data,nextId:nid});  // 同步更新快取
   }catch(err){console.error('儲存採購資料失敗:',err);ntf('❌ 儲存失敗，請檢查網路');}
+}
+// 單筆新增/更新：只送這一筆資料，後端只覆寫對應那一列（比整包 save() 快）
+// 若後端尚未部署新版（沒有 upsertRecord），自動退回整包儲存，確保仍然存得進去
+async function saveOneRecord(rec){
+  try{
+    const res=await apiPost('upsertRecord',rec);
+    if(res&&res.error)throw new Error(res.error);
+    localCache('data',{records:data,nextId:nid});
+  }catch(err){
+    console.warn('單筆儲存失敗，改用整包儲存：',err);
+    await save();
+  }
+}
+// 單筆刪除：只送 id，後端只刪對應那一列（比整包 save() 快）
+async function deleteOneRecord(id){
+  try{
+    const res=await apiPost('deleteRecordById',{id});
+    if(res&&res.error)throw new Error(res.error);
+    localCache('data',{records:data,nextId:nid});
+  }catch(err){
+    console.warn('單筆刪除失敗，改用整包儲存：',err);
+    await save();
+  }
 }
 async function saveO(){
   try{
@@ -2002,7 +2077,7 @@ async function reviewAutoClose(recId, batchIdx){
 
   showLoading(true);
   try{
-    await save();
+    await saveOneRecord(r);
     ntf(allBatchesDone ? '✓ 已確認交貨（整張完成）' : '✓ 已確認部分到貨');
     renderDash();
     if(curTab==='list') renderList();
@@ -2542,16 +2617,17 @@ async function saveRec(){
   }));
   // 注意：已交貨狀態改為透過「儀表板 ETA 追蹤」的審核機制手動確認，
   // 不在儲存時自動覆蓋 status（避免跳過審核步驟）。
-  if(eid){const idx=data.findIndex(x=>x.id===eid);data[idx]={...data[idx],...rec};}
-  else{rec.id=nid++;data.push(rec);}
-  showLoading(true);await save();showLoading(false);closeDet();ntf(eid?'✓ 已更新':'✓ 已新增');
+  let savedRec;
+  if(eid){const idx=data.findIndex(x=>x.id===eid);data[idx]={...data[idx],...rec};savedRec=data[idx];}
+  else{rec.id=nid++;data.push(rec);savedRec=rec;}
+  showLoading(true);await saveOneRecord(savedRec);showLoading(false);closeDet();ntf(eid?'✓ 已更新':'✓ 已新增');
   if(curTab==='list')renderList();
   else if(curTab==='payment')renderPay();
   else if(curTab==='calendar')renderCal();
   else renderDash();
 }
-async function delCur(){if(!eid||!confirm('確定刪除？'))return;data=data.filter(r=>r.id!==eid);showLoading(true);await save();showLoading(false);closeDet();ntf('✓ 已刪除');renderList();}
-async function delRec(id){if(!confirm('確定刪除？'))return;data=data.filter(r=>r.id!==id);showLoading(true);await save();showLoading(false);ntf('✓ 已刪除');renderList();}
+async function delCur(){if(!eid||!confirm('確定刪除？'))return;const delId=eid;data=data.filter(r=>r.id!==delId);showLoading(true);await deleteOneRecord(delId);showLoading(false);closeDet();ntf('✓ 已刪除');renderList();}
+async function delRec(id){if(!confirm('確定刪除？'))return;data=data.filter(r=>r.id!==id);showLoading(true);await deleteOneRecord(id);showLoading(false);ntf('✓ 已刪除');renderList();}
 
 // Options
 const OL={plant:'廠區',dept:'部門',payStage:'付款期別',claimType:'請款方式',country:'國家',city:'產地城市',shipMode:'運送方式'};
