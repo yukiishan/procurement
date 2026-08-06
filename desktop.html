@@ -1542,6 +1542,9 @@ async function saveOneRecord(rec){
     if(res&&res.error)throw new Error(res.error);
     localCache('data',{records:data,nextId:nid});
   }catch(err){
+    // Token 已過期時，_handleTokenExpiry() 已經顯示登入畫面且清空 Token，
+    // 用同一個過期 Token 重試整包儲存注定失敗，只會白等一趟，直接停下來即可
+    if(err&&err.message==='請重新登入'){throw err;}
     console.warn('單筆儲存失敗，改用整包儲存：',err);
     await save();
   }
@@ -1553,6 +1556,7 @@ async function deleteOneRecord(id){
     if(res&&res.error)throw new Error(res.error);
     localCache('data',{records:data,nextId:nid});
   }catch(err){
+    if(err&&err.message==='請重新登入'){throw err;}
     console.warn('單筆刪除失敗，改用整包儲存：',err);
     await save();
   }
@@ -2081,6 +2085,8 @@ async function reviewAutoClose(recId, batchIdx){
     ntf(allBatchesDone ? '✓ 已確認交貨（整張完成）' : '✓ 已確認部分到貨');
     renderDash();
     if(curTab==='list') renderList();
+  } catch(err){
+    if(!(err&&err.message==='請重新登入'))ntf('❌ 儲存失敗，請檢查網路');
   } finally {
     showLoading(false);
   }
@@ -2620,14 +2626,48 @@ async function saveRec(){
   let savedRec;
   if(eid){const idx=data.findIndex(x=>x.id===eid);data[idx]={...data[idx],...rec};savedRec=data[idx];}
   else{rec.id=nid++;data.push(rec);savedRec=rec;}
-  showLoading(true);await saveOneRecord(savedRec);showLoading(false);closeDet();ntf(eid?'✓ 已更新':'✓ 已新增');
-  if(curTab==='list')renderList();
-  else if(curTab==='payment')renderPay();
-  else if(curTab==='calendar')renderCal();
-  else renderDash();
+  showLoading(true);
+  try{
+    await saveOneRecord(savedRec);
+    closeDet();ntf(eid?'✓ 已更新':'✓ 已新增');
+    if(curTab==='list')renderList();
+    else if(curTab==='payment')renderPay();
+    else if(curTab==='calendar')renderCal();
+    else renderDash();
+  }catch(err){
+    // Token 過期時登入畫面已經蓋上去了，這裡不用再另外提示；其他錯誤才提示失敗
+    if(!(err&&err.message==='請重新登入'))ntf('❌ 儲存失敗，請檢查網路');
+  }finally{
+    showLoading(false);
+  }
 }
-async function delCur(){if(!eid||!confirm('確定刪除？'))return;const delId=eid;data=data.filter(r=>r.id!==delId);showLoading(true);await deleteOneRecord(delId);showLoading(false);closeDet();ntf('✓ 已刪除');renderList();}
-async function delRec(id){if(!confirm('確定刪除？'))return;data=data.filter(r=>r.id!==id);showLoading(true);await deleteOneRecord(id);showLoading(false);ntf('✓ 已刪除');renderList();}
+async function delCur(){
+  if(!eid||!confirm('確定刪除？'))return;
+  const delId=eid;
+  data=data.filter(r=>r.id!==delId);
+  showLoading(true);
+  try{
+    await deleteOneRecord(delId);
+    closeDet();ntf('✓ 已刪除');renderList();
+  }catch(err){
+    if(!(err&&err.message==='請重新登入'))ntf('❌ 刪除失敗，請檢查網路');
+  }finally{
+    showLoading(false);
+  }
+}
+async function delRec(id){
+  if(!confirm('確定刪除？'))return;
+  data=data.filter(r=>r.id!==id);
+  showLoading(true);
+  try{
+    await deleteOneRecord(id);
+    ntf('✓ 已刪除');renderList();
+  }catch(err){
+    if(!(err&&err.message==='請重新登入'))ntf('❌ 刪除失敗，請檢查網路');
+  }finally{
+    showLoading(false);
+  }
+}
 
 // Options
 const OL={plant:'廠區',dept:'部門',payStage:'付款期別',claimType:'請款方式',country:'國家',city:'產地城市',shipMode:'運送方式'};

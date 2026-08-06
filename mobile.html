@@ -1407,6 +1407,7 @@ async function saveOneRecord(rec){
     if(res&&res.error)throw new Error(res.error);
     lc('data',{records:data,nextId:nid});
   }catch(err){
+    if(err&&err.message==='請重新登入'){throw err;}
     console.warn('單筆儲存失敗，改用整包儲存：',err);
     await save();
   }
@@ -1418,6 +1419,7 @@ async function deleteOneRecord(id){
     if(res&&res.error)throw new Error(res.error);
     lc('data',{records:data,nextId:nid});
   }catch(err){
+    if(err&&err.message==='請重新登入'){throw err;}
     console.warn('單筆刪除失敗，改用整包儲存：',err);
     await save();
   }
@@ -2229,6 +2231,8 @@ async function reviewAutoCloseMob(recId, batchIdx){
     toast(allBatchesDone ? '✓ 已確認交貨（整張完成）' : '✓ 已確認部分到貨');
     renderDashboard();
     renderCards();
+  } catch(err){
+    if(!(err&&err.message==='請重新登入'))toast('❌ 儲存失敗，請檢查網路');
   } finally {
     showLoading(false);
   }
@@ -2727,19 +2731,31 @@ async function saveRec(){
   if(eid){const idx=data.findIndex(x=>x.id===eid);data[idx]={...data[idx],...rec};savedRec=data[idx];}
   else{rec.id=nid++;data.push(rec);savedRec=rec;}
   showLoading(true);
-  await saveOneRecord(savedRec);
-  showLoading(false);
-  closeDet();
-  toast(eid?'✓ 已更新':'✓ 已新增');
-  renderCards();renderPayCards();
+  try{
+    await saveOneRecord(savedRec);
+    closeDet();
+    toast(eid?'✓ 已更新':'✓ 已新增');
+    renderCards();renderPayCards();
+  }catch(err){
+    if(!(err&&err.message==='請重新登入'))toast('❌ 儲存失敗，請檢查網路');
+  }finally{
+    showLoading(false);
+  }
 }
 
 async function deleteCurRec(){
   if(!eid||!confirm('確定刪除此筆採購？'))return;
   const delId=eid;
   data=data.filter(r=>r.id!==delId);
-  showLoading(true);await deleteOneRecord(delId);showLoading(false);
-  closeDet();toast('✓ 已刪除');renderCards();renderPayCards();
+  showLoading(true);
+  try{
+    await deleteOneRecord(delId);
+    closeDet();toast('✓ 已刪除');renderCards();renderPayCards();
+  }catch(err){
+    if(!(err&&err.message==='請重新登入'))toast('❌ 刪除失敗，請檢查網路');
+  }finally{
+    showLoading(false);
+  }
 }
 
 // ══════════════════════════════════════════════════
