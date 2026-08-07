@@ -1324,16 +1324,27 @@ let opts={},rates={},hols=[],modelNames={};
 
 // ── API 呼叫工具 ──────────────────────────────────────
 async function apiGet(action){
-  const res=await fetch(`${API_URL}?action=${action}&token=${encodeURIComponent(_TOKEN)}`);
+  const _tokAtCall=_TOKEN; // 記住這次請求發送當下用的 Token
+  const res=await fetch(`${API_URL}?action=${action}&token=${encodeURIComponent(_tokAtCall)}`);
   const json=await res.json();
-  if(json.code==='INVALID_TOKEN'){_handleTokenExpiry();throw new Error('請重新登入');}
+  if(json.code==='INVALID_TOKEN'){
+    // 只有在「目前的 Token」跟「這次發送當下的 Token」相同時才登出。
+    // 如果不同，代表中途已經有更新的登入把 Token 換掉了，這只是一個慢半拍、過期的回應，忽略即可，
+    // 避免把使用者剛登入成功的新 Token 洗掉（造成「第一次登入看起來失敗，要按第二次」的競速問題）。
+    if(_tokAtCall===_TOKEN)_handleTokenExpiry();
+    throw new Error('請重新登入');
+  }
   if(!json.ok)throw new Error(json.error);
   return json.data;
 }
 async function apiPost(action,payload){
-  const res=await fetch(API_URL,{method:'POST',body:JSON.stringify({action,payload,token:_TOKEN})});
+  const _tokAtCall=_TOKEN;
+  const res=await fetch(API_URL,{method:'POST',body:JSON.stringify({action,payload,token:_tokAtCall})});
   const json=await res.json();
-  if(json.code==='INVALID_TOKEN'){_handleTokenExpiry();throw new Error('請重新登入');}
+  if(json.code==='INVALID_TOKEN'){
+    if(_tokAtCall===_TOKEN)_handleTokenExpiry();
+    throw new Error('請重新登入');
+  }
   if(!json.ok)throw new Error(json.error);
   return json.data;
 }
@@ -3346,14 +3357,18 @@ const _origStartApp = startApp;
 async function startApp(){
   // 還原 Token（頁面重整後從 sessionStorage 取回）
   if(!_TOKEN) _TOKEN = sessionStorage.getItem('pv6_token') || '';
-  // 還原計時器（頁面重整後）
-  if(_TOKEN && sessionStorage.getItem(SESSION_KEY)==='1'){
-    const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
-    if(loginTime && (Date.now() - loginTime) >= SESSION_TTL_MS){
-      _handleTokenExpiry(); return; // 重整時已過期，直接登出
-    }
-    startTokenHeartbeat();
+  // 還沒登入（沒有 Token 或 session 不存在）：不要嘗試載入資料，停在登入畫面即可。
+  // 避免帶著空白 Token 打 API，該請求稍後才收到 INVALID_TOKEN 回應時，
+  // 可能會跟使用者剛輸入密碼登入成功的流程互相競速，把剛拿到的正確 Token 洗掉。
+  if(!_TOKEN || sessionStorage.getItem(SESSION_KEY)!=='1'){
+    return;
   }
+  // 還原計時器（頁面重整後）
+  const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
+  if(loginTime && (Date.now() - loginTime) >= SESSION_TTL_MS){
+    _handleTokenExpiry(); return; // 重整時已過期，直接登出
+  }
+  startTokenHeartbeat();
   try{
     initCalY();
     await load();
