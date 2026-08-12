@@ -801,7 +801,7 @@ function _updatePwDots(){
 
 <div id="tab-payment" style="display:none">
   <div class="toolbar">
-    <input type="text" id="psrch" placeholder="🔍 搜尋 PO / 廠商 / 設備..." oninput="debouncedRenderPay()">
+    <input type="text" id="psrch" placeholder="🔍 搜尋 PO / 廠商 / 設備 / 發票..." oninput="debouncedRenderPay()">
     <input type="date" id="pDateFilter" title="依付款日期篩選" style="font-size:11px;padding:3px 6px;border-radius:var(--r);border:1px solid var(--bd);background:var(--sf2);color:var(--tx);height:26px;font-family:inherit" oninput="debouncedRenderPay()">
     <button class="btn xs" onclick="document.getElementById('pDateFilter').value='';renderPay()" title="清除日期篩選" style="padding:2px 7px">✕日期</button>
     <div style="display:flex;gap:4px;align-items:center">
@@ -1942,11 +1942,14 @@ function renderPay(){
     return`<span style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap;background:${col}22;color:${col};border:1px solid ${col}55">${safe(sl)}</span>`;
   }
 
-  // 文字搜尋：比對 PO、廠商、型號等固定欄位（不含付款明細，避免誤比對）
+  // 文字搜尋：比對 PO、廠商、型號等固定欄位，以及每筆付款明細裡的發票號碼
   function matchRec(r){
     if(!q) return true;
-    return [r.pr,r.vendor,r.model,r.payment,r.dept,r.plant,r.pr]
+    const baseMatch=[r.pr,r.vendor,r.model,r.payment,r.dept,r.plant]
       .some(v=>v&&String(v).toLowerCase().includes(q));
+    if(baseMatch) return true;
+    // 發票號碼藏在付款明細（deliveries[].payments[].invoice）裡，不是訂單固定欄位，要另外比對
+    return (r.deliveries||[]).some(d=>(d.payments||[]).some(p=>p.invoice&&String(p.invoice).toLowerCase().includes(q)));
   }
 
   const {col:_psc,dir:_psd}=_sortState['tab-payment']||{col:null,dir:'asc'};
