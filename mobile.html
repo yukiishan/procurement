@@ -115,7 +115,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
   justify-content:space-around;
   position:fixed;
   left:12px;right:12px;
-  bottom:calc(14px + env(safe-area-inset-bottom,0px));
+  bottom:15px;
   padding:8px 6px;
   flex-shrink:0;
   z-index:300;
@@ -125,22 +125,21 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
 #tabBarFade{
   position:fixed;
   left:0;right:0;bottom:0;
-  height:calc(14px + env(safe-area-inset-bottom,0px) + 34px);
+  height:calc(15px + 34px);
   background:linear-gradient(180deg, transparent 0%, var(--bg) 65%);
   pointer-events:none;
   z-index:290
 }
 /* Reserve space for fixed tabBar inside flex #app */
 #tabBarSpacer{
-  height:calc(var(--tab-h) + var(--tab-extra) + env(safe-area-inset-bottom,0px));
+  height:calc(var(--tab-h) + var(--tab-extra));
   flex-shrink:0
 }
 
 /* ── LOGIN SCREEN ── */
 #loginScreen{
   position:fixed;
-  top:0;left:0;right:0;
-  height:100vh;
+  top:0;left:0;right:0;bottom:0;
   background:#9A7A78;
   z-index:999;
   display:flex;
@@ -226,7 +225,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
 .empty-state p{font-size:14px;color:var(--tx3);text-align:center}
 
 /* ── FAB (Floating Action Button) ── */
-.fab{position:fixed;bottom:calc(var(--tab-h) + var(--tab-extra) + env(safe-area-inset-bottom,0px) + 16px);right:20px;width:54px;height:54px;background:#3A5480;border-radius:27px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(58,84,128,.35);z-index:40;transition:transform .15s}
+.fab{position:fixed;bottom:calc(var(--tab-h) + var(--tab-extra) + 16px);right:20px;width:54px;height:54px;background:#3A5480;border-radius:27px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(58,84,128,.35);z-index:40;transition:transform .15s}
 .fab:active{transform:scale(.93)}
 .fab svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
@@ -234,7 +233,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
 .det-page{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:150;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94)}
 .det-page.open{transform:translateX(0)}
 /* Settings sub-pages: leave tab bar visible at bottom */
-.det-page-settings{bottom:calc(var(--tab-h) + var(--tab-extra) + env(safe-area-inset-bottom,0px))}
+.det-page-settings{bottom:calc(var(--tab-h) + var(--tab-extra))}
 .det-nav{background:var(--sf);border-bottom:1px solid var(--bd);padding:12px 14px;display:flex;align-items:center;gap:10px;padding-top:calc(var(--safe-top) + 12px);flex-shrink:0}
 .det-nav-back{background:none;border:none;color:#3A5480;font-size:16px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;padding:4px 0;font-family:inherit}
 .det-nav-back svg{width:20px;height:20px;stroke:#3A5480;fill:none;stroke-width:2;stroke-linecap:round}
@@ -319,7 +318,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── TOAST ── */
-#toast{position:fixed;bottom:calc(var(--tab-h) + var(--tab-extra) + env(safe-area-inset-bottom,0px) + 12px);left:50%;transform:translateX(-50%) translateY(10px);background:rgba(13,27,42,.9);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:500;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none}
+#toast{position:fixed;bottom:calc(var(--tab-h) + var(--tab-extra) + 12px);left:50%;transform:translateX(-50%) translateY(10px);background:rgba(13,27,42,.9);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:500;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ── PAY PAGE CARDS ── */
@@ -345,7 +344,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
 .dc-sub{font-size:11px;color:var(--tx3);margin-top:3px}
 
 /* ── SETTINGS ── */
-.set-section{padding:14px 14px calc(var(--tab-h)+var(--tab-extra)+env(safe-area-inset-bottom,0px)+20px)}
+.set-section{padding:14px 14px calc(var(--tab-h)+var(--tab-extra)+20px)}
 .set-group-title{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;padding:0 4px;margin-bottom:7px;margin-top:16px}
 .set-group-title:first-child{margin-top:0}
 .set-card{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);overflow:hidden;margin-bottom:4px}
@@ -680,7 +679,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
 
     <!-- DASHBOARD PAGE -->
     <div class="page scroll-page" id="page-dash">
-      <div style="padding:14px 14px calc(var(--tab-h)+var(--tab-extra)+var(--safe-bot)+20px)">
+      <div style="padding:14px 14px calc(var(--tab-h)+var(--tab-extra)+20px)">
         <div id="dashCards" style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px"></div>
         <div class="stat-card" style="margin-bottom:10px">
           <div class="stat-card-title">交期追蹤 ETA（未交貨）<span id="etaAutoCount" style="font-weight:400;color:var(--amber-tx,#6B4A28)"></span></div>
