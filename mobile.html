@@ -127,7 +127,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
   position:fixed;
   left:0;right:0;bottom:0;
   height:calc(15px + 34px);
-  background:linear-gradient(180deg, transparent 0%, var(--bg) 65%);
+  background:linear-gradient(180deg, rgba(245,239,238,0) 0%, var(--bg) 65%);
   pointer-events:none;
   z-index:290
 }
@@ -1231,14 +1231,20 @@ let _TOKEN=sessionStorage.getItem('pv6_token')||'';
 
 // 手機鍵盤跳出時，畫面可視高度會縮小；用 visualViewport 動態調整登入畫面高度，
 // #loginScreen 用 justify-content:center 置中，縮小高度後置中內容會自動往上收，
-// 比照美甲網頁的做法。實測發現本系統內容整體置中後，縮小同樣高度會比美甲網頁多往上移
-// 約 235px，所以補回這段差距，讓密碼欄/登入鈕跟鍵盤上方核准列的間距跟美甲網頁一致。
+// 比照美甲網頁的做法。實測發現本系統內容整體置中後，縮小同樣高度會比美甲網頁多往上移，
+// 所以補回這段差距，讓密碼欄/登入鈕跟鍵盤上方核准列的間距跟美甲網頁一致。
+// 一定要判斷「真的是鍵盤跳出來」（可視高度明顯變矮）才套用，沒開鍵盤時要維持原本 100dvh 滿版。
 const LOGIN_KB_COMPENSATE=335;
 function _adjustLoginScreenForKeyboard(){
   const ls=document.getElementById('loginScreen');
   if(!ls||!window.visualViewport)return;
-  const targetH=Math.min(window.innerHeight, window.visualViewport.height+LOGIN_KB_COMPENSATE);
-  ls.style.height=targetH+'px';
+  const kbGap=window.innerHeight-window.visualViewport.height;
+  if(kbGap>100){
+    const targetH=Math.min(window.innerHeight, window.visualViewport.height+LOGIN_KB_COMPENSATE);
+    ls.style.height=targetH+'px';
+  }else{
+    ls.style.height='';
+  }
 }
 if(window.visualViewport){
   window.visualViewport.addEventListener('resize',_adjustLoginScreenForKeyboard);
