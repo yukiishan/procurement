@@ -69,10 +69,10 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
   display:flex;
   flex-direction:column;
   position:fixed;
-  top:0;left:0;right:0;bottom:0;
+  top:0;left:0;right:0;
+  height:100dvh; /* 動態視窗高度，瀏覽器原生支援，Safari 網址列/工具列顯示縮放時會自動即時調整，不需要 JS 手動同步 */
   background:var(--sf);
-  overflow:hidden;
-  transition:height .15s ease
+  overflow:hidden
 }
 
 /* ── STATUS BAR SPACER (top safe area) ── */
@@ -140,7 +140,8 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
 /* ── LOGIN SCREEN ── */
 #loginScreen{
   position:fixed;
-  top:0;left:0;right:0;bottom:0;
+  top:0;left:0;right:0;
+  height:100dvh; /* 動態視窗高度，瀏覽器原生支援，取代手動 JS 同步 */
   background:#9A7A78;
   z-index:999;
   display:flex;
@@ -150,8 +151,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
   padding:395px 32px 0;
   width:100%;
   box-sizing:border-box;
-  overflow:hidden;
-  transition:height .15s ease,padding-top .15s ease
+  overflow:hidden
 }
 #loginScreen h1,#loginScreen p,#loginScreen .login-input,#loginScreen .login-btn,#loginScreen .login-err,#pwDotsBox{
   width:100%;max-width:340px
@@ -1232,12 +1232,15 @@ let _TOKEN=sessionStorage.getItem('pv6_token')||'';
 // 避免登入按鈕被鍵盤上方的工具列（上下箭頭/完成鍵）擋住。
 // 因為登入畫面改用 justify-content:flex-start + 固定 padding-top 精準定位（比照美甲網頁像素），
 // 鍵盤跳出時要主動把 padding-top 往回收，內容才會跟著往上收；不能只靠縮小高度（那是給 center 用的）。
+// 加上「密碼欄必須實際 focus 中」的判斷，避免 Safari 網址列顯示/收起等非鍵盤因素被誤判成鍵盤跳出。
 const LOGIN_BASE_PADDING_TOP=395;
 function _adjustLoginScreenForKeyboard(){
   const ls=document.getElementById('loginScreen');
+  const pwInput=document.getElementById('pwInput');
   if(!ls||!window.visualViewport)return;
   const kbGap=window.innerHeight-window.visualViewport.height;
-  if(kbGap>100){
+  const isTyping=document.activeElement===pwInput;
+  if(kbGap>100&&isTyping){
     ls.style.height=window.visualViewport.height+'px';
     ls.style.paddingTop=Math.max(20,LOGIN_BASE_PADDING_TOP-kbGap)+'px';
   }else{
@@ -1255,25 +1258,9 @@ if(window.visualViewport){
   pwInput.addEventListener('focus',()=>setTimeout(_adjustLoginScreenForKeyboard,50));
   pwInput.addEventListener('blur',()=>{
     const ls=document.getElementById('loginScreen');
-    if(ls)ls.style.height='';
+    if(ls){ls.style.height='';ls.style.paddingTop='';}
   });
 })();
-
-// 主畫面（#app）也持續跟 Safari 實際可視高度同步：Safari 的網址列/底部工具列會隨滾動
-// 顯示/隱藏，導致可視高度不斷變動；用 visualViewport 讓 #app（連同懸浮導覽列）隨時貼齊
-// 「目前真正看得到的」畫面底部，而不是用寫死的 CSS bottom:0（那個在 Safari 動態工具列
-// 顯示時可能對不準，Chrome 沒有這個動態工具列機制所以沒這個問題）。
-function _syncAppHeightToViewport(){
-  const app=document.getElementById('app');
-  if(!app||!window.visualViewport)return;
-  if(app.style.display==='none')return; // 登入畫面顯示中，#app 還沒出現
-  app.style.height=window.visualViewport.height+'px';
-}
-if(window.visualViewport){
-  window.visualViewport.addEventListener('resize',_syncAppHeightToViewport);
-  window.visualViewport.addEventListener('scroll',_syncAppHeightToViewport);
-}
-window.addEventListener('load',()=>setTimeout(_syncAppHeightToViewport,100));
 
 const DO={
   plant:['3B','3A','2B','1F'],
@@ -1616,7 +1603,6 @@ async function doLogin(){
       startTokenHeartbeat();
       document.getElementById('loginScreen').style.display='none';
       document.getElementById('app').style.display='flex';
-      setTimeout(_syncAppHeightToViewport,50);
       startApp();
     } else {
       err.textContent=json.error||'密碼錯誤';
@@ -3689,7 +3675,6 @@ function checkCodeDupMob(code){
 if(sessionStorage.getItem(SESSION_KEY)==='1'){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('app').style.display='flex';
-  setTimeout(_syncAppHeightToViewport,50);
   startApp();
 } else {
   setTimeout(()=>document.getElementById('pwInput').focus(),300);
