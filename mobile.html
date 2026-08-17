@@ -109,7 +109,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
 /* ── TAB BAR: 懸浮式導覽列（比照美甲網頁 .bottom-nav），fixed at bottom ── */
 #tabBar{
   background:var(--sf);
-  border:1px solid var(--bd);
+  border:1px solid rgba(0,0,0,.06);
   border-radius:20px;
   display:flex;
   align-items:center;
@@ -120,7 +120,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
   padding:8px 6px;
   flex-shrink:0;
   z-index:300;
-  box-shadow:0 14px 32px -12px rgba(0,0,0,.35)
+  box-shadow:0 8px 20px -10px rgba(0,0,0,.18)
 }
 /* 導覽列底下的漸層遮罩，取代完全透明的空隙（比照美甲網頁 .bottom-fade） */
 #tabBarFade{
@@ -1233,7 +1233,7 @@ let _TOKEN=sessionStorage.getItem('pv6_token')||'';
 // #loginScreen 用 justify-content:center 置中，縮小高度後置中內容會自動往上收，
 // 比照美甲網頁的做法。實測發現本系統內容整體置中後，縮小同樣高度會比美甲網頁多往上移
 // 約 235px，所以補回這段差距，讓密碼欄/登入鈕跟鍵盤上方核准列的間距跟美甲網頁一致。
-const LOGIN_KB_COMPENSATE=235;
+const LOGIN_KB_COMPENSATE=335;
 function _adjustLoginScreenForKeyboard(){
   const ls=document.getElementById('loginScreen');
   if(!ls||!window.visualViewport)return;
