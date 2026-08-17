@@ -744,9 +744,9 @@ function _updatePwDots(){
     <button class="btn" onclick="openHol()" title="假日設定"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> 假日</button>
     <button class="btn success" onclick="exportExcel()" title="匯出 Excel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Excel</button>
     <button class="btn" onclick="exportJSON()" title="備份資料"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> 備份</button>
-    <label class="btn" style="cursor:pointer" title="還原備份"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 還原<input type="file" accept=".json" style="display:none" onchange="importJSON(event)"></label>
-    
-  </div>
+    <label class="btn" style="cursor:pointer" title="還原本機備份"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 還原<input type="file" accept=".json" style="display:none" onchange="importJSON(event)"></label>
+    <button class="btn" onclick="openBackup()" title="雲端備份與還原（每日自動備份存放的地方）">☁️ 雲端備份</button>
+    </div>
 </div>
 
 <div id="tab-list">
@@ -1184,6 +1184,26 @@ function _updatePwDots(){
   </div>
   <div id="holDupWarnDesk" style="color:var(--red,#c0392b);font-size:10px;margin-top:3px;min-height:12px;font-weight:600"></div>
   <div class="mkft"><button class="btn" onclick="closeHol()">關閉</button><button class="btn primary" onclick="saveHols()">✓ 儲存</button></div>
+</div>
+</div>
+
+<!-- BACKUP MODAL -->
+<div class="mkov" id="backupMod">
+<div class="mk">
+  <h3>雲端備份與還原 <button onclick="closeBackup()">✕</button></h3>
+  <p style="font-size:11px;color:var(--tx2);margin-bottom:10px">
+    系統每天午夜過後會自動檢查前一天是否有異動，有的話就自動備份一次（存放於指定的雲端硬碟資料夾）。
+    這裡也可以立即手動備份，或選擇一份備份還原回目前系統（會覆蓋全部 7 個分頁的資料，此動作無法復原）。
+  </p>
+  <button class="btn primary sm" onclick="runManualBackup()" id="backupNowBtn" style="margin-bottom:14px">💾 立即備份</button>
+  <div style="border-top:1px solid var(--bd);padding-top:12px">
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px">還原備份</div>
+    <select id="backupSelect" style="width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx);margin-bottom:8px">
+      <option value="">讀取備份清單中…</option>
+    </select>
+    <button class="btn danger sm" onclick="runRestoreBackup()" id="backupRestoreBtn">還原此備份</button>
+  </div>
+  <div class="mkft"><button class="btn" onclick="closeBackup()">關閉</button></div>
 </div>
 </div>
 
@@ -2763,6 +2783,75 @@ function rmHol(i){hols.splice(i,1);renderHolList();}
 function addHol(){const date=document.getElementById('holDate').value,name=document.getElementById('holName').value.trim();if(!date){alert('請選擇日期');return;}if(hols.some(h=>h.date===date)){alert('此日期已存在');return;}hols.push({date,name});document.getElementById('holDate').value='';document.getElementById('holName').value='';renderHolList();}
 async function saveHols(){saveH();closeHol();ntf('✓ 假日已儲存');if(curTab==='calendar')renderCal();}
 function closeHol(){document.getElementById('holMod').classList.remove('open');}
+
+// ── 雲端備份與還原 ────────────────────────────────────
+let backupsCache=null;
+function openBackup(){
+  document.getElementById('backupMod').classList.add('open');
+  loadBackupsIntoSelect();
+}
+function closeBackup(){document.getElementById('backupMod').classList.remove('open');}
+
+async function loadBackupsIntoSelect(){
+  const select=document.getElementById('backupSelect');
+  select.innerHTML='<option value="">讀取備份清單中…</option>';
+  try{
+    const res=await apiGet('getBackups');
+    backupsCache=(res&&res.backups)||[];
+    if(!backupsCache.length){
+      select.innerHTML='<option value="">目前沒有任何雲端備份檔案</option>';
+      return;
+    }
+    select.innerHTML=backupsCache.map(b=>`<option value="${safe(b.id)}">${safe(b.date)}　${safe(b.name)}</option>`).join('');
+  }catch(err){
+    select.innerHTML=`<option value="">讀取失敗：${safe(err.message)}</option>`;
+  }
+}
+
+async function runManualBackup(){
+  const btn=document.getElementById('backupNowBtn');
+  const orig=btn.textContent;
+  btn.disabled=true;btn.textContent='⏳ 備份中…';
+  try{
+    const res=await apiPost('backup',{});
+    if(res&&res.error)throw new Error(res.error);
+    alert('備份完成 ✓\n檔名：'+(res&&res.backupName?res.backupName:''));
+    loadBackupsIntoSelect();
+  }catch(err){
+    if(!(err&&err.message==='請重新登入'))alert('備份失敗：'+err.message);
+  }finally{
+    btn.disabled=false;btn.textContent=orig;
+  }
+}
+
+async function runRestoreBackup(){
+  const select=document.getElementById('backupSelect');
+  const fileId=select.value;
+  if(!fileId){alert('請先選擇一份備份。');return;}
+  const selected=(backupsCache||[]).find(b=>b.id===fileId);
+  const label=selected?`${selected.date}　${selected.name}`:fileId;
+  if(!confirm(`確定要用「${label}」覆蓋目前全部 7 個分頁的資料嗎？\n此動作無法復原，目前的資料會被取代。`))return;
+
+  const btn=document.getElementById('backupRestoreBtn');
+  const orig=btn.textContent;
+  btn.disabled=true;btn.textContent='還原中…';
+  showLoading(true);
+  try{
+    const res=await apiPost('restore',{backupFileId:fileId});
+    if(res&&res.error)throw new Error(res.error);
+    alert(`還原完成，共還原 ${res&&res.restoredSheets!=null?res.restoredSheets:'?'} 個分頁 ✓\n頁面即將重新載入最新資料。`);
+    closeBackup();
+    await load();
+    migrateModelsFromOpts();
+    refreshSels();
+    sw(curTab||'list');
+  }catch(err){
+    if(!(err&&err.message==='請重新登入'))alert('還原失敗：'+err.message);
+  }finally{
+    btn.disabled=false;btn.textContent=orig;
+    showLoading(false);
+  }
+}
 
 function exportExcel(){
   if(typeof XLSX==='undefined'){alert('套件載入中');return;}

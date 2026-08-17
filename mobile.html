@@ -618,6 +618,11 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
             <div class="more-item-txt"><div class="more-item-title">匯出 Excel</div><div class="more-item-sub">下載設備歷程 & 設備價格</div></div>
             <div class="more-chevron">›</div>
           </div>
+          <div class="more-item" onclick="openBackupPage()">
+            <div class="more-icon" style="background:#0891b2"><svg viewBox="0 0 24 24"><path d="M3 15a4 4 0 004 4h10a4 4 0 000-8 5 5 0 00-9.6-1.5A4 4 0 003 15z"/></svg></div>
+            <div class="more-item-txt"><div class="more-item-title">雲端備份</div><div class="more-item-sub">每日自動備份・立即備份・還原</div></div>
+            <div class="more-chevron">›</div>
+          </div>
         </div>
         <div class="more-card">
           <div class="more-item" onclick="openSettings('opts')">
@@ -685,6 +690,13 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
               <svg viewBox="0 0 24 24" fill="none" stroke="#3D6647" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             </div>
             <div class="set-item-txt"><div class="set-item-title">匯出 Excel</div><div class="set-item-sub">設備歷程 &amp; 設備價格</div></div>
+            <svg class="set-chevron" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+          </div>
+          <div class="set-item" onclick="openBackupPage()">
+            <div class="set-icon" style="background:#DCEEF2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#0891b2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15a4 4 0 004 4h10a4 4 0 000-8 5 5 0 00-9.6-1.5A4 4 0 003 15z"/></svg>
+            </div>
+            <div class="set-item-txt"><div class="set-item-title">雲端備份</div><div class="set-item-sub">每日自動備份・立即備份・還原</div></div>
             <svg class="set-chevron" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
           </div>
           </div>
@@ -1139,6 +1151,34 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
     <!-- Delete button -->
     <button id="detDelBtn" onclick="deleteCurRec()" style="display:none;width:100%;margin-top:6px;padding:14px;background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:var(--rl);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">刪除此筆採購</button>
 
+  </div>
+</div>
+
+<!-- BACKUP PAGE -->
+<div class="det-page" id="backupPage">
+  <div class="det-nav">
+    <button class="det-nav-back" onclick="closeBackupPage()">
+      <svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回
+    </button>
+    <h2>雲端備份與還原</h2>
+    <span></span>
+  </div>
+  <div class="det-scroll" id="backupScroll">
+    <div class="form-section">
+      <p style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:14px">
+        系統每天午夜過後會自動檢查前一天是否有異動，有的話就自動備份一次。這裡也可以立即手動備份，
+        或選擇一份備份還原回目前系統（會覆蓋全部 7 個分頁的資料，此動作無法復原）。
+      </p>
+      <button id="backupNowBtnMob" onclick="runManualBackupMob()" style="width:100%;padding:13px;background:var(--blue,#3D5F78);color:#fff;border:none;border-radius:var(--rl);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:18px">💾 立即備份</button>
+
+      <div class="form-section-title">還原備份</div>
+      <div class="form-input-box" style="margin-bottom:10px">
+        <select id="backupSelectMob" class="form-select" style="width:100%">
+          <option value="">讀取備份清單中…</option>
+        </select>
+      </div>
+      <button id="backupRestoreBtnMob" onclick="runRestoreBackupMob()" style="width:100%;padding:14px;background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:var(--rl);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">還原此備份</button>
+    </div>
   </div>
 </div>
 
@@ -2778,6 +2818,76 @@ async function deleteCurRec(){
 // ══════════════════════════════════════════════════
 function openSettings(type){
   toast('設定功能請使用桌機版完整操作');
+}
+
+// ══════════════════════════════════════════════════
+//  雲端備份與還原
+// ══════════════════════════════════════════════════
+let backupsCacheMob=null;
+function openBackupPage(){
+  document.getElementById('backupPage').classList.add('open');
+  loadBackupsIntoSelectMob();
+}
+function closeBackupPage(){document.getElementById('backupPage').classList.remove('open');}
+
+async function loadBackupsIntoSelectMob(){
+  const select=document.getElementById('backupSelectMob');
+  select.innerHTML='<option value="">讀取備份清單中…</option>';
+  try{
+    const res=await apiGet('getBackups');
+    backupsCacheMob=(res&&res.backups)||[];
+    if(!backupsCacheMob.length){
+      select.innerHTML='<option value="">目前沒有任何雲端備份檔案</option>';
+      return;
+    }
+    select.innerHTML=backupsCacheMob.map(b=>`<option value="${safe(b.id)}">${safe(b.date)}　${safe(b.name)}</option>`).join('');
+  }catch(err){
+    select.innerHTML=`<option value="">讀取失敗：${safe(err.message)}</option>`;
+  }
+}
+
+async function runManualBackupMob(){
+  const btn=document.getElementById('backupNowBtnMob');
+  const orig=btn.textContent;
+  btn.disabled=true;btn.textContent='⏳ 備份中…';
+  try{
+    const res=await apiPost('backup',{});
+    if(res&&res.error)throw new Error(res.error);
+    alert('備份完成 ✓\n檔名：'+(res&&res.backupName?res.backupName:''));
+    loadBackupsIntoSelectMob();
+  }catch(err){
+    if(!(err&&err.message==='請重新登入'))alert('備份失敗：'+err.message);
+  }finally{
+    btn.disabled=false;btn.textContent=orig;
+  }
+}
+
+async function runRestoreBackupMob(){
+  const select=document.getElementById('backupSelectMob');
+  const fileId=select.value;
+  if(!fileId){alert('請先選擇一份備份。');return;}
+  const selected=(backupsCacheMob||[]).find(b=>b.id===fileId);
+  const label=selected?`${selected.date}　${selected.name}`:fileId;
+  if(!confirm(`確定要用「${label}」覆蓋目前全部 7 個分頁的資料嗎？\n此動作無法復原，目前的資料會被取代。`))return;
+
+  const btn=document.getElementById('backupRestoreBtnMob');
+  const orig=btn.textContent;
+  btn.disabled=true;btn.textContent='還原中…';
+  showLoading(true);
+  try{
+    const res=await apiPost('restore',{backupFileId:fileId});
+    if(res&&res.error)throw new Error(res.error);
+    alert(`還原完成，共還原 ${res&&res.restoredSheets!=null?res.restoredSheets:'?'} 個分頁 ✓\n頁面即將重新載入最新資料。`);
+    closeBackupPage();
+    await load();
+    refreshSels();
+    renderCards();renderPayCards();renderCal();renderStatsPreview();
+  }catch(err){
+    if(!(err&&err.message==='請重新登入'))alert('還原失敗：'+err.message);
+  }finally{
+    btn.disabled=false;btn.textContent=orig;
+    showLoading(false);
+  }
 }
 
 // ══════════════════════════════════════════════════
