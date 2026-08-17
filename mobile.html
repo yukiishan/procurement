@@ -71,7 +71,8 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
   position:fixed;
   top:0;left:0;right:0;bottom:0;
   background:var(--sf);
-  overflow:hidden
+  overflow:hidden;
+  transition:height .15s ease
 }
 
 /* ── STATUS BAR SPACER (top safe area) ── */
@@ -1258,6 +1259,22 @@ if(window.visualViewport){
   });
 })();
 
+// 主畫面（#app）也持續跟 Safari 實際可視高度同步：Safari 的網址列/底部工具列會隨滾動
+// 顯示/隱藏，導致可視高度不斷變動；用 visualViewport 讓 #app（連同懸浮導覽列）隨時貼齊
+// 「目前真正看得到的」畫面底部，而不是用寫死的 CSS bottom:0（那個在 Safari 動態工具列
+// 顯示時可能對不準，Chrome 沒有這個動態工具列機制所以沒這個問題）。
+function _syncAppHeightToViewport(){
+  const app=document.getElementById('app');
+  if(!app||!window.visualViewport)return;
+  if(app.style.display==='none')return; // 登入畫面顯示中，#app 還沒出現
+  app.style.height=window.visualViewport.height+'px';
+}
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',_syncAppHeightToViewport);
+  window.visualViewport.addEventListener('scroll',_syncAppHeightToViewport);
+}
+window.addEventListener('load',()=>setTimeout(_syncAppHeightToViewport,100));
+
 const DO={
   plant:['3B','3A','2B','1F'],
   dept:['SMT','LGA FC','QFN FC','DIP','其他'],
@@ -1599,6 +1616,7 @@ async function doLogin(){
       startTokenHeartbeat();
       document.getElementById('loginScreen').style.display='none';
       document.getElementById('app').style.display='flex';
+      setTimeout(_syncAppHeightToViewport,50);
       startApp();
     } else {
       err.textContent=json.error||'密碼錯誤';
@@ -3671,6 +3689,7 @@ function checkCodeDupMob(code){
 if(sessionStorage.getItem(SESSION_KEY)==='1'){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('app').style.display='flex';
+  setTimeout(_syncAppHeightToViewport,50);
   startApp();
 } else {
   setTimeout(()=>document.getElementById('pwInput').focus(),300);
