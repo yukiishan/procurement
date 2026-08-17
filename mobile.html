@@ -141,17 +141,18 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
 #loginScreen{
   position:fixed;
   top:0;left:0;right:0;
-  height:100dvh; /* 動態視窗高度，瀏覽器原生支援，取代手動 JS 同步 */
+  height:100dvh;
   background:#9A7A78;
   z-index:999;
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:flex-start;
-  padding:395px 32px 0;
+  justify-content:center;
+  padding:0 32px;
   width:100%;
   box-sizing:border-box;
-  overflow:hidden
+  overflow:hidden;
+  transition:height .15s ease
 }
 #loginScreen h1,#loginScreen p,#loginScreen .login-input,#loginScreen .login-btn,#loginScreen .login-err,#pwDotsBox{
   width:100%;max-width:340px
@@ -1228,25 +1229,13 @@ const API_URL='https://script.google.com/macros/s/AKfycbyRH0X9jngKTOhvS20i_9kDly
 const SESSION_KEY='pv6_auth';
 let _TOKEN=sessionStorage.getItem('pv6_token')||'';
 
-// 手機鍵盤跳出時，畫面可視高度會縮小；用 visualViewport 動態調整登入畫面，
-// 避免登入按鈕被鍵盤上方的工具列（上下箭頭/完成鍵）擋住。
-// 因為登入畫面改用 justify-content:flex-start + 固定 padding-top 精準定位（比照美甲網頁像素），
-// 鍵盤跳出時要主動把 padding-top 往回收，內容才會跟著往上收；不能只靠縮小高度（那是給 center 用的）。
-// 加上「密碼欄必須實際 focus 中」的判斷，避免 Safari 網址列顯示/收起等非鍵盤因素被誤判成鍵盤跳出。
-const LOGIN_BASE_PADDING_TOP=395;
+// 手機鍵盤跳出時，畫面可視高度會縮小；用 visualViewport 動態調整登入畫面高度，
+// #loginScreen 用 justify-content:center 置中，縮小高度後置中內容會自動往上收，
+// 完全比照美甲網頁的做法，不再額外用 padding-top 手動計算位移。
 function _adjustLoginScreenForKeyboard(){
   const ls=document.getElementById('loginScreen');
-  const pwInput=document.getElementById('pwInput');
   if(!ls||!window.visualViewport)return;
-  const kbGap=window.innerHeight-window.visualViewport.height;
-  const isTyping=document.activeElement===pwInput;
-  if(kbGap>100&&isTyping){
-    ls.style.height=window.visualViewport.height+'px';
-    ls.style.paddingTop=Math.max(20,LOGIN_BASE_PADDING_TOP-kbGap)+'px';
-  }else{
-    ls.style.height='';
-    ls.style.paddingTop='';
-  }
+  ls.style.height=window.visualViewport.height+'px';
 }
 if(window.visualViewport){
   window.visualViewport.addEventListener('resize',_adjustLoginScreenForKeyboard);
@@ -1258,7 +1247,7 @@ if(window.visualViewport){
   pwInput.addEventListener('focus',()=>setTimeout(_adjustLoginScreenForKeyboard,50));
   pwInput.addEventListener('blur',()=>{
     const ls=document.getElementById('loginScreen');
-    if(ls){ls.style.height='';ls.style.paddingTop='';}
+    if(ls)ls.style.height='';
   });
 })();
 
