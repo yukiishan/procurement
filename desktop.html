@@ -559,8 +559,8 @@ tbody tr{will-change:auto;contain:layout style}
       onkeydown="if(event.key==='Enter')doLogin()" oninput="_updatePwDots()">
     <!-- 視覺裝飾：固定顯示 4 個圓點，不隨密碼長度變化 -->
     <div id="pwDotsBox" onclick="document.getElementById('pwInput').focus()"
-      style="display:flex;justify-content:center;gap:14px;padding:14px;background:rgba(255,255,255,.15);
-             border-radius:10px;cursor:text;margin:8px 0;width:100%;box-sizing:border-box">
+      style="display:flex;justify-content:center;gap:18px;padding:22px 16px;background:rgba(255,255,255,.15);
+             border-radius:14px;cursor:text;margin:8px 0;width:100%;box-sizing:border-box">
       <span class="pw-dot" id="pwDot0"></span>
       <span class="pw-dot" id="pwDot1"></span>
       <span class="pw-dot" id="pwDot2"></span>
@@ -571,7 +571,7 @@ tbody tr{will-change:auto;contain:layout style}
   </div>
 </div>
 <style>
-.pw-dot{display:inline-block;width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.3);transition:background-color .15s}
+.pw-dot{display:inline-block;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.3);transition:background-color .15s}
 .pw-dot.filled{background:#fff}
 </style>
 <script>
