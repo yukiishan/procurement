@@ -133,9 +133,18 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
   padding:env(safe-area-inset-top,0px) 32px env(safe-area-inset-bottom,0px);
   width:100%
 }
-#loginScreen h1,#loginScreen p,#loginScreen .login-input,#loginScreen .login-btn,#loginScreen .login-err{
+#loginScreen h1,#loginScreen p,#loginScreen .login-input,#loginScreen .login-btn,#loginScreen .login-err,#pwDotsBox{
   width:100%;max-width:360px
 }
+#pwDotsBox{
+  display:flex;justify-content:center;gap:18px;
+  padding:16px;background:rgba(255,255,255,.15);
+  border-radius:10px;
+  cursor:text;margin:10px 0 16px;
+  box-sizing:border-box
+}
+.pw-dot{font-size:22px;color:rgba(255,255,255,.3);transition:color .15s}
+.pw-dot.filled{color:#fff}
 
 /* ── HEADER ── */
 .app-header{background:var(--accent, #9A7A78);color:#fff;padding:14px 16px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0}
@@ -488,9 +497,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
   <input type="password" id="pwInput" maxlength="20" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px"
     onkeydown="if(event.key==='Enter')doLogin()" oninput="_updatePwDots()">
   <!-- 視覺裝飾：固定顯示 4 個圓點 -->
-  <div id="pwDotsBox" onclick="document.getElementById('pwInput').focus()"
-    style="display:flex;justify-content:center;gap:14px;padding:14px;background:rgba(255,255,255,.15);
-           border-radius:10px;cursor:text;margin:10px 0;width:100%;box-sizing:border-box">
+  <div id="pwDotsBox" onclick="document.getElementById('pwInput').focus()">
     <span class="pw-dot" id="pwDot0">●</span>
     <span class="pw-dot" id="pwDot1">●</span>
     <span class="pw-dot" id="pwDot2">●</span>
@@ -499,10 +506,6 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
   <button class="login-btn" onclick="doLogin()">登　入</button>
   <div class="login-err" id="loginErr"></div>
 </div>
-<style>
-.pw-dot{font-size:22px;color:rgba(255,255,255,.3);transition:color .15s}
-.pw-dot.filled{color:#fff}
-</style>
 
 <!-- Main App -->
 <div id="app" style="display:none">
