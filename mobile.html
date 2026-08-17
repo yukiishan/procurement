@@ -71,7 +71,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
   position:fixed;
   top:0;left:0;right:0;
   height:100dvh; /* 動態視窗高度，瀏覽器原生支援，Safari 網址列/工具列顯示縮放時會自動即時調整，不需要 JS 手動同步 */
-  background:var(--sf);
+  background:var(--bg);
   overflow:hidden
 }
 
@@ -1231,11 +1231,14 @@ let _TOKEN=sessionStorage.getItem('pv6_token')||'';
 
 // 手機鍵盤跳出時，畫面可視高度會縮小；用 visualViewport 動態調整登入畫面高度，
 // #loginScreen 用 justify-content:center 置中，縮小高度後置中內容會自動往上收，
-// 完全比照美甲網頁的做法，不再額外用 padding-top 手動計算位移。
+// 比照美甲網頁的做法。實測發現本系統內容整體置中後，縮小同樣高度會比美甲網頁多往上移
+// 約 235px，所以補回這段差距，讓密碼欄/登入鈕跟鍵盤上方核准列的間距跟美甲網頁一致。
+const LOGIN_KB_COMPENSATE=235;
 function _adjustLoginScreenForKeyboard(){
   const ls=document.getElementById('loginScreen');
   if(!ls||!window.visualViewport)return;
-  ls.style.height=window.visualViewport.height+'px';
+  const targetH=Math.min(window.innerHeight, window.visualViewport.height+LOGIN_KB_COMPENSATE);
+  ls.style.height=targetH+'px';
 }
 if(window.visualViewport){
   window.visualViewport.addEventListener('resize',_adjustLoginScreenForKeyboard);
