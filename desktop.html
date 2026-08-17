@@ -246,9 +246,10 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .lb button:hover{background:#6B3E3C}
 .lerr{color:#A32D2D;font-size:12px;margin-top:8px;min-height:16px}
 @media(max-width:768px){
-  /* 窄螢幕（手機）輸入密碼時，鍵盤上方的核准列容易擋到登入按鈕，
-     改成內容靠上排列，而不是整個垂直置中 */
-  .ls{align-items:flex-start;padding-top:20vh;box-sizing:border-box}
+  /* 窄螢幕（手機）輸入密碼時，改用 visualViewport API 動態調整 .ls 高度
+     （見下方 JS：_adjustLoginScreenForKeyboard），讓置中內容自動往上收，
+     避免登入按鈕被鍵盤上方的工具列擋住；這裡只需維持置中，不用額外位移 */
+  .ls{height:100vh;transition:height .15s ease;overflow:hidden}
 }
 /* ══════════════════════════════════════════════════
    手機 App 風格 - 莫蘭迪色系 (≤768px)
@@ -3066,6 +3067,27 @@ async function saveCodeDet(){
 // ── 安全驗證（Token 由 GAS 伺服器發放，密碼不在前端）──
 const SESSION_KEY = 'pv6_auth';
 let _TOKEN = sessionStorage.getItem('pv6_token') || '';  // 執行期間持有 Token
+
+// 手機鍵盤跳出時（縮小到手機寬度瀏覽時），畫面可視高度會縮小；
+// 用 visualViewport 動態調整登入畫面高度，避免登入按鈕被鍵盤上方的工具列擋住
+function _adjustLoginScreenForKeyboard(){
+  const ls=document.getElementById('ls');
+  if(!ls||!window.visualViewport)return;
+  ls.style.height=window.visualViewport.height+'px';
+}
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',_adjustLoginScreenForKeyboard);
+  window.visualViewport.addEventListener('scroll',_adjustLoginScreenForKeyboard);
+}
+(function bindLoginKeyboardListeners(){
+  const pwInput=document.getElementById('pwInput');
+  if(!pwInput)return;
+  pwInput.addEventListener('focus',()=>setTimeout(_adjustLoginScreenForKeyboard,50));
+  pwInput.addEventListener('blur',()=>{
+    const ls=document.getElementById('ls');
+    if(ls)ls.style.height='';
+  });
+})();
 
 function checkAuth(){
   return !!_TOKEN && sessionStorage.getItem(SESSION_KEY) === '1';

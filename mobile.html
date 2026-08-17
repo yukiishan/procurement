@@ -9,6 +9,9 @@
 <meta name="theme-color" content="#9A7A78">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;600&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>設備採購管理系統</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -52,6 +55,8 @@
   --tab-h:62px;
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bot:env(safe-area-inset-bottom,0px);
+  --serif:'Noto Serif TC',Georgia,serif;
+  --sans:'Noto Sans TC','Inter',-apple-system,BlinkMacSystemFont,sans-serif;
 }
 
 /* ── BASE ── */
@@ -123,28 +128,36 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 /* ── LOGIN SCREEN ── */
 #loginScreen{
   position:fixed;
-  top:0;left:0;right:0;bottom:0;
+  top:0;left:0;right:0;
+  height:100vh;
   background:#9A7A78;
   z-index:999;
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:flex-start;
-  padding:calc(env(safe-area-inset-top,0px) + 20vh) 32px env(safe-area-inset-bottom,0px);
-  width:100%
+  justify-content:center;
+  padding:env(safe-area-inset-top,0px) 32px env(safe-area-inset-bottom,0px);
+  width:100%;
+  box-sizing:border-box;
+  overflow:hidden;
+  transition:height .15s ease
 }
 #loginScreen h1,#loginScreen p,#loginScreen .login-input,#loginScreen .login-btn,#loginScreen .login-err,#pwDotsBox{
   width:100%;max-width:340px
 }
 #pwDotsBox{
   display:flex;justify-content:center;gap:18px;
-  padding:22px 16px;background:rgba(255,255,255,.15);
+  padding:16px;background:rgba(255,255,255,.15);
+  border:1.5px solid rgba(255,255,255,.3);
   border-radius:14px;
   cursor:text;margin-bottom:16px;
-  box-sizing:border-box
+  box-sizing:border-box;
+  transition:border-color .2s,box-shadow .2s;
+  box-shadow:0 10px 24px -18px rgba(0,0,0,.3)
 }
-.pw-dot{display:inline-block;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.3);transition:background-color .15s}
-.pw-dot.filled{background:#fff}
+#pwDotsBox:focus-within{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.25)}
+.pw-dot{font-family:var(--sans);font-size:22px;color:rgba(255,255,255,.3);transition:color .15s}
+.pw-dot.filled{color:#fff}
 
 /* ── HEADER ── */
 .app-header{background:var(--accent, #9A7A78);color:#fff;padding:14px 16px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0}
@@ -399,7 +412,8 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
   background:rgba(255,255,255,.15);
   border-radius:20px;
   display:flex;align-items:center;justify-content:center;
-  margin-bottom:24px
+  margin-bottom:24px;
+  box-shadow:0 12px 28px -12px rgba(0,0,0,.4)
 }
 .login-logo svg{
   width:44px;height:44px;
@@ -407,10 +421,12 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
   stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round
 }
 #loginScreen h1{
-  color:#fff;font-size:24px;font-weight:700;
+  font-family:var(--serif);
+  color:#fff;font-size:24px;font-weight:600;
   margin-bottom:6px;text-align:center
 }
 #loginScreen p{
+  font-family:var(--sans);
   color:rgba(255,255,255,.7);font-size:13px;
   margin-bottom:32px;text-align:center
 }
@@ -435,12 +451,14 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
   width:100%;background:#fff;
   color:var(--blue);border:none;
   border-radius:14px;padding:15px;
-  font-size:16px;font-weight:700;
-  cursor:pointer;font-family:inherit;
-  transition:opacity .2s
+  font-family:var(--sans);font-size:16px;font-weight:700;
+  cursor:pointer;
+  transition:opacity .2s;
+  box-shadow:0 12px 24px -12px rgba(0,0,0,.4)
 }
 .login-btn:active{opacity:.85}
 .login-err{
+  font-family:var(--sans);
   color:rgba(255,200,200,1);font-size:13px;
   text-align:center;margin-top:8px;min-height:18px
 }
@@ -498,10 +516,10 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
     onkeydown="if(event.key==='Enter')doLogin()" oninput="_updatePwDots()">
   <!-- 視覺裝飾：固定顯示 4 個圓點 -->
   <div id="pwDotsBox" onclick="document.getElementById('pwInput').focus()">
-    <span class="pw-dot" id="pwDot0"></span>
-    <span class="pw-dot" id="pwDot1"></span>
-    <span class="pw-dot" id="pwDot2"></span>
-    <span class="pw-dot" id="pwDot3"></span>
+    <span class="pw-dot" id="pwDot0">●</span>
+    <span class="pw-dot" id="pwDot1">●</span>
+    <span class="pw-dot" id="pwDot2">●</span>
+    <span class="pw-dot" id="pwDot3">●</span>
   </div>
   <button class="login-btn" onclick="doLogin()">登　入</button>
   <div class="login-err" id="loginErr"></div>
@@ -1197,6 +1215,27 @@ const API_URL='https://script.google.com/macros/s/AKfycbyRH0X9jngKTOhvS20i_9kDly
 // ── 安全驗證（Token 由 GAS 伺服器發放，密碼不在前端）──
 const SESSION_KEY='pv6_auth';
 let _TOKEN=sessionStorage.getItem('pv6_token')||'';
+
+// 手機鍵盤跳出時，畫面可視高度會縮小；用 visualViewport 動態調整登入畫面高度，
+// 避免登入按鈕被鍵盤上方的工具列（上下箭頭/完成鍵）擋住
+function _adjustLoginScreenForKeyboard(){
+  const ls=document.getElementById('loginScreen');
+  if(!ls||!window.visualViewport)return;
+  ls.style.height=window.visualViewport.height+'px';
+}
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',_adjustLoginScreenForKeyboard);
+  window.visualViewport.addEventListener('scroll',_adjustLoginScreenForKeyboard);
+}
+(function bindLoginKeyboardListeners(){
+  const pwInput=document.getElementById('pwInput');
+  if(!pwInput)return;
+  pwInput.addEventListener('focus',()=>setTimeout(_adjustLoginScreenForKeyboard,50));
+  pwInput.addEventListener('blur',()=>{
+    const ls=document.getElementById('loginScreen');
+    if(ls)ls.style.height='';
+  });
+})();
 
 const DO={
   plant:['3B','3A','2B','1F'],
