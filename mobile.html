@@ -143,8 +143,8 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
   cursor:text;margin-bottom:16px;
   box-sizing:border-box
 }
-.pw-dot{font-size:22px;color:rgba(255,255,255,.3);transition:color .15s}
-.pw-dot.filled{color:#fff}
+.pw-dot{display:inline-block;width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.3);transition:background-color .15s}
+.pw-dot.filled{background:#fff}
 
 /* ── HEADER ── */
 .app-header{background:var(--accent, #9A7A78);color:#fff;padding:14px 16px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0}
@@ -498,10 +498,10 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
     onkeydown="if(event.key==='Enter')doLogin()" oninput="_updatePwDots()">
   <!-- 視覺裝飾：固定顯示 4 個圓點 -->
   <div id="pwDotsBox" onclick="document.getElementById('pwInput').focus()">
-    <span class="pw-dot" id="pwDot0">●</span>
-    <span class="pw-dot" id="pwDot1">●</span>
-    <span class="pw-dot" id="pwDot2">●</span>
-    <span class="pw-dot" id="pwDot3">●</span>
+    <span class="pw-dot" id="pwDot0"></span>
+    <span class="pw-dot" id="pwDot1"></span>
+    <span class="pw-dot" id="pwDot2"></span>
+    <span class="pw-dot" id="pwDot3"></span>
   </div>
   <button class="login-btn" onclick="doLogin()">登　入</button>
   <div class="login-err" id="loginErr"></div>

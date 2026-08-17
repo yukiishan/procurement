@@ -561,18 +561,18 @@ tbody tr{will-change:auto;contain:layout style}
     <div id="pwDotsBox" onclick="document.getElementById('pwInput').focus()"
       style="display:flex;justify-content:center;gap:14px;padding:14px;background:rgba(255,255,255,.15);
              border-radius:10px;cursor:text;margin:8px 0;width:100%;box-sizing:border-box">
-      <span class="pw-dot" id="pwDot0">●</span>
-      <span class="pw-dot" id="pwDot1">●</span>
-      <span class="pw-dot" id="pwDot2">●</span>
-      <span class="pw-dot" id="pwDot3">●</span>
+      <span class="pw-dot" id="pwDot0"></span>
+      <span class="pw-dot" id="pwDot1"></span>
+      <span class="pw-dot" id="pwDot2"></span>
+      <span class="pw-dot" id="pwDot3"></span>
     </div>
     <button onclick="doLogin()">登　入</button>
     <div class="lerr" id="lerr"></div>
   </div>
 </div>
 <style>
-.pw-dot{font-size:22px;color:rgba(255,255,255,.3);transition:color .15s}
-.pw-dot.filled{color:#fff}
+.pw-dot{display:inline-block;width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.3);transition:background-color .15s}
+.pw-dot.filled{background:#fff}
 </style>
 <script>
 function _updatePwDots(){
