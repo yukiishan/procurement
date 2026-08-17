@@ -53,6 +53,7 @@
   --accent-bg:#E8D8D7;   /* = 主色 */
   --r:12px;--rl:16px;
   --tab-h:62px;
+  --tab-extra:30px; /* 懸浮導覽列的 padding(16px) + 離底部間距(14px)，比照美甲網頁 .bottom-nav */
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bot:env(safe-area-inset-bottom,0px);
   --serif:'Noto Serif TC',Georgia,serif;
@@ -104,24 +105,34 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 /* 頁面內捲動內容區 */
 .page-scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:12px}
 
-/* ── TAB BAR: fixed at bottom, always visible above all panels ── */
+/* ── TAB BAR: 懸浮式導覽列（比照美甲網頁 .bottom-nav），fixed at bottom ── */
 #tabBar{
   background:var(--sf);
-  border-top:1px solid var(--bd);
+  border:1px solid var(--bd);
+  border-radius:20px;
   display:flex;
   align-items:center;
   justify-content:space-around;
   position:fixed;
-  left:0;right:0;bottom:0;
-  height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));
-  padding-bottom:env(safe-area-inset-bottom,0px);
+  left:12px;right:12px;
+  bottom:calc(14px + env(safe-area-inset-bottom,0px));
+  padding:8px 6px;
   flex-shrink:0;
   z-index:300;
-  box-shadow:0 -2px 12px rgba(0,0,0,.07)
+  box-shadow:0 14px 32px -12px rgba(0,0,0,.35)
+}
+/* 導覽列底下的漸層遮罩，取代完全透明的空隙（比照美甲網頁 .bottom-fade） */
+#tabBarFade{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  height:calc(14px + env(safe-area-inset-bottom,0px) + 34px);
+  background:linear-gradient(180deg, transparent 0%, var(--bg) 65%);
+  pointer-events:none;
+  z-index:290
 }
 /* Reserve space for fixed tabBar inside flex #app */
 #tabBarSpacer{
-  height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));
+  height:calc(var(--tab-h) + var(--tab-extra) + env(safe-area-inset-bottom,0px));
   flex-shrink:0
 }
 
@@ -135,12 +146,12 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:center;
-  padding:0 32px;
+  justify-content:flex-start;
+  padding:312px 32px 0;
   width:100%;
   box-sizing:border-box;
   overflow:hidden;
-  transition:height .15s ease
+  transition:height .15s ease,padding-top .15s ease
 }
 #loginScreen h1,#loginScreen p,#loginScreen .login-input,#loginScreen .login-btn,#loginScreen .login-err,#pwDotsBox{
   width:100%;max-width:340px
@@ -215,7 +226,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .empty-state p{font-size:14px;color:var(--tx3);text-align:center}
 
 /* ── FAB (Floating Action Button) ── */
-.fab{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);right:20px;width:54px;height:54px;background:#3A5480;border-radius:27px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(58,84,128,.35);z-index:40;transition:transform .15s}
+.fab{position:fixed;bottom:calc(var(--tab-h) + var(--tab-extra) + env(safe-area-inset-bottom,0px) + 16px);right:20px;width:54px;height:54px;background:#3A5480;border-radius:27px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(58,84,128,.35);z-index:40;transition:transform .15s}
 .fab:active{transform:scale(.93)}
 .fab svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
@@ -223,7 +234,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .det-page{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:150;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94)}
 .det-page.open{transform:translateX(0)}
 /* Settings sub-pages: leave tab bar visible at bottom */
-.det-page-settings{bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px))}
+.det-page-settings{bottom:calc(var(--tab-h) + var(--tab-extra) + env(safe-area-inset-bottom,0px))}
 .det-nav{background:var(--sf);border-bottom:1px solid var(--bd);padding:12px 14px;display:flex;align-items:center;gap:10px;padding-top:calc(var(--safe-top) + 12px);flex-shrink:0}
 .det-nav-back{background:none;border:none;color:#3A5480;font-size:16px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;padding:4px 0;font-family:inherit}
 .det-nav-back svg{width:20px;height:20px;stroke:#3A5480;fill:none;stroke-width:2;stroke-linecap:round}
@@ -308,7 +319,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── TOAST ── */
-#toast{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 12px);left:50%;transform:translateX(-50%) translateY(10px);background:rgba(13,27,42,.9);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:500;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none}
+#toast{position:fixed;bottom:calc(var(--tab-h) + var(--tab-extra) + env(safe-area-inset-bottom,0px) + 12px);left:50%;transform:translateX(-50%) translateY(10px);background:rgba(13,27,42,.9);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:500;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ── PAY PAGE CARDS ── */
@@ -334,7 +345,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 .dc-sub{font-size:11px;color:var(--tx3);margin-top:3px}
 
 /* ── SETTINGS ── */
-.set-section{padding:14px 14px calc(var(--tab-h)+env(safe-area-inset-bottom,0px)+20px)}
+.set-section{padding:14px 14px calc(var(--tab-h)+var(--tab-extra)+env(safe-area-inset-bottom,0px)+20px)}
 .set-group-title{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;padding:0 4px;margin-bottom:7px;margin-top:16px}
 .set-group-title:first-child{margin-top:0}
 .set-card{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);overflow:hidden;margin-bottom:4px}
@@ -412,7 +423,6 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
   background:rgba(255,255,255,.15);
   border-radius:20px;
   display:flex;align-items:center;justify-content:center;
-  margin-top:142px;
   margin-bottom:24px;
   box-shadow:0 12px 28px -12px rgba(0,0,0,.4)
 }
@@ -670,7 +680,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 
     <!-- DASHBOARD PAGE -->
     <div class="page scroll-page" id="page-dash">
-      <div style="padding:14px 14px calc(var(--tab-h)+var(--safe-bot)+20px)">
+      <div style="padding:14px 14px calc(var(--tab-h)+var(--tab-extra)+var(--safe-bot)+20px)">
         <div id="dashCards" style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px"></div>
         <div class="stat-card" style="margin-bottom:10px">
           <div class="stat-card-title">交期追蹤 ETA（未交貨）<span id="etaAutoCount" style="font-weight:400;color:var(--amber-tx,#6B4A28)"></span></div>
@@ -777,6 +787,7 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden}
 
 
 <!-- Bottom Tab Bar -->
+  <div id="tabBarFade"></div>
   <div id="tabBar">
     <button class="tab-btn active" id="tab-list" onclick="showPage('page-list')">
       <div class="tab-icon">
@@ -1217,19 +1228,21 @@ const API_URL='https://script.google.com/macros/s/AKfycbyRH0X9jngKTOhvS20i_9kDly
 const SESSION_KEY='pv6_auth';
 let _TOKEN=sessionStorage.getItem('pv6_token')||'';
 
-// 手機鍵盤跳出時，畫面可視高度會縮小；用 visualViewport 動態調整登入畫面高度，
+// 手機鍵盤跳出時，畫面可視高度會縮小；用 visualViewport 動態調整登入畫面，
 // 避免登入按鈕被鍵盤上方的工具列（上下箭頭/完成鍵）擋住。
-// 注意：procurement 這邊用了 viewport-fit=cover（處理瀏海/安全區域），
-// 這會讓 visualViewport 在「鍵盤根本沒跳出來」的情況下也偶爾回報跟 innerHeight 有落差，
-// 所以要判斷「真的縮小超過一定幅度」才視為鍵盤跳出來，避免誤判把畫面縮小。
+// 因為登入畫面改用 justify-content:flex-start + 固定 padding-top 精準定位（比照美甲網頁像素），
+// 鍵盤跳出時要主動把 padding-top 往回收，內容才會跟著往上收；不能只靠縮小高度（那是給 center 用的）。
+const LOGIN_BASE_PADDING_TOP=312;
 function _adjustLoginScreenForKeyboard(){
   const ls=document.getElementById('loginScreen');
   if(!ls||!window.visualViewport)return;
   const kbGap=window.innerHeight-window.visualViewport.height;
   if(kbGap>100){
     ls.style.height=window.visualViewport.height+'px';
+    ls.style.paddingTop=Math.max(20,LOGIN_BASE_PADDING_TOP-kbGap)+'px';
   }else{
     ls.style.height='';
+    ls.style.paddingTop='';
   }
 }
 if(window.visualViewport){
