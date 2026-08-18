@@ -196,7 +196,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
 .pill.active{background:#93939B;border-color:#93939B;color:#fff}
 
 /* ── LIST CARDS ── */
-.card-list{padding:10px 14px;display:flex;flex-direction:column;gap:10px}
+.card-list{padding:10px 28px;display:flex;flex-direction:column;gap:10px}
 .rec-card{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);padding:14px 15px;cursor:pointer;transition:all .15s;-webkit-user-select:none}
 .rec-card:active{background:var(--sf2);transform:scale(.99)}
 .rec-card-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
@@ -605,7 +605,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
       </div>
       <!-- 捲動清單區 -->
       <div class="page-scroll-body">
-        <div id="payCardList" style="padding:10px 14px;display:flex;flex-direction:column;gap:12px"></div>
+        <div id="payCardList" style="padding:10px 28px;display:flex;flex-direction:column;gap:12px"></div>
       </div>
     </div>
 
@@ -1234,7 +1234,7 @@ let _TOKEN=sessionStorage.getItem('pv6_token')||'';
 // 沒開鍵盤時的位置：CSS 內建的 padding-top:440px（固定值，不受這段 JS 影響）。
 // 鍵盤開啟時：padding-top 改成「目前可視高度 - 168px」，用可視高度動態算，
 // 不管鍵盤實際佔多少高度、裝置多大，都會自動算出正確位置，不用寫死補償值。
-const LOGIN_KB_PADDING_FORMULA=350; // 可視高度 - 這個值 = 鍵盤開啟時的 padding-top（再加大安全間距）
+const LOGIN_KB_PADDING_FORMULA=312; // 可視高度 - 這個值 = 鍵盤開啟時的 padding-top
 function _adjustLoginScreenForKeyboard(){
   const ls=document.getElementById('loginScreen');
   if(!ls||!window.visualViewport)return;
