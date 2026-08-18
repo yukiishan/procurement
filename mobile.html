@@ -120,7 +120,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
   padding:8px 6px;
   flex-shrink:0;
   z-index:300;
-  box-shadow:0 8px 20px -10px rgba(90,60,58,.22)
+  box-shadow:0 6px 10px -6px rgba(90,60,58,.2)
 }
 /* 導覽列底下的漸層遮罩，取代完全透明的空隙（比照美甲網頁 .bottom-fade） */
 #tabBarFade{
@@ -424,6 +424,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
   background:rgba(255,255,255,.15);
   border-radius:20px;
   display:flex;align-items:center;justify-content:center;
+  margin-top:168px;
   margin-bottom:24px;
   box-shadow:0 12px 28px -12px rgba(0,0,0,.4)
 }
@@ -1229,13 +1230,24 @@ const API_URL='https://script.google.com/macros/s/AKfycbyRH0X9jngKTOhvS20i_9kDly
 const SESSION_KEY='pv6_auth';
 let _TOKEN=sessionStorage.getItem('pv6_token')||'';
 
-// 手機鍵盤跳出時，畫面可視高度會縮小；用 visualViewport 動態調整登入畫面高度，
-// 完全比照美甲網頁 app.js 的原始寫法：#loginScreen 用 justify-content:center 置中，
-// 縮小高度後置中內容會自動往上收，不額外加任何補償或判斷邏輯。
+// 手機鍵盤跳出時，畫面可視高度會縮小；用 visualViewport 動態調整登入畫面高度。
+// #loginScreen 用 justify-content:center 置中。
+// 沒開鍵盤時的位置只由 .login-logo 的 margin-top（CSS）決定；
+// 鍵盤開啟時，暫時把這個 margin-top 歸零、改成完全由這裡的 LOGIN_KB_HEIGHT_OFFSET 獨立控制，
+// 兩個狀態的數值互不影響，之後要各自微調都不會牽動到另一邊。
+const LOGIN_KB_HEIGHT_OFFSET=124;
 function _adjustLoginScreenForKeyboard(){
   const ls=document.getElementById('loginScreen');
+  const logo=document.querySelector('#loginScreen .login-logo');
   if(!ls||!window.visualViewport)return;
-  ls.style.height=window.visualViewport.height+'px';
+  const kbGap=window.innerHeight-window.visualViewport.height;
+  if(kbGap>100){
+    if(logo)logo.style.marginTop='0px'; // 鍵盤開啟時，關閉狀態的 margin 不生效
+    ls.style.height=(window.visualViewport.height+LOGIN_KB_HEIGHT_OFFSET)+'px';
+  }else{
+    if(logo)logo.style.marginTop=''; // 還原成 CSS 預設值（沒開鍵盤時的位置）
+    ls.style.height='';
+  }
 }
 if(window.visualViewport){
   window.visualViewport.addEventListener('resize',_adjustLoginScreenForKeyboard);
@@ -1247,7 +1259,9 @@ if(window.visualViewport){
   pwInput.addEventListener('focus',()=>setTimeout(_adjustLoginScreenForKeyboard,50));
   pwInput.addEventListener('blur',()=>{
     const ls=document.getElementById('loginScreen');
+    const logo=document.querySelector('#loginScreen .login-logo');
     if(ls)ls.style.height='';
+    if(logo)logo.style.marginTop='';
   });
 })();
 
