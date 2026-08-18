@@ -147,12 +147,11 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:center;
-  padding:0 32px;
+  justify-content:flex-start;
+  padding:440px 32px 0;
   width:100%;
   box-sizing:border-box;
-  overflow:hidden;
-  transition:height .15s ease
+  overflow:hidden
 }
 #loginScreen h1,#loginScreen p,#loginScreen .login-input,#loginScreen .login-btn,#loginScreen .login-err,#pwDotsBox{
   width:100%;max-width:340px
@@ -197,7 +196,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
 .pill.active{background:#93939B;border-color:#93939B;color:#fff}
 
 /* ── LIST CARDS ── */
-.card-list{padding:10px 14px;display:flex;flex-direction:column;gap:10px}
+.card-list{padding:10px 20px;display:flex;flex-direction:column;gap:10px}
 .rec-card{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);padding:14px 15px;cursor:pointer;transition:all .15s;-webkit-user-select:none}
 .rec-card:active{background:var(--sf2);transform:scale(.99)}
 .rec-card-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
@@ -346,7 +345,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
 .dc-sub{font-size:11px;color:var(--tx3);margin-top:3px}
 
 /* ── SETTINGS ── */
-.set-section{padding:14px 14px calc(var(--tab-h)+var(--tab-extra)+20px)}
+.set-section{padding:14px 20px calc(var(--tab-h)+var(--tab-extra)+20px)}
 .set-group-title{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;padding:0 4px;margin-bottom:7px;margin-top:16px}
 .set-group-title:first-child{margin-top:0}
 .set-card{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);overflow:hidden;margin-bottom:4px}
@@ -424,7 +423,6 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
   background:rgba(255,255,255,.15);
   border-radius:20px;
   display:flex;align-items:center;justify-content:center;
-  margin-top:168px;
   margin-bottom:24px;
   box-shadow:0 12px 28px -12px rgba(0,0,0,.4)
 }
@@ -607,7 +605,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
       </div>
       <!-- 捲動清單區 -->
       <div class="page-scroll-body">
-        <div id="payCardList" style="padding:10px 14px;display:flex;flex-direction:column;gap:12px"></div>
+        <div id="payCardList" style="padding:10px 20px;display:flex;flex-direction:column;gap:12px"></div>
       </div>
     </div>
 
@@ -682,7 +680,7 @@ body{margin:0;padding:0;background:var(--bg);overflow:hidden}
 
     <!-- DASHBOARD PAGE -->
     <div class="page scroll-page" id="page-dash">
-      <div style="padding:14px 14px calc(var(--tab-h)+var(--tab-extra)+20px)">
+      <div style="padding:14px 20px calc(var(--tab-h)+var(--tab-extra)+20px)">
         <div id="dashCards" style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px"></div>
         <div class="stat-card" style="margin-bottom:10px">
           <div class="stat-card-title">交期追蹤 ETA（未交貨）<span id="etaAutoCount" style="font-weight:400;color:var(--amber-tx,#6B4A28)"></span></div>
@@ -1230,23 +1228,23 @@ const API_URL='https://script.google.com/macros/s/AKfycbyRH0X9jngKTOhvS20i_9kDly
 const SESSION_KEY='pv6_auth';
 let _TOKEN=sessionStorage.getItem('pv6_token')||'';
 
-// 手機鍵盤跳出時，畫面可視高度會縮小；用 visualViewport 動態調整登入畫面高度。
-// #loginScreen 用 justify-content:center 置中。
-// 沒開鍵盤時的位置只由 .login-logo 的 margin-top（CSS）決定；
-// 鍵盤開啟時，暫時把這個 margin-top 歸零、改成完全由這裡的 LOGIN_KB_HEIGHT_OFFSET 獨立控制，
-// 兩個狀態的數值互不影響，之後要各自微調都不會牽動到另一邊。
-const LOGIN_KB_HEIGHT_OFFSET=124;
+// 手機鍵盤跳出時，畫面可視高度會縮小；用 visualViewport 動態調整登入畫面。
+// #loginScreen 改用 justify-content:flex-start + padding-top 直接定位（不再靠 center 置中），
+// 這樣位置由 padding-top 直接控制，不需要靠切換 margin 這種容易被覆蓋的方式。
+// 沒開鍵盤時的位置：CSS 內建的 padding-top:440px（固定值，不受這段 JS 影響）。
+// 鍵盤開啟時：padding-top 改成「目前可視高度 - 168px」，用可視高度動態算，
+// 不管鍵盤實際佔多少高度、裝置多大，都會自動算出正確位置，不用寫死補償值。
+const LOGIN_KB_PADDING_FORMULA=168; // 可視高度 - 這個值 = 鍵盤開啟時的 padding-top
 function _adjustLoginScreenForKeyboard(){
   const ls=document.getElementById('loginScreen');
-  const logo=document.querySelector('#loginScreen .login-logo');
   if(!ls||!window.visualViewport)return;
   const kbGap=window.innerHeight-window.visualViewport.height;
   if(kbGap>100){
-    if(logo)logo.style.marginTop='0px'; // 鍵盤開啟時，關閉狀態的 margin 不生效
-    ls.style.height=(window.visualViewport.height+LOGIN_KB_HEIGHT_OFFSET)+'px';
+    ls.style.height=window.visualViewport.height+'px';
+    ls.style.paddingTop=Math.max(20, window.visualViewport.height-LOGIN_KB_PADDING_FORMULA)+'px';
   }else{
-    if(logo)logo.style.marginTop=''; // 還原成 CSS 預設值（沒開鍵盤時的位置）
     ls.style.height='';
+    ls.style.paddingTop='';
   }
 }
 if(window.visualViewport){
@@ -1259,9 +1257,7 @@ if(window.visualViewport){
   pwInput.addEventListener('focus',()=>setTimeout(_adjustLoginScreenForKeyboard,50));
   pwInput.addEventListener('blur',()=>{
     const ls=document.getElementById('loginScreen');
-    const logo=document.querySelector('#loginScreen .login-logo');
-    if(ls)ls.style.height='';
-    if(logo)logo.style.marginTop='';
+    if(ls){ls.style.height='';ls.style.paddingTop='';}
   });
 })();
 
