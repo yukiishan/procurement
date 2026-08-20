@@ -2027,6 +2027,7 @@ function getFiltered(){
   if(clrBtn)clrBtn.style.display=q?'block':'none';
   return data.filter(r=>{
     if(curFilter==='all'){}
+    else if(curFilter==='status:待交貨'){ if(r.status!=='待交貨'&&r.status!=='部分交貨')return false; }
     else if(curFilter.startsWith('status:')&&r.status!==curFilter.slice(7))return false;
     else if(curFilter.startsWith('cur:')&&r.currency!==curFilter.slice(4))return false;
     else if(curFilter==='noCert:是'&&r.noCert!=='是')return false;
@@ -2126,7 +2127,7 @@ function renderPayCards(){
   // 文字篩選（比對採購主欄位，以及每筆付款明細裡的發票號碼）
   function matchRec(r){
     if(!q)return true;
-    const baseMatch=[r.pr,r.vendor,r.model,r.payment,r.dept,r.plant]
+    const baseMatch=[r.pr,r.vendorCode,r.vendor,r.model,r.payment,r.dept,r.plant]
       .some(v=>v&&String(v).toLowerCase().includes(q));
     if(baseMatch)return true;
     return (r.deliveries||[]).some(d=>(d.payments||[]).some(p=>p.invoice&&String(p.invoice).toLowerCase().includes(q)));

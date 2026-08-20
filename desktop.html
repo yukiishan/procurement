@@ -1838,7 +1838,8 @@ function getFilt(){
   return data.filter(r=>{
     if(dept&&r.dept!==dept)return false;
     if(cur&&r.currency!==cur)return false;
-    if(st&&r.status!==st)return false;
+    if(st==='待交貨'){ if(r.status!=='待交貨'&&r.status!=='部分交貨')return false; }
+    else if(st&&r.status!==st)return false;
     if(q&&!JSON.stringify(r).toLowerCase().includes(q))return false;
     return true;
   });
@@ -1971,7 +1972,7 @@ function renderPay(){
   // 文字搜尋：比對 PO、廠商、型號等固定欄位，以及每筆付款明細裡的發票號碼
   function matchRec(r){
     if(!q) return true;
-    const baseMatch=[r.pr,r.vendor,r.model,r.payment,r.dept,r.plant]
+    const baseMatch=[r.pr,r.vendorCode,r.vendor,r.model,r.payment,r.dept,r.plant]
       .some(v=>v&&String(v).toLowerCase().includes(q));
     if(baseMatch) return true;
     // 發票號碼藏在付款明細（deliveries[].payments[].invoice）裡，不是訂單固定欄位，要另外比對
@@ -3231,7 +3232,8 @@ function renderMobList(){
 
   // 過濾資料
   const filtered=data.filter(r=>{
-    if(mobFilterStatus&&r.status!==mobFilterStatus)return false;
+    if(mobFilterStatus==='待交貨'){ if(r.status!=='待交貨'&&r.status!=='部分交貨')return false; }
+    else if(mobFilterStatus&&r.status!==mobFilterStatus)return false;
     if(q&&!JSON.stringify(r).toLowerCase().includes(q))return false;
     return true;
   });
