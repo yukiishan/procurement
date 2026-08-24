@@ -156,6 +156,11 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .calbody{display:grid;grid-template-columns:0.6fr 1fr 1fr 1fr 1fr 1fr 0.6fr}
 .calcell{border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);padding:4px 3px;min-height:80px;overflow:hidden}
 .calcell:nth-child(7n){border-right:none}
+/* 桌機版行事曆：單日最多顯示約4筆，超過改用格內垂直捲動，避免撐開整列高度 */
+#calgrid .calcell{max-height:120px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+#calgrid .calcell::-webkit-scrollbar{width:4px}
+#calgrid .calcell::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+#calgrid .calcell::-webkit-scrollbar-track{background:transparent}
 .calcell.om{background:var(--sf2)}.calcell.wknd{background:#f0eff0}
 .calcell.hol{background:#fff0f0}
 .calcell.today .caldate{background:var(--blue);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px}
