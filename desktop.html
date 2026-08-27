@@ -1740,7 +1740,8 @@ function renderVendorPickerList(){
 
 function renderModelPickerList(){
   const q=(document.getElementById('mPickerSrch')?.value||'').toLowerCase();
-  const filtered=models.filter(m=>!q||JSON.stringify(m).toLowerCase().includes(q));
+  // 倒序：最後新增的型號排最前面
+  const filtered=models.filter(m=>!q||JSON.stringify(m).toLowerCase().includes(q)).reverse();
   const el=document.getElementById('mPickerList'); if(!el)return;
   el.innerHTML=filtered.map(m=>`<div onclick="pickModelDesk('${safe(m.model||'')}');document.getElementById('mPickerOverlay').remove()" style="padding:9px 12px;border-radius:8px;border:1px solid var(--bd);cursor:pointer;background:var(--sf);margin-bottom:5px" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background='var(--sf)'">
     <div style="font-size:12px;font-weight:700;color:var(--tx);font-family:monospace">${safe(m.model||'')}</div>

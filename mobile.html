@@ -2551,7 +2551,8 @@ function openModelPickerMob(){
 
 function renderModelPickerListMob(){
   const q=(document.getElementById('mPickerSrch')?.value||'').toLowerCase();
-  const filtered=models.filter(m=>!q||JSON.stringify(m).toLowerCase().includes(q));
+  // 倒序：最後新增的型號排最前面
+  const filtered=models.filter(m=>!q||JSON.stringify(m).toLowerCase().includes(q)).reverse();
   const el=document.getElementById('mPickerListMob');if(!el)return;
   el.innerHTML=filtered.map(m=>`<div onclick="pickModelMob('${safe(m.model||'')}');document.getElementById('mPickerOv').remove()" style="padding:12px;border-radius:10px;border:1px solid var(--bd);margin-bottom:6px;background:var(--sf)">
     <div style="font-size:14px;font-weight:700;color:var(--tx);font-family:monospace">${safe(m.model||'')}</div>
