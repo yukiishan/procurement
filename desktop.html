@@ -157,10 +157,11 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .calcell{border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);padding:4px 3px;min-height:80px;overflow:hidden}
 .calcell:nth-child(7n){border-right:none}
 /* 桌機版行事曆：單日最多顯示約4筆，超過改用格內垂直捲動，避免撐開整列高度 */
-#calgrid .calcell{max-height:120px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+#calgrid .calcell{max-height:120px;overflow-y:auto;overflow-x:hidden}
 #calgrid .calcell::-webkit-scrollbar{width:4px}
-#calgrid .calcell::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
 #calgrid .calcell::-webkit-scrollbar-track{background:transparent}
+#calgrid .calcell::-webkit-scrollbar-thumb{background:var(--tx3);border-radius:2px}
+#calgrid .calcell::-webkit-scrollbar-thumb:hover{background:var(--blue)}
 .calcell.om{background:var(--sf2)}.calcell.wknd{background:#f0eff0}
 .calcell.hol{background:#fff0f0}
 .calcell.today .caldate{background:var(--blue);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px}
@@ -498,6 +499,15 @@ tbody td{padding:8px 7px;vertical-align:middle}
   .mob-header,.mob-nav,.mob-fab,.mob-content,
   .mob-card,.mob-stats,.mob-search,.mob-filters,
   .mob-pay-card,.mob-empty{display:none!important}
+
+  /* 桌機版全站捲軸：莫蘭迪灰玫瑰色系。軌道貼近底色（透明），
+     滑塊使用中性玫瑰灰（可見但不過深），hover 時加深方便辨識 */
+  *{scrollbar-width:thin;scrollbar-color:var(--tx3) transparent}
+  *::-webkit-scrollbar{width:10px;height:10px}
+  *::-webkit-scrollbar-corner{background:transparent}
+  *::-webkit-scrollbar-track{background:transparent}
+  *::-webkit-scrollbar-thumb{background:var(--tx3);border-radius:20px;border:2px solid transparent;background-clip:padding-box}
+  *::-webkit-scrollbar-thumb:hover{background:var(--blue)}
 }
 
 
@@ -3863,6 +3873,40 @@ document.addEventListener('focusin', function(e){
     el.dispatchEvent(new Event('input', {bubbles:true}));
   }
 }, true);
+
+
+// ── 桌機鍵盤快捷鍵：Ctrl/Cmd+F 定位目前搜尋欄並全選，搜尋欄按 ESC 清除 ──
+// 各分頁固定搜尋欄
+const TAB_SEARCH_ID={list:'srch',payment:'psrch',vendors:'vendorSrch',models:'modelSrch',paycode:'paycodeSrch',fwdcode:'fwdcodeSrch'};
+// 動態彈出視窗（型號/廠商/選項/付款代號 選擇器）的搜尋欄
+const POPUP_SEARCH_IDS=['mPickerSrch','pickerSrch','optPickerSrch','payPickerSrch'];
+const DESKTOP_SEARCH_IDS=[...Object.values(TAB_SEARCH_ID),...POPUP_SEARCH_IDS];
+function _findActiveSearchInput(){
+  // 若有彈出選擇視窗開啟，優先聚焦其搜尋欄（疊在最上層）
+  for(const id of POPUP_SEARCH_IDS){
+    const el=document.getElementById(id);
+    if(el)return el;
+  }
+  // 否則聚焦目前分頁自己的搜尋欄
+  const id=TAB_SEARCH_ID[curTab];
+  return id?document.getElementById(id):null;
+}
+document.addEventListener('keydown', function(e){
+  if((e.ctrlKey||e.metaKey)&&!e.altKey&&(e.key==='f'||e.key==='F')){
+    if(IS_MOB())return; // 手機版維持瀏覽器原生行為
+    const target=_findActiveSearchInput();
+    if(target){
+      e.preventDefault();
+      target.focus();
+      target.select();
+    }
+  } else if(e.key==='Escape'&&e.target&&DESKTOP_SEARCH_IDS.includes(e.target.id)){
+    if(e.target.value){
+      e.target.value='';
+      e.target.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+  }
+});
 
 
 // ── Email Tag Input ──────────────────────────────
