@@ -587,7 +587,7 @@ tbody tr{will-change:auto;contain:layout style}
       <span class="pw-dot" id="pwDot2"></span>
       <span class="pw-dot" id="pwDot3"></span>
     </div>
-    <button onclick="doLogin()">登　入</button>
+    <button id="loginBtn" onclick="doLogin()">登　入</button>
     <div class="lerr" id="lerr"></div>
   </div>
 </div>
@@ -3116,20 +3116,41 @@ function checkAuth(){
   return !!_TOKEN && sessionStorage.getItem(SESSION_KEY) === '1';
 }
 
+// 呼叫一次 checkPw，帶 15 秒逾時（GAS 容器閒置一段時間後，第一次呼叫常需要「冷啟動」，
+// 有時會等很久甚至逾時失敗，用 AbortController 明確中止，避免卡住不動）
+function _checkPwOnce(pw){
+  const ctrl = new AbortController();
+  const timer = setTimeout(()=>ctrl.abort(), 15000);
+  return fetch(API_URL, {
+    method:'POST',
+    body: JSON.stringify({ action:'checkPw', pw }),
+    signal: ctrl.signal
+  }).then(res=>res.json()).finally(()=>clearTimeout(timer));
+}
+
+let _loginInFlight = false;
 async function doLogin(){
+  if(_loginInFlight) return; // 防止 Enter 與按鈕點擊同時觸發、或連點造成重複送出
   const input = document.getElementById('pwInput');
   const err   = document.getElementById('lerr');
+  const btn   = document.getElementById('loginBtn');
   const pw    = input.value.trim();
   if(!pw) return;
-  err.textContent = '驗證中...';
+  _loginInFlight = true;
   input.disabled = true;
+  if(btn) btn.disabled = true;
+  err.textContent = '驗證中...';
   try {
     // 密碼送到 GAS 伺服器比對，前端不做任何比對
-    const res  = await fetch(API_URL, {
-      method:'POST',
-      body: JSON.stringify({ action:'checkPw', pw })
-    });
-    const json = await res.json();
+    // 第一次連線常因伺服器冷啟動而較慢，若失敗或逾時就自動重試一次，
+    // 不讓使用者自己發現失敗、再手動按一次登入
+    let json;
+    try {
+      json = await _checkPwOnce(pw);
+    } catch(e1){
+      err.textContent = '伺服器回應較慢，重新嘗試中...';
+      json = await _checkPwOnce(pw);
+    }
     if(json.ok){
       _TOKEN = json.token;
       sessionStorage.setItem(SESSION_KEY,'1');
@@ -3154,10 +3175,12 @@ async function doLogin(){
       setTimeout(()=>err.textContent='', 3000);
     }
   } catch(e) {
-    err.textContent = '連線失敗，請確認網路';
+    err.textContent = '連線失敗，請確認網路後再試一次';
     setTimeout(()=>err.textContent='', 3000);
   } finally {
+    _loginInFlight = false;
     input.disabled = false;
+    if(btn) btn.disabled = false;
   }
 }
 
