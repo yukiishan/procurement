@@ -1,4 +1,8 @@
 <!DOCTYPE html>
+<!--
+  版次記錄（供比對是否為最新版）
+  v1.0  2026-09-17  採購卡片 ETD → 改為顯示各批次的 ETA（例：1台 ETA.../1台 ETA.../2台 ETA...）
+-->
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
@@ -2082,7 +2086,11 @@ function renderCards(){
   const summary=`<div style="padding:8px 0 4px;font-size:12px;color:var(--tx3)">${f.length} 筆・台幣合計 NT$${(ntdTotal/1e6).toFixed(2)}M</div>`;
   list.innerHTML=summary+f.map(r=>{
     const ntd=r.amountNTD||calcNTDv(r.amount,r.currency);
-    const etd=r.deliveries&&r.deliveries[0]?r.deliveries[0].etd:'';
+    // 每個批次各自的 ETA（不再只顯示批次1的ETD），例如 4台分3批：1台 ETA .../1台 ETA .../2台 ETA ...
+    const batchEtaTags=(r.deliveries||[])
+      .filter(d=>d&&d.eta)
+      .map(d=>`<span class="tag tag-cur">${d.qty||r.qty||1}台 ETA ${fD(d.eta)}</span>`)
+      .join('');
     const amt=r.currency==='NTD'?`NT$ ${fN(r.amount)}`:`${r.currency} ${fN(r.amount)}`;
     return`<div class="rec-card" onclick="openDet(${r.id})">
       <div class="rec-card-top">
@@ -2098,7 +2106,7 @@ function renderCards(){
         <div class="rec-card-tags">
           ${r.podate?`<span class="tag tag-cur">${fD(r.podate)}</span>`:''}
           ${r.qty?`<span class="tag tag-cur">${r.qty}台</span>`:''}
-          ${etd?`<span class="tag tag-cur">ETD ${fD(etd)}</span>`:''}
+          ${batchEtaTags}
         </div>
       </div>
     </div>`;

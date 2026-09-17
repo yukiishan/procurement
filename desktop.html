@@ -1,4 +1,8 @@
 <!DOCTYPE html>
+<!--
+  版次記錄（供比對是否為最新版）
+  v1.0  2026-09-17  修正誤植：撤銷「採購卡片 ETD 改顯示各批次 ETA」（此變更應套用於手機版 mobile.html，桌機版還原為原本只顯示批次1的 ETD/ETA）
+-->
 <html lang="zh-TW">
 <head>
 <script>
@@ -3295,11 +3299,8 @@ function renderMobList(){
   }
   cEl.innerHTML=filtered.map(r=>{
     const ntd=r.amountNTD||calcNTDv(r.amount,r.currency);
-    // 每個批次各自的 ETA（不再只顯示批次1的ETD），例如 4台分3批：1台 ETA .../1台 ETA .../2台 ETA ...
-    const batchEtaStr=(r.deliveries||[])
-      .filter(d=>d&&d.eta)
-      .map(d=>`${d.qty||r.qty||1}台 ETA ${fD(d.eta)}`)
-      .join(' · ');
+    const etd=r.deliveries&&r.deliveries[0]?r.deliveries[0].etd:'';
+    const eta=r.deliveries&&r.deliveries[0]?r.deliveries[0].eta:'';
     const amtStr=r.currency==='NTD'?`NT$${fN(r.amount)}`:
       `${r.currency} ${fN(r.amount)}`;
     return`<div class="mob-card" onclick="openDet(${r.id})">
@@ -3316,7 +3317,7 @@ function renderMobList(){
         ${mobCurBadge(r.currency)}
         ${r.noCert==='是'?'<span class="mob-badge mb-red">無產證</span>':''}
       </div>
-      ${batchEtaStr?`<div class="mob-card-etd">✈ ${batchEtaStr}</div>`:''}
+      ${(etd||eta)?`<div class="mob-card-etd">${etd?'📦 ETD '+fD(etd):''}${etd&&eta?' · ':''}${eta?'✈ ETA '+fD(eta):''}</div>`:''}
     </div>`;
   }).join('');
 }
