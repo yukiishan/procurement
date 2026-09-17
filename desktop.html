@@ -3295,8 +3295,11 @@ function renderMobList(){
   }
   cEl.innerHTML=filtered.map(r=>{
     const ntd=r.amountNTD||calcNTDv(r.amount,r.currency);
-    const etd=r.deliveries&&r.deliveries[0]?r.deliveries[0].etd:'';
-    const eta=r.deliveries&&r.deliveries[0]?r.deliveries[0].eta:'';
+    // 每個批次各自的 ETA（不再只顯示批次1的ETD），例如 4台分3批：1台 ETA .../1台 ETA .../2台 ETA ...
+    const batchEtaStr=(r.deliveries||[])
+      .filter(d=>d&&d.eta)
+      .map(d=>`${d.qty||r.qty||1}台 ETA ${fD(d.eta)}`)
+      .join(' · ');
     const amtStr=r.currency==='NTD'?`NT$${fN(r.amount)}`:
       `${r.currency} ${fN(r.amount)}`;
     return`<div class="mob-card" onclick="openDet(${r.id})">
@@ -3313,7 +3316,7 @@ function renderMobList(){
         ${mobCurBadge(r.currency)}
         ${r.noCert==='是'?'<span class="mob-badge mb-red">無產證</span>':''}
       </div>
-      ${(etd||eta)?`<div class="mob-card-etd">${etd?'📦 ETD '+fD(etd):''}${etd&&eta?' · ':''}${eta?'✈ ETA '+fD(eta):''}</div>`:''}
+      ${batchEtaStr?`<div class="mob-card-etd">✈ ${batchEtaStr}</div>`:''}
     </div>`;
   }).join('');
 }
