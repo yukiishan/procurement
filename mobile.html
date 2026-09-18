@@ -5,6 +5,8 @@
   v1.1  2026-09-18  修正部分手機鍵盤未關閉時點登入鈕，只關閉鍵盤、需再點一次
                      才會真的登入的問題（延遲鍵盤關閉時的版面重設，避免跟點擊
                      手勢的判定互相干擾）
+  v1.2  2026-09-18  登入驗證邏輯改為與 INDEX 發票系統一致（移除逾時/自動重試/
+                     防連點包裝，改回單純 fetch）
 -->
 <html lang="zh-TW">
 <head>
@@ -1607,40 +1609,17 @@ function _updatePwDots(){
   }
 }
 
-// 呼叫一次 checkPw，帶 15 秒逾時（GAS 容器閒置一段時間後，第一次呼叫常需要「冷啟動」，
-// 有時會等很久甚至逾時失敗，用 AbortController 明確中止，避免卡住不動）
-function _checkPwOnce(pw){
-  const ctrl = new AbortController();
-  const timer = setTimeout(()=>ctrl.abort(), 15000);
-  return fetch(API_URL, {
-    method:'POST',
-    body: JSON.stringify({ action:'checkPw', pw }),
-    signal: ctrl.signal
-  }).then(res=>res.json()).finally(()=>clearTimeout(timer));
-}
-
-let _loginInFlight = false;
+// 登入驗證邏輯改為與 INDEX 發票系統一致（單純 fetch，不含逾時/重試/防連點包裝）
 async function doLogin(){
-  if(_loginInFlight)return; // 防止 Enter 與按鈕點擊同時觸發、或連點造成重複送出
   const input=document.getElementById('pwInput');
   const err=document.getElementById('loginErr');
-  const btn=document.getElementById('loginBtn');
   const pw=input.value.trim();
   if(!pw)return;
-  _loginInFlight=true;
   err.textContent='驗證中...';
   input.disabled=true;
-  if(btn)btn.disabled=true;
   try{
-    // 第一次連線常因伺服器冷啟動而較慢，若失敗或逾時就自動重試一次，
-    // 不讓使用者自己發現失敗、再手動按一次登入
-    let json;
-    try{
-      json=await _checkPwOnce(pw);
-    } catch(e1){
-      err.textContent='伺服器回應較慢，重新嘗試中...';
-      json=await _checkPwOnce(pw);
-    }
+    const res=await fetch(API_URL, { method:'POST', body: JSON.stringify({ action:'checkPw', pw }) });
+    const json=await res.json();
     if(json.ok){
       _TOKEN=json.token;
       sessionStorage.setItem(SESSION_KEY,'1');
@@ -1651,17 +1630,15 @@ async function doLogin(){
       document.getElementById('app').style.display='flex';
       startApp();
     } else {
-      err.textContent=json.error||'密碼錯誤';
+      err.textContent=json.error||'密碼錯誤，請重試';
       input.value='';_updatePwDots();input.focus();
-      setTimeout(()=>err.textContent='',3000);
+      setTimeout(()=>err.textContent='',3500);
     }
   } catch(e){
-    err.textContent='連線失敗，請確認網路後再試一次';
-    setTimeout(()=>err.textContent='',3000);
+    err.textContent='連線失敗，請確認網路';
+    setTimeout(()=>err.textContent='',3500);
   } finally {
-    _loginInFlight=false;
     input.disabled=false;
-    if(btn)btn.disabled=false;
   }
 }
 

@@ -2,6 +2,12 @@
 <!--
   版次記錄（供比對是否為最新版）
   v1.0  2026-09-17  修正誤植：撤銷「採購卡片 ETD 改顯示各批次 ETA」（此變更應套用於手機版 mobile.html，桌機版還原為原本只顯示批次1的 ETD/ETA）
+  v1.1  2026-09-18  1) 登入驗證邏輯改為與 INDEX 發票系統一致（移除逾時/自動重試/防連點包裝，
+                        改回單純 fetch）
+                     2) 假日維護介面／邏輯改為與 INDEX 發票系統一致（新增假日名稱必填、
+                        清單改為「刪除」按鈕樣式＋筆數統計、點擊遮罩可關閉），不含發票
+                        系統「儲存假日後重新驗證付款日」的部分（本系統無對應需求）
+                     3) 採購清單表格數量／ETD／ETA／狀態改為依批次分行顯示（多批次時）
 -->
 <html lang="zh-TW">
 <head>
@@ -112,6 +118,16 @@ tbody td{padding:8px 7px;vertical-align:middle}
 .fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--blue);background:var(--sf)}
 .fg input[readonly]{background:var(--sf3);color:var(--tx3);cursor:not-allowed}
 .fg textarea{resize:vertical;min-height:142px;font-size:12px;line-height:1.6;overflow-y:auto}
+.hol-list{display:flex;flex-direction:column;gap:2px;max-height:300px;overflow-y:auto;border:1px solid var(--bd);border-radius:var(--r);padding:5px;margin-bottom:4px}
+.hol-row{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:5px}
+.hol-row:hover{background:var(--sf2)}
+.hol-date{font-family:'Courier New',monospace;font-size:11px;font-weight:700;color:var(--blue);flex-shrink:0;width:86px}
+.hol-name{font-size:11px;flex:1;color:var(--tx2)}
+.hol-del{font-size:11px;cursor:pointer;color:var(--tx3);padding:2px 6px;border:1px solid var(--bd);background:none;border-radius:4px;font-family:inherit}
+.hol-del:hover{background:var(--rbg);color:var(--rtx)}
+.batch-stack{display:flex;flex-direction:column;gap:4px}
+.batch-stack>div{padding:2px 0;line-height:1.3}
+.batch-stack>div:not(:last-child){border-bottom:1px dashed var(--bd)}
 .fgg{display:grid;gap:6px}
 .c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:1fr 1fr 1fr}.c4{grid-template-columns:1fr 1fr 1fr 1fr}
 .c5{grid-template-columns:repeat(5,1fr)}.c6{grid-template-columns:repeat(6,1fr)}
@@ -1197,18 +1213,27 @@ function _updatePwDots(){
 </div>
 
 <!-- HOL MODAL -->
-<div class="mkov" id="holMod">
+<div class="mkov" id="holMod" onclick="if(event.target===this)closeHol()">
 <div class="mk">
-  <h3>假日維護 <button onclick="closeHol()">✕</button></h3>
-  <p style="font-size:11px;color:var(--tx2);margin-bottom:7px">新增國定假日（週六日自動反灰）</p>
-  <div id="hollist" style="max-height:270px;overflow-y:auto;margin-bottom:7px"></div>
-  <div style="display:flex;gap:5px;margin-bottom:7px">
-    <input type="date" id="holDate" style="flex:1;font-size:12px;padding:4px 7px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx)" oninput="checkHolDupDesk(this.value)">
-    <input type="text" id="holName" placeholder="假日名稱" style="flex:1;font-size:12px;padding:4px 7px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);color:var(--tx)">
-    <button class="btn primary sm" onclick="addHol()">新增</button>
+  <h3>📅 國定假日管理 <button onclick="closeHol()">✕</button></h3>
+  <p style="font-size:11px;color:var(--tx3);margin-bottom:12px">六日已自動排除，此處管理國定假日（含補假）。</p>
+  <div style="display:flex;gap:6px;margin-bottom:8px;align-items:flex-end">
+    <div class="fg" style="flex:0 0 140px">
+      <label>日期</label>
+      <input type="date" id="holDate" oninput="checkHolDupDesk(this.value)" style="width:100%">
+    </div>
+    <div class="fg" style="flex:1">
+      <label>假日名稱</label>
+      <input type="text" id="holName" placeholder="例：中秋節" style="width:100%">
+    </div>
+    <button class="btn primary sm" style="flex-shrink:0" onclick="addHol()">新增</button>
   </div>
-  <div id="holDupWarnDesk" style="color:var(--red,#c0392b);font-size:10px;margin-top:3px;min-height:12px;font-weight:600"></div>
-  <div class="mkft"><button class="btn" onclick="closeHol()">關閉</button><button class="btn primary" onclick="saveHols()">✓ 儲存</button></div>
+  <div id="holDupWarnDesk" style="color:var(--red,#c0392b);font-size:10px;margin-top:-4px;margin-bottom:8px;min-height:12px;font-weight:600"></div>
+  <div style="font-size:10px;font-weight:700;color:var(--tx3);margin-bottom:5px;text-transform:uppercase">
+    假日清單（<span id="hol-count">0</span> 筆）
+  </div>
+  <div class="hol-list" id="hollist"></div>
+  <div class="mkft"><button class="btn" onclick="closeHol()">取消</button><button class="btn primary" onclick="saveHols()">✓ 儲存</button></div>
 </div>
 </div>
 
@@ -1893,8 +1918,23 @@ function renderList(){
   const getFwdDesc=(code)=>{const f=fwdMap.get(String(code||''));const s=fwdShortMap.get(String(code||''))||'';return s||(f&&typeof f==='object'?f.desc||'':String(f||''));};
   tb.innerHTML=fs.map(r=>{
     const ntd=r.amountNTD||calcNTDv(r.amount,r.currency);
-    const etd=r.deliveries&&r.deliveries[0]?r.deliveries[0].etd:'';
-    const eta=r.deliveries&&r.deliveries[0]?r.deliveries[0].eta:'';
+    const dels=r.deliveries||[];
+    const etd=dels[0]?dels[0].etd:'';
+    const eta=dels[0]?dels[0].eta:'';
+    // 若該筆有多個批次，數量／ETD／ETA／狀態改為依批次分行顯示；只有一個批次（或無批次資料）時維持原本單行顯示
+    let qtyCell,etdCell,etaCell,statusCell;
+    if(dels.length>1){
+      const batchStatus=d=>d.partialStatus==='已交貨'?'已交貨':(r.status==='作廢'||r.status==='處理中'?r.status:'待交貨');
+      qtyCell=`<div class="batch-stack">${dels.map(d=>`<div>${d.qty||'—'}</div>`).join('')}</div>`;
+      etdCell=`<div class="batch-stack">${dels.map(d=>`<div>${d.etd?'ETD '+fD(d.etd):'—'}</div>`).join('')}</div>`;
+      etaCell=`<div class="batch-stack">${dels.map(d=>`<div>${d.eta?'ETA '+fD(d.eta):'—'}</div>`).join('')}</div>`;
+      statusCell=`<div class="batch-stack">${dels.map(d=>sBdg(batchStatus(d))).join('')}</div>`;
+    } else {
+      qtyCell=r.qty||'—';
+      etdCell=etd?'ETD '+fD(etd):'—';
+      etaCell=eta?'ETA '+fD(eta):'—';
+      statusCell=sBdg(r.status);
+    }
     return`<tr onclick="openDet(${r.id})">
       <td>${r.plant}</td><td style="font-size:10px;white-space:nowrap">${fD(r.podate)||'—'}</td>
       <td style="font-size:10px;white-space:nowrap;font-family:monospace">${r.pr}</td>
@@ -1905,10 +1945,10 @@ function renderList(){
       <td>${cBdg(r.currency)}</td>
       <td class="ar">${fN(r.quote)}</td>
       <td class="ar" style="font-weight:600">${fN(r.amount)}</td>
-      <td style="text-align:center;font-weight:600">${r.qty||'—'}</td>
-      <td style="font-size:10px;white-space:nowrap">${etd?'ETD '+fD(etd):'—'}</td>
-      <td style="font-size:10px;white-space:nowrap">${eta?'ETA '+fD(eta):'—'}</td>
-      <td>${sBdg(r.status)}</td>
+      <td style="text-align:center;font-weight:600">${qtyCell}</td>
+      <td style="font-size:10px;white-space:nowrap">${etdCell}</td>
+      <td style="font-size:10px;white-space:nowrap">${etaCell}</td>
+      <td>${statusCell}</td>
       <td style="font-size:10px">${r.lt||'—'}</td>
       <td>${r.noCert?bdg(r.noCert,r.noCert==='是'?'b-y':'b-n'):'—'}</td>
       <td style="font-size:10px" title="${getPayPct(r.payment)}">${displayCode(r.payment)||'—'}</td>
@@ -2804,10 +2844,30 @@ function closeRate(){document.getElementById('rateMod').classList.remove('open')
 
 function openHol(){renderHolList();const hw=document.getElementById('holDupWarnDesk');if(hw)hw.textContent='';const hd=document.getElementById('holDate');if(hd)hd.value='';const hn=document.getElementById('holName');if(hn)hn.value='';document.getElementById('holMod').classList.add('open');}
 function renderHolList(){
-  document.getElementById('hollist').innerHTML=hols.sort((a,b)=>a.date>b.date?1:-1).map((h,i)=>`<div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px solid var(--bd)"><span style="font-size:12px;min-width:88px">${fD(h.date)}</span><span style="font-size:12px;flex:1;color:var(--tx2)">${safe(h.name||'')}</span><button class="btn xs danger" onclick="rmHol(${i})">✕</button></div>`).join('');
+  hols.sort((a,b)=>a.date>b.date?1:-1);
+  const cnt=document.getElementById('hol-count');if(cnt)cnt.textContent=hols.length;
+  document.getElementById('hollist').innerHTML=hols.length?hols.map((h,i)=>`
+    <div class="hol-row">
+      <span class="hol-date">${fD(h.date)}</span>
+      <span class="hol-name">${safe(h.name||'')}</span>
+      <button class="hol-del" onclick="rmHol(${i})">刪除</button>
+    </div>`).join('')
+    :`<div style="text-align:center;padding:16px;color:var(--tx3);font-size:12px">尚無假日資料</div>`;
 }
 function rmHol(i){hols.splice(i,1);renderHolList();}
-function addHol(){const date=document.getElementById('holDate').value,name=document.getElementById('holName').value.trim();if(!date){alert('請選擇日期');return;}if(hols.some(h=>h.date===date)){alert('此日期已存在');return;}hols.push({date,name});document.getElementById('holDate').value='';document.getElementById('holName').value='';renderHolList();}
+function addHol(){
+  const date=document.getElementById('holDate').value;
+  const name=document.getElementById('holName').value.trim();
+  if(!date){ntf('請選擇日期');return;}
+  if(!name){ntf('請填入假日名稱');return;}
+  if(hols.some(h=>h.date===date)){ntf('此日期已存在');return;}
+  hols.push({date,name});
+  renderHolList();
+  document.getElementById('holDate').value='';
+  document.getElementById('holName').value='';
+  const hw=document.getElementById('holDupWarnDesk');if(hw)hw.textContent='';
+  ntf('✓ 假日已新增（請按儲存）');
+}
 async function saveHols(){saveH();closeHol();ntf('✓ 假日已儲存');if(curTab==='calendar')renderCal();}
 function closeHol(){document.getElementById('holMod').classList.remove('open');}
 
@@ -3120,41 +3180,17 @@ function checkAuth(){
   return !!_TOKEN && sessionStorage.getItem(SESSION_KEY) === '1';
 }
 
-// 呼叫一次 checkPw，帶 15 秒逾時（GAS 容器閒置一段時間後，第一次呼叫常需要「冷啟動」，
-// 有時會等很久甚至逾時失敗，用 AbortController 明確中止，避免卡住不動）
-function _checkPwOnce(pw){
-  const ctrl = new AbortController();
-  const timer = setTimeout(()=>ctrl.abort(), 15000);
-  return fetch(API_URL, {
-    method:'POST',
-    body: JSON.stringify({ action:'checkPw', pw }),
-    signal: ctrl.signal
-  }).then(res=>res.json()).finally(()=>clearTimeout(timer));
-}
-
-let _loginInFlight = false;
+// 登入驗證邏輯改為與 INDEX 發票系統一致（單純 fetch，不含逾時/重試/防連點包裝）
 async function doLogin(){
-  if(_loginInFlight) return; // 防止 Enter 與按鈕點擊同時觸發、或連點造成重複送出
   const input = document.getElementById('pwInput');
   const err   = document.getElementById('lerr');
-  const btn   = document.getElementById('loginBtn');
   const pw    = input.value.trim();
   if(!pw) return;
-  _loginInFlight = true;
-  input.disabled = true;
-  if(btn) btn.disabled = true;
   err.textContent = '驗證中...';
+  input.disabled = true;
   try {
-    // 密碼送到 GAS 伺服器比對，前端不做任何比對
-    // 第一次連線常因伺服器冷啟動而較慢，若失敗或逾時就自動重試一次，
-    // 不讓使用者自己發現失敗、再手動按一次登入
-    let json;
-    try {
-      json = await _checkPwOnce(pw);
-    } catch(e1){
-      err.textContent = '伺服器回應較慢，重新嘗試中...';
-      json = await _checkPwOnce(pw);
-    }
+    const res  = await fetch(API_URL, { method:'POST', body: JSON.stringify({ action:'checkPw', pw }) });
+    const json = await res.json();
     if(json.ok){
       _TOKEN = json.token;
       sessionStorage.setItem(SESSION_KEY,'1');
@@ -3176,15 +3212,13 @@ async function doLogin(){
       input.value = '';
       _updatePwDots();
       input.focus();
-      setTimeout(()=>err.textContent='', 3000);
+      setTimeout(()=>err.textContent='', 3500);
     }
   } catch(e) {
-    err.textContent = '連線失敗，請確認網路後再試一次';
-    setTimeout(()=>err.textContent='', 3000);
+    err.textContent = '連線失敗，請確認網路';
+    setTimeout(()=>err.textContent='', 3500);
   } finally {
-    _loginInFlight = false;
     input.disabled = false;
-    if(btn) btn.disabled = false;
   }
 }
 
