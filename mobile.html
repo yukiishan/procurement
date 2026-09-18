@@ -2,6 +2,9 @@
 <!--
   版次記錄（供比對是否為最新版）
   v1.0  2026-09-17  採購卡片 ETD → 改為顯示各批次的 ETA（例：1台 ETA.../1台 ETA.../2台 ETA...）
+  v1.1  2026-09-18  修正部分手機鍵盤未關閉時點登入鈕，只關閉鍵盤、需再點一次
+                     才會真的登入的問題（延遲鍵盤關閉時的版面重設，避免跟點擊
+                     手勢的判定互相干擾）
 -->
 <html lang="zh-TW">
 <head>
@@ -1255,13 +1258,29 @@ if(window.visualViewport){
   window.visualViewport.addEventListener('resize',_adjustLoginScreenForKeyboard);
   window.visualViewport.addEventListener('scroll',_adjustLoginScreenForKeyboard);
 }
+// 部分手機：密碼欄位還沒失焦（鍵盤還開著）時直接點「登入」鈕，會出現「這一下
+// 只把鍵盤關掉、登入鈕本身沒被真的觸發」的情況，得再點一次才會真的送出登入。
+// 原因：blur 當下就同步把 loginScreen 的 height／padding-top 重設回鍵盤關閉時
+// 的預設值，版面立刻回彈；如果這個回彈剛好發生在使用者手指觸控還沒結束（點下
+// 去到放開之間），登入鈕的位置已經被回彈移動過，瀏覽器判定觸控起點與終點對不
+// 上同一個元素，就不會觸發 click。改成延遲重設（等觸控手勢有充分時間完整結束
+// 再回彈版面），並在重新聚焦時取消還沒執行的重設，避免用舊的計時器誤重設到
+// 新一輪已經聚焦的畫面。
+let _kbResetTimer=null;
 (function bindLoginKeyboardListeners(){
   const pwInput=document.getElementById('pwInput');
   if(!pwInput)return;
-  pwInput.addEventListener('focus',()=>setTimeout(_adjustLoginScreenForKeyboard,50));
+  pwInput.addEventListener('focus',()=>{
+    if(_kbResetTimer){clearTimeout(_kbResetTimer);_kbResetTimer=null;}
+    setTimeout(_adjustLoginScreenForKeyboard,50);
+  });
   pwInput.addEventListener('blur',()=>{
-    const ls=document.getElementById('loginScreen');
-    if(ls){ls.style.height='';ls.style.paddingTop='';}
+    if(_kbResetTimer)clearTimeout(_kbResetTimer);
+    _kbResetTimer=setTimeout(()=>{
+      const ls=document.getElementById('loginScreen');
+      if(ls){ls.style.height='';ls.style.paddingTop='';}
+      _kbResetTimer=null;
+    },250);
   });
 })();
 
