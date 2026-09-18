@@ -8,6 +8,10 @@
                         清單改為「刪除」按鈕樣式＋筆數統計、點擊遮罩可關閉），不含發票
                         系統「儲存假日後重新驗證付款日」的部分（本系統無對應需求）
                      3) 採購清單表格數量／ETD／ETA／狀態改為依批次分行顯示（多批次時）
+  v1.2  2026-09-18  修正 v1.1 造成的登入卡死問題：改成跟 INDEX 一樣的單純登入
+                     流程後，實測「發票系統同時登入中」會讓採購系統卡在「驗證
+                     中...」進不去（GAS 冷啟動／多專案併發變慢），改回帶 15 秒
+                     逾時＋自動重試一次的版本
 -->
 <html lang="zh-TW">
 <head>
@@ -3180,17 +3184,41 @@ function checkAuth(){
   return !!_TOKEN && sessionStorage.getItem(SESSION_KEY) === '1';
 }
 
-// 登入驗證邏輯改為與 INDEX 發票系統一致（單純 fetch，不含逾時/重試/防連點包裝）
+// 呼叫一次 checkPw，帶 15 秒逾時（GAS 容器閒置一段時間後，或多個 Apps Script
+// 專案同時使用時，第一次呼叫常需要「冷啟動」／排隊，有時會等很久甚至逾時失敗，
+// 用 AbortController 明確中止，避免卡在「驗證中...」不動）
+// 【2026-09-18 補記】原本改成跟 INDEX 發票系統一樣的單純 fetch（不含逾時/重試），
+// 但改版當天就實測到「發票系統同時登入中」時，採購系統會卡在「驗證中...」進不去
+// ——證實 GAS 冷啟動／多專案併發變慢的狀況會直接卡死，INDEX 沒有這層保護其實
+// 也有一樣的風險，只是還沒被踩到。因此把這層逾時＋自動重試保護加回來。
+function _checkPwOnce(pw){
+  const ctrl = new AbortController();
+  const timer = setTimeout(()=>ctrl.abort(), 15000);
+  return fetch(API_URL, {
+    method:'POST',
+    body: JSON.stringify({ action:'checkPw', pw }),
+    signal: ctrl.signal
+  }).then(res=>res.json()).finally(()=>clearTimeout(timer));
+}
+
+let _loginInFlight = false;
 async function doLogin(){
+  if(_loginInFlight) return; // 防止 Enter 與按鈕點擊同時觸發、或連點造成重複送出
   const input = document.getElementById('pwInput');
   const err   = document.getElementById('lerr');
   const pw    = input.value.trim();
   if(!pw) return;
-  err.textContent = '驗證中...';
+  _loginInFlight = true;
   input.disabled = true;
+  err.textContent = '驗證中...';
   try {
-    const res  = await fetch(API_URL, { method:'POST', body: JSON.stringify({ action:'checkPw', pw }) });
-    const json = await res.json();
+    let json;
+    try {
+      json = await _checkPwOnce(pw);
+    } catch(e1){
+      err.textContent = '伺服器回應較慢，重新嘗試中...';
+      json = await _checkPwOnce(pw);
+    }
     if(json.ok){
       _TOKEN = json.token;
       sessionStorage.setItem(SESSION_KEY,'1');
@@ -3215,9 +3243,10 @@ async function doLogin(){
       setTimeout(()=>err.textContent='', 3500);
     }
   } catch(e) {
-    err.textContent = '連線失敗，請確認網路';
+    err.textContent = '連線失敗，請確認網路後再試一次';
     setTimeout(()=>err.textContent='', 3500);
   } finally {
+    _loginInFlight = false;
     input.disabled = false;
   }
 }
