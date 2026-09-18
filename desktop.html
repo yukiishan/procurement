@@ -2848,7 +2848,7 @@ function renderHolList(){
   const cnt=document.getElementById('hol-count');if(cnt)cnt.textContent=hols.length;
   document.getElementById('hollist').innerHTML=hols.length?hols.map((h,i)=>`
     <div class="hol-row">
-      <span class="hol-date">${fD(h.date)}</span>
+      <span class="hol-date">${h.date}</span>
       <span class="hol-name">${safe(h.name||'')}</span>
       <button class="hol-del" onclick="rmHol(${i})">刪除</button>
     </div>`).join('')
