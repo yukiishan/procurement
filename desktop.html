@@ -82,6 +82,12 @@
                      的常見原因：該付款代號本身在維護資料裡就還沒有設定幣別
                      /稅別/天數，此表格改版後可直接在清單上確認，需要的話
                      再進入該代號的編輯畫面補上數值並儲存即可。）
+  v1.10 2026-09-21  付款代號維護的新增/編輯視窗，設定欄位的 Tab 鍵跳轉順序：
+                     付款代號→幣別→稅別→訂金款%→交機款%→驗收款%→訂金款天數
+                     →交機款天數→驗收款天數→儲存（原本沒有指定 tabindex，
+                     Tab 鍵會依 HTML 原始順序跳到簡要備註、或先跳到頂部的
+                     儲存按鈕，不符合實際輸入順序）。簡要備註／備註欄位不在
+                     這個順序內，Tab 到最後（儲存之後）才會到。
 -->
 <html lang="zh-TW">
 <head>
@@ -976,7 +982,7 @@ function _updatePwDots(){
   <div class="dethd">
     <button class="detback" onclick="closeCodeDet()">←</button>
     <h2 id="codeDetTitle">編輯代號</h2>
-    <button class="btn primary sm" onclick="saveCodeDet()">✓ 儲存</button>
+    <button class="btn primary sm" onclick="saveCodeDet()" tabindex="10">✓ 儲存</button>
   </div>
   <div class="detbody">
     <div class="sec">
@@ -984,7 +990,7 @@ function _updatePwDots(){
         <!-- Row1: 代號(3碼) + 簡要備註(填滿) -->
         <div class="fg">
           <label id="codeDetCodeLbl">付款代號</label>
-          <input id="codeDetCode" placeholder="如 J94" style="text-transform:uppercase;font-family:monospace;letter-spacing:2px;font-size:15px" oninput="setValPreserveCursor(this,this.value.toUpperCase());checkCodeDupDesk(this.value)">
+          <input id="codeDetCode" placeholder="如 J94" style="text-transform:uppercase;font-family:monospace;letter-spacing:2px;font-size:15px" oninput="setValPreserveCursor(this,this.value.toUpperCase());checkCodeDupDesk(this.value)" tabindex="1">
           <div id="codeDetDupWarn" style="color:var(--red,#c0392b);font-size:10px;margin-top:2px;min-height:12px;font-weight:600"></div>
         </div>
         <div class="fg">
@@ -995,17 +1001,17 @@ function _updatePwDots(){
       <!-- Row2: 幣別/稅別(payCode only) -->
       <div id="payCurrTaxRow" style="display:none;margin-top:8px">
         <div class="fgg c2" style="gap:8px">
-          <div class="fg"><label>幣別</label><select id="codeDetCurrency"><option value="">—</option><option>台幣</option><option>外幣</option></select></div>
-          <div class="fg"><label>稅別</label><select id="codeDetTaxType"><option value="">—</option><option>應稅</option><option>零稅</option><option>免稅</option></select></div>
+          <div class="fg"><label>幣別</label><select id="codeDetCurrency" tabindex="2"><option value="">—</option><option>台幣</option><option>外幣</option></select></div>
+          <div class="fg"><label>稅別</label><select id="codeDetTaxType" tabindex="3"><option value="">—</option><option>應稅</option><option>零稅</option><option>免稅</option></select></div>
         </div>
       </div>
       <!-- Row3: 付款比例(payCode) or 運送方式(fwdCode) -->
       <div id="payPctRow" style="display:none;margin-top:8px">
         <div class="sechd" style="margin-bottom:6px">付款比例 (%)</div>
         <div class="fgg c3" style="gap:8px">
-          <div class="fg"><label>訂金款 (%)</label><input id="codeDetPctD" type="number" min="0" max="100" value="0" oninput="syncPayPct()"></div>
-          <div class="fg"><label>交機款 (%)</label><input id="codeDetPctM" type="number" min="0" max="100" value="0" oninput="syncPayPct()"></div>
-          <div class="fg"><label>驗收款 (%)</label><input id="codeDetPctA" type="number" min="0" max="100" value="0" oninput="syncPayPct()"></div>
+          <div class="fg"><label>訂金款 (%)</label><input id="codeDetPctD" type="number" min="0" max="100" value="0" oninput="syncPayPct()" tabindex="4"></div>
+          <div class="fg"><label>交機款 (%)</label><input id="codeDetPctM" type="number" min="0" max="100" value="0" oninput="syncPayPct()" tabindex="5"></div>
+          <div class="fg"><label>驗收款 (%)</label><input id="codeDetPctA" type="number" min="0" max="100" value="0" oninput="syncPayPct()" tabindex="6"></div>
         </div>
         <div id="pctSumWarn" style="font-size:11px;color:var(--red);margin-top:4px;min-height:14px"></div>
       </div>
@@ -1013,9 +1019,9 @@ function _updatePwDots(){
       <div id="payDaysRow" style="display:none;margin-top:8px">
         <div class="sechd" style="margin-bottom:6px">付款天數</div>
         <div class="fgg c3" style="gap:8px">
-          <div class="fg"><label>訂金款天數</label><input id="codeDetDaysD" type="number" min="0" value="0"></div>
-          <div class="fg"><label>交機款天數</label><input id="codeDetDaysM" type="number" min="0" value="0"></div>
-          <div class="fg"><label>驗收款天數</label><input id="codeDetDaysA" type="number" min="0" value="0"></div>
+          <div class="fg"><label>訂金款天數</label><input id="codeDetDaysD" type="number" min="0" value="0" tabindex="7"></div>
+          <div class="fg"><label>交機款天數</label><input id="codeDetDaysM" type="number" min="0" value="0" tabindex="8"></div>
+          <div class="fg"><label>驗收款天數</label><input id="codeDetDaysA" type="number" min="0" value="0" tabindex="9"></div>
         </div>
       </div>
       <div id="fwdShipRow" style="display:none;margin-top:8px">
