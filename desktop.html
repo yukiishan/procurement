@@ -12,6 +12,27 @@
                      流程後，實測「發票系統同時登入中」會讓採購系統卡在「驗證
                      中...」進不去（GAS 冷啟動／多專案併發變慢），改回帶 15 秒
                      逾時＋自動重試一次的版本
+  v1.3  2026-09-21  新增付款代號/採購清單付款相關欄位：
+                     1) 付款代號維護：新增「幣別（台幣/外幣）」「稅別（應稅/
+                        零稅/免稅）」「付款天數（訂金/交機/驗收各自天數）」
+                     2) 採購清單明細：無產證後方新增「稅別」欄位（連動付款代
+                        號自動帶入，可手動覆蓋）；訂金/交機/驗收%移至下一行；
+                        再新增一行「訂金/交機/驗收付款天數」（同樣連動付款代
+                        號自動帶入）
+                     3) 批次付款明細新增「驗收日期」欄位：輸入請款日期後，依
+                        該筆期別對應的付款天數自動計算，使用者手動修改過的驗
+                        收日期不會被自動覆蓋。後端 getCodes/saveCodes 沿用既
+                        有 JSON 欄位泛用儲存機制，無需修改 code.gs。
+  v1.4  2026-09-21  修正驗收日期計算公式：完全比照 INDEX 發票系統
+                     calcTWD()／calcFX() 的月結算日捲動邏輯（v1.3 原本只有
+                     單純「請款日+天數+假日順延」，未含月結算日捲動）：
+                     台幣（依付款代號的幣別設定）：請款日<=25號→基準日為次
+                     月10號；>25號→基準日為次次月10號；基準日+付款天數後再
+                     捲到最近的10或25號。外幣：請款日+付款天數後捲到最近的
+                     14或28號。兩者最後都查假日管理、遇假日順延至次一營業日
+                     （此點與發票系統不同：發票系統 calcFX 並未做假日順延，
+                     但依使用者確認，採購系統外幣也要一併順延）。付款代號未
+                     設定幣別時，預設視為台幣處理。
 -->
 <html lang="zh-TW">
 <head>
@@ -922,7 +943,14 @@ function _updatePwDots(){
           <input id="codeDetShort" placeholder="簡要備註（顯示於列表）" style="width:100%">
         </div>
       </div>
-      <!-- Row2: 付款比例(payCode) or 運送方式(fwdCode) -->
+      <!-- Row2: 幣別/稅別(payCode only) -->
+      <div id="payCurrTaxRow" style="display:none;margin-top:8px">
+        <div class="fgg c2" style="gap:8px">
+          <div class="fg"><label>幣別</label><select id="codeDetCurrency"><option value="">—</option><option>台幣</option><option>外幣</option></select></div>
+          <div class="fg"><label>稅別</label><select id="codeDetTaxType"><option value="">—</option><option>應稅</option><option>零稅</option><option>免稅</option></select></div>
+        </div>
+      </div>
+      <!-- Row3: 付款比例(payCode) or 運送方式(fwdCode) -->
       <div id="payPctRow" style="display:none;margin-top:8px">
         <div class="sechd" style="margin-bottom:6px">付款比例 (%)</div>
         <div class="fgg c3" style="gap:8px">
@@ -931,6 +959,15 @@ function _updatePwDots(){
           <div class="fg"><label>驗收款 (%)</label><input id="codeDetPctA" type="number" min="0" max="100" value="0" oninput="syncPayPct()"></div>
         </div>
         <div id="pctSumWarn" style="font-size:11px;color:var(--red);margin-top:4px;min-height:14px"></div>
+      </div>
+      <!-- Row4: 付款天數(payCode only) -->
+      <div id="payDaysRow" style="display:none;margin-top:8px">
+        <div class="sechd" style="margin-bottom:6px">付款天數</div>
+        <div class="fgg c3" style="gap:8px">
+          <div class="fg"><label>訂金款天數</label><input id="codeDetDaysD" type="number" min="0" value="0"></div>
+          <div class="fg"><label>交機款天數</label><input id="codeDetDaysM" type="number" min="0" value="0"></div>
+          <div class="fg"><label>驗收款天數</label><input id="codeDetDaysA" type="number" min="0" value="0"></div>
+        </div>
       </div>
       <div id="fwdShipRow" style="display:none;margin-top:8px">
         <div class="fgg" style="grid-template-columns:160px 1fr;gap:8px">
@@ -1155,18 +1192,30 @@ function _updatePwDots(){
         <!-- Row 7: 付款 貨代 運送方式 吊掛 -->
         <div class="fg"><label>付款代號</label>
           <div style="display:flex;gap:4px">
-            <input id="f-payment" placeholder="如 J04" style="flex:1;text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s);autoFillPayCodeDesk(this.value,true)" onchange="['f-pctD','f-pctM','f-pctA'].forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});autoFillPayCodeDesk(this.value,true)">
+            <input id="f-payment" placeholder="如 J04" style="flex:1;text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s);autoFillPayCodeDesk(this.value,true)" onchange="['f-pctD','f-pctM','f-pctA','f-taxType','f-daysD','f-daysM','f-daysA'].forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});autoFillPayCodeDesk(this.value,true)">
             <button class="btn xs" type="button" onclick="openPayCodePickerDesk()">選擇</button>
           </div>
         </div>
         <div class="fg"><label>貨代</label><input id="f-forwarder" placeholder="如 I32" oninput="setValPreserveCursor(this,this.value.toUpperCase()" style="text-transform:uppercase"></div>
         <div class="fg"><label>運送方式</label><select id="f-shipMode"></select></div>
         <div class="fg"><label>吊掛</label><select id="f-rigging"><option value="">—</option><option>是</option><option>否</option><option>-</option></select></div>
-        <!-- Row 8: 無產證 訂金款 交機款 驗收款 -->
+      </div>
+      <!-- Row 8: 無產證 / 稅別 -->
+      <div class="fgg c2" style="margin-top:6px">
         <div class="fg"><label>無產證</label><select id="f-noCert"><option value="">—</option><option>否</option><option>是</option></select></div>
+        <div class="fg"><label>稅別</label><select id="f-taxType" onchange="this.dataset.manual='1'"><option value="">—</option><option>應稅</option><option>零稅</option><option>免稅</option></select></div>
+      </div>
+      <!-- Row 9: 訂金款 交機款 驗收款 % -->
+      <div class="fgg c3" style="margin-top:6px">
         <div class="fg"><label>訂金款 %</label><input id="f-pctD" type="number" min="0" max="100" oninput="recalcAll()"></div>
         <div class="fg"><label>交機款 %</label><input id="f-pctM" type="number" min="0" max="100" oninput="recalcAll()"></div>
         <div class="fg"><label>驗收款 %</label><input id="f-pctA" type="number" min="0" max="100" oninput="recalcAll()"></div>
+      </div>
+      <!-- Row 10: 訂金款/交機款/驗收款 付款天數 -->
+      <div class="fgg c3" style="margin-top:6px">
+        <div class="fg"><label>訂金款天數</label><input id="f-daysD" type="number" min="0" oninput="this.dataset.manual='1';recalcAcceptDates()"></div>
+        <div class="fg"><label>交機款天數</label><input id="f-daysM" type="number" min="0" oninput="this.dataset.manual='1';recalcAcceptDates()"></div>
+        <div class="fg"><label>驗收款天數</label><input id="f-daysA" type="number" min="0" oninput="this.dataset.manual='1';recalcAcceptDates()"></div>
       </div>
     </div>
     <div class="sec">
@@ -2495,7 +2544,8 @@ function openDet(idOrNew){
   });
   // 清除所有欄位的手動旗標（開啟記錄時不算手動修改）
   ['f-vendor','f-agent','f-forwarder','f-name','f-country','f-city','f-currency',
-   'f-pctD','f-pctM','f-pctA','f-shipMode','f-rigging','f-noCert','f-payment']
+   'f-pctD','f-pctM','f-pctA','f-shipMode','f-rigging','f-noCert','f-payment',
+   'f-taxType','f-daysD','f-daysM','f-daysA']
     .forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});
   const _pw=document.getElementById('prDupWarnDesk');if(_pw)_pw.textContent='';
   // Restore custom textarea heights
@@ -2508,7 +2558,11 @@ function openDet(idOrNew){
   document.getElementById('f-pctD').value=r.pctD||'';
   document.getElementById('f-pctM').value=r.pctM||'';
   document.getElementById('f-pctA').value=r.pctA||'';
-  // Sync pct from payment code if available
+  document.getElementById('f-taxType').value=r.taxType||'';
+  document.getElementById('f-daysD').value=r.daysD||'';
+  document.getElementById('f-daysM').value=r.daysM||'';
+  document.getElementById('f-daysA').value=r.daysA||'';
+  // Sync pct/taxType/days from payment code if available
   if(r.payment)setTimeout(()=>autoFillPayCodeDesk(r.payment),50);
 
   // Load deliveries into state array (deep copy)
@@ -2529,7 +2583,7 @@ function openDet(idOrNew){
       }))
     }));
   } else {
-    detDeliveries=[{etd:'',eta:'',qty:'',sn:'',etdUpdated:'',etaUpdated:'',payments:[{invoiceDate:todayDet,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel:'訂金款',pct:'',payAmt:'',claimType:'',voucherDate:'',claimDate:'',payDate:'',payRemark:'',pctManual:false,payAmtManual:false}]}];
+    detDeliveries=[{etd:'',eta:'',qty:'',sn:'',etdUpdated:'',etaUpdated:'',payments:[{invoiceDate:todayDet,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel:'訂金款',pct:'',payAmt:'',claimType:'',voucherDate:'',claimDate:'',payDate:'',payRemark:'',pctManual:false,payAmtManual:false,acceptDate:'',acceptDateManual:false}]}];
   }
 
   renderDPList();
@@ -2616,12 +2670,14 @@ function renderPayRow(ci,pi){
     <div class="pf" style="justify-content:flex-end;align-items:flex-end"><button class="btn xs danger" onclick="removePayRow(${ci},${pi})">✕</button></div>
     <div class="pf"><label>請款方式</label><select class="ct-sel" onchange="detDeliveries[${ci}].payments[${pi}].claimType=this.value"><option value="">—</option>${ctOpts}</select></div>
     <div class="pf"><label>憑證時間</label><input type="date" value="${p.voucherDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].voucherDate=this.value"></div>
-    <div class="pf"><label>請款時間</label><input type="date" value="${p.claimDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].claimDate=this.value"></div>
+    <div class="pf"><label>請款時間</label><input type="date" value="${p.claimDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].claimDate=this.value;calcAcceptDate(${ci},${pi})"></div>
     <div class="pf"><label>付款日期</label><input type="date" value="${p.payDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].payDate=this.value"></div>
-    <div class="pf" style="grid-column:5/9"><label>備註</label><input value="${safe(p.payRemark||'')}" placeholder="備註..." oninput="detDeliveries[${ci}].payments[${pi}].payRemark=this.value"></div>
+    <div class="pf"><label>驗收日期</label><input type="date" class="acd-inp" value="${p.acceptDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].acceptDate=this.value;detDeliveries[${ci}].payments[${pi}].acceptDateManual=true"></div>
+    <div class="pf" style="grid-column:6/9"><label>備註</label><input value="${safe(p.payRemark||'')}" placeholder="備註..." oninput="detDeliveries[${ci}].payments[${pi}].payRemark=this.value"></div>
   `;
   container.appendChild(row);
   setTimeout(()=>recalcPayRow(ci,pi),10);
+  if(!p.acceptDateManual)setTimeout(()=>calcAcceptDate(ci,pi),10);
 }
 
 function addDP(){
@@ -2640,7 +2696,7 @@ function addDP(){
   const stageLabel=getDefaultStageByOrder(0,cdObj);
   // 批次索引（新批次是第幾個）
   const newCi=detDeliveries.length;
-  detDeliveries.push({etd:'',eta:'',qty:'',sn:'',partialStatus:'待交貨',payments:[{invoiceDate:todayDP,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel,pct:'',payAmt:'',claimType:'',claimDate:'',payDate:'',voucherDate:'',payRemark:'',pctManual:false,payAmtManual:false,stageManual:false}]});
+  detDeliveries.push({etd:'',eta:'',qty:'',sn:'',partialStatus:'待交貨',payments:[{invoiceDate:todayDP,invoice:'',arrivalDate:'',arrivalQty:'',stageLabel,pct:'',payAmt:'',claimType:'',claimDate:'',payDate:'',voucherDate:'',payRemark:'',pctManual:false,payAmtManual:false,stageManual:false,acceptDate:'',acceptDateManual:false}]});
   const ci=detDeliveries.length-1;
   renderDPCard(ci);
   // 帶入比例（非手動改過）
@@ -2674,7 +2730,7 @@ function addPayRow(ci){
   if(cd&&typeof cd==='string'){try{cdObj=JSON.parse(cd);}catch(e){}}
   else if(cd&&typeof cd==='object'){cdObj=cd;}
   const stageLabel=getDefaultStageByOrder(pi, cdObj);
-  d.payments.push({invoiceDate,invoice,arrivalDate,arrivalQty,stageLabel,pct:'',payAmt:'',claimType:'',voucherDate:'',claimDate:'',payDate:'',payRemark:'',pctManual:false,payAmtManual:false,stageManual:false});
+  d.payments.push({invoiceDate,invoice,arrivalDate,arrivalQty,stageLabel,pct:'',payAmt:'',claimType:'',voucherDate:'',claimDate:'',payDate:'',payRemark:'',pctManual:false,payAmtManual:false,stageManual:false,acceptDate:'',acceptDateManual:false});
   renderPayRow(ci,pi);
   setTimeout(()=>recalcPayRow(ci,pi),20);
 }
@@ -2695,13 +2751,14 @@ function onStCh(ci,pi,val){
   detDeliveries[ci].payments[pi].pct='';
   detDeliveries[ci].payments[pi].payAmt='';
   recalcPayRow(ci,pi);
+  calcAcceptDate(ci,pi);  // 期別改變會影響對應付款天數，重算驗收日期
 }
 
 async function saveRec(){
   const total=Number(document.getElementById('f-qty').value)||0;
   const used=getUsedQty();
   if(total>0&&used>total){if(!confirm(`批次數量合計(${used})超過總數(${total})，確定儲存？`))return;}
-  const sf=['plant','dept','pr','vendorCode','vendor','agent','model','name','quoteNo','currency','partno','lt','line','tt','cea','podate','noCert','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'];
+  const sf=['plant','dept','pr','vendorCode','vendor','agent','model','name','quoteNo','currency','partno','lt','line','tt','cea','podate','noCert','taxType','country','city','payment','forwarder','shipMode','rigging','remark','signNote','status'];
   const rec={};
   sf.forEach(f=>{const el=document.getElementById('f-'+f);if(el)rec[f]=el.value;});
   // Save custom textarea heights
@@ -2714,6 +2771,9 @@ async function saveRec(){
   rec.pctD=Number(document.getElementById('f-pctD').value)||0;
   rec.pctM=Number(document.getElementById('f-pctM').value)||0;
   rec.pctA=Number(document.getElementById('f-pctA').value)||0;
+  rec.daysD=Number(document.getElementById('f-daysD').value)||0;
+  rec.daysM=Number(document.getElementById('f-daysM').value)||0;
+  rec.daysA=Number(document.getElementById('f-daysA').value)||0;
   // Save from state array, not DOM
   rec.deliveries=detDeliveries.map(d=>({
     etd:d.etd,eta:d.eta,qty:d.qty,sn:d.sn||'',
@@ -2723,7 +2783,8 @@ async function saveRec(){
       invoiceDate:p.invoiceDate,invoice:p.invoice,arrivalDate:p.arrivalDate,
       arrivalQty:p.arrivalQty,stageLabel:p.stageLabel,pct:p.pct,
       payAmt:p.payAmt,claimType:p.claimType,voucherDate:p.voucherDate,
-      claimDate:p.claimDate,payDate:p.payDate,payRemark:p.payRemark
+      claimDate:p.claimDate,payDate:p.payDate,payRemark:p.payRemark,
+      acceptDate:p.acceptDate||'',acceptDateManual:!!p.acceptDateManual
     }))
   }));
   // 注意：已交貨狀態改為透過「儀表板 ETA 追蹤」的審核機制手動確認，
@@ -3026,8 +3087,12 @@ function openNewCodeDet(key){
   const dw=document.getElementById('codeDetDupWarn');if(dw)dw.textContent='';
   const pctRow=document.getElementById('payPctRow');
   const fwdRow2=document.getElementById('fwdShipRow');
+  const currTaxRow=document.getElementById('payCurrTaxRow');
+  const daysRow=document.getElementById('payDaysRow');
   if(pctRow)pctRow.style.display=key==='payCode'?'block':'none';
   if(fwdRow2)fwdRow2.style.display=key==='fwdCode'?'block':'none';
+  if(currTaxRow)currTaxRow.style.display=key==='payCode'?'block':'none';
+  if(daysRow)daysRow.style.display=key==='payCode'?'block':'none';
   if(key==='fwdCode'){
     const smEl=document.getElementById('codeDetShipMode');
     if(smEl){smEl.innerHTML='<option value="">—</option>'+(opts.shipMode||DO.shipMode||[]).map(s=>`<option>${safe(s)}</option>`).join('');}
@@ -3036,6 +3101,13 @@ function openNewCodeDet(key){
   const pctM=document.getElementById('codeDetPctM');
   const pctA=document.getElementById('codeDetPctA');
   if(pctD)pctD.value=0;if(pctM)pctM.value=0;if(pctA)pctA.value=0;
+  const curEl=document.getElementById('codeDetCurrency');
+  const taxEl=document.getElementById('codeDetTaxType');
+  const dD=document.getElementById('codeDetDaysD');
+  const dM=document.getElementById('codeDetDaysM');
+  const dA=document.getElementById('codeDetDaysA');
+  if(curEl)curEl.value='';if(taxEl)taxEl.value='';
+  if(dD)dD.value=0;if(dM)dM.value=0;if(dA)dA.value=0;
   document.getElementById('codeDetOv').classList.add('open');
 }
 
@@ -3084,16 +3156,34 @@ function openCodeDet(key,codeArg){
   }
   const pctRow=document.getElementById('payPctRow');
   const fwdRow=document.getElementById('fwdShipRow');
+  const currTaxRow=document.getElementById('payCurrTaxRow');
+  const daysRow=document.getElementById('payDaysRow');
   if(pctRow)pctRow.style.display=key==='payCode'?'block':'none';
   if(fwdRow)fwdRow.style.display=key==='fwdCode'?'block':'none';
+  if(currTaxRow)currTaxRow.style.display=key==='payCode'?'block':'none';
+  if(daysRow)daysRow.style.display=key==='payCode'?'block':'none';
   const elD=document.getElementById('codeDetPctD');
   const elM=document.getElementById('codeDetPctM');
   const elA=document.getElementById('codeDetPctA');
+  const curEl=document.getElementById('codeDetCurrency');
+  const taxEl=document.getElementById('codeDetTaxType');
+  const dD=document.getElementById('codeDetDaysD');
+  const dM=document.getElementById('codeDetDaysM');
+  const dA=document.getElementById('codeDetDaysA');
   if(key==='payCode'){
     if(elD)elD.value=Number(cd.pctD)||0;
     if(elM)elM.value=Number(cd.pctM)||0;
     if(elA)elA.value=Number(cd.pctA)||0;
-  }else{if(elD)elD.value=0;if(elM)elM.value=0;if(elA)elA.value=0;}
+    if(curEl)curEl.value=cd.currency||'';
+    if(taxEl)taxEl.value=cd.taxType||'';
+    if(dD)dD.value=Number(cd.daysD)||0;
+    if(dM)dM.value=Number(cd.daysM)||0;
+    if(dA)dA.value=Number(cd.daysA)||0;
+  }else{
+    if(elD)elD.value=0;if(elM)elM.value=0;if(elA)elA.value=0;
+    if(curEl)curEl.value='';if(taxEl)taxEl.value='';
+    if(dD)dD.value=0;if(dM)dM.value=0;if(dA)dA.value=0;
+  }
   // fwdCode: populate shipMode select and set value
   if(key==='fwdCode'){
     const smEl=document.getElementById('codeDetShipMode');
@@ -3133,7 +3223,12 @@ async function saveCodeDet(){
     const pctD=Number(document.getElementById('codeDetPctD')?.value||0);
     const pctM=Number(document.getElementById('codeDetPctM')?.value||0);
     const pctA=Number(document.getElementById('codeDetPctA')?.value||0);
-    const _obj={desc:descVal,pctD,pctM,pctA};
+    const currency=document.getElementById('codeDetCurrency')?.value||'';
+    const taxType=document.getElementById('codeDetTaxType')?.value||'';
+    const daysD=Number(document.getElementById('codeDetDaysD')?.value||0);
+    const daysM=Number(document.getElementById('codeDetDaysM')?.value||0);
+    const daysA=Number(document.getElementById('codeDetDaysA')?.value||0);
+    const _obj={desc:descVal,pctD,pctM,pctA,currency,taxType,daysD,daysM,daysA};
     if(_descH)_obj.descH=_descH;
     codeDesc[codeDetKey][codeStr]=_obj;
   }else{
@@ -4135,6 +4230,15 @@ function autoFillPayCodeDesk(code, force=false){
   if(elM&&(force||elM.dataset.manual!=='1'))elM.value=cd.pctM!==undefined?cd.pctM:elM.value;
   if(elA&&(force||elA.dataset.manual!=='1'))elA.value=cd.pctA!==undefined?cd.pctA:elA.value;
 
+  const elTax=document.getElementById('f-taxType');
+  const elDD=document.getElementById('f-daysD');
+  const elDM=document.getElementById('f-daysM');
+  const elDA=document.getElementById('f-daysA');
+  if(elTax&&(force||elTax.dataset.manual!=='1'))elTax.value=cd.taxType!==undefined?cd.taxType:elTax.value;
+  if(elDD&&(force||elDD.dataset.manual!=='1'))elDD.value=cd.daysD!==undefined?cd.daysD:elDD.value;
+  if(elDM&&(force||elDM.dataset.manual!=='1'))elDM.value=cd.daysM!==undefined?cd.daysM:elDM.value;
+  if(elDA&&(force||elDA.dataset.manual!=='1'))elDA.value=cd.daysA!==undefined?cd.daysA:elDA.value;
+
   // 根據新比例依順序分配各期 stageLabel
   function defaultStage(pi){
     return getDefaultStageByOrder(pi, cd);
@@ -4161,6 +4265,81 @@ function autoFillPayCodeDesk(code, force=false){
     });
   }
   recalcAll();
+  recalcAcceptDates();
+}
+
+// ── 驗收日期自動計算（比照 INDEX 的日期運算方式：請款日+付款天數，遇假日順延至次一營業日）──
+function _acdParseYMD(s){
+  if(!s)return null;
+  const parts=String(s).split('-').map(Number);
+  if(parts.length<3||parts.some(n=>isNaN(n)))return null;
+  return new Date(parts[0],parts[1]-1,parts[2]);
+}
+function _acdFmtYMD(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function _acdIsHoliday(d){
+  const ds=_acdFmtYMD(d);
+  return d.getDay()===0||d.getDay()===6||(hols||[]).some(h=>h.date===ds);
+}
+function _acdNextBizDay(d){
+  const r=new Date(d);
+  while(_acdIsHoliday(r))r.setDate(r.getDate()+1);
+  return r;
+}
+// 比照 INDEX 發票系統 calcTWD()／calcFX() 的月結算日捲動邏輯：
+// 台幣：請款日 <=25 號 → 基準日＝次月10號；>25 號 → 基準日＝次次月10號；
+//        基準日＋付款天數後，再往後捲到最近的 10 或 25 號。
+// 外幣：請款日直接＋付款天數，再往後捲到最近的 14 或 28 號。
+// 兩者最後都再查假日管理、遇假日順延至次一營業日（外幣這段跟發票系統不同：
+// 發票系統的 calcFX 並未做假日順延，但採購系統統一都要順延）。
+// 付款代號未設定幣別時，預設視為台幣處理。
+function calcAcceptDateFromClaim(claimDate,days,currency){
+  const cd=_acdParseYMD(claimDate);
+  if(!cd)return '';
+  const n=Number(days)||0;
+  const isFX=currency==='外幣';
+  let base;
+  if(isFX){
+    base=cd;
+  }else{
+    base=cd.getDate()<=25
+      ? new Date(cd.getFullYear(),cd.getMonth()+1,10)
+      : new Date(cd.getFullYear(),cd.getMonth()+2,10);
+  }
+  const calcDate=new Date(base);
+  calcDate.setDate(calcDate.getDate()+n);
+  const targetDays=isFX?[14,28]:[10,25];
+  let cand=new Date(calcDate);
+  for(let i=0;i<60;i++){
+    if(targetDays.indexOf(cand.getDate())>=0)break;
+    cand.setDate(cand.getDate()+1);
+  }
+  return _acdFmtYMD(_acdNextBizDay(cand));
+}
+function calcAcceptDate(ci,pi){
+  const d=detDeliveries[ci];if(!d)return;
+  const p=d.payments[pi];if(!p)return;
+  if(p.acceptDateManual)return; // 使用者手動改過，不自動覆蓋
+  if(!p.claimDate){
+    p.acceptDate='';
+  }else{
+    let days=0;
+    if(p.stageLabel==='訂金款')days=Number(document.getElementById('f-daysD')?.value)||0;
+    else if(p.stageLabel==='交機款')days=Number(document.getElementById('f-daysM')?.value)||0;
+    else if(p.stageLabel==='驗收款')days=Number(document.getElementById('f-daysA')?.value)||0;
+    const payCode=document.getElementById('f-payment')?.value||'';
+    const cdData=getPayCodeData(payCode);
+    const currency=(cdData&&cdData.currency)||'台幣'; // 未設定幣別時預設台幣
+    p.acceptDate=calcAcceptDateFromClaim(p.claimDate,days,currency);
+  }
+  const row=document.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);
+  if(row){const el=row.querySelector('.acd-inp');if(el)el.value=p.acceptDate||'';}
+}
+function recalcAcceptDates(){
+  detDeliveries.forEach((d,ci)=>{
+    d.payments.forEach((p,pi)=>{if(!p.acceptDateManual)calcAcceptDate(ci,pi);});
+  });
 }
 
 function getPayCodeData(code){
