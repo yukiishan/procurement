@@ -71,6 +71,13 @@
                         代號，一律依新代號重新帶入，不論欄位內是否已有存檔
                         資料；僅在使用者於「同一次編輯期間」直接手動輸入過
                         該欄位時才鎖定保護，避免被隨後的代號變更覆蓋掉。
+  v1.9  2026-09-21  付款代號維護清單新增顯示幣別/稅別/付款天數（桌機版已改
+                     為表格新增欄位，手機版無對應表格，改為在簡要備註後方的
+                     摘要文字追加顯示）：原本只顯示「簡要備註 (訂金%/交機%/
+                     驗收%)」，現在改為「簡要備註 幣別·稅別 (訂金%/交機%/驗
+                     收%) 天數訂金/交機/驗收」，未設定幣別/稅別時顯示
+                     「—」，讓使用者能直接在清單上看出哪些付款代號還沒有設
+                     定幣別/稅別/天數。純顯示層變更，不影響儲存/計算邏輯。
 -->
 <html lang="zh-TW">
 <head>
@@ -3476,7 +3483,12 @@ function renderCodesEdit(){
         if(typeof rawCd==='string'){try{rawCd=JSON.parse(rawCd);}catch(e){rawCd={desc:rawCd};}}
         const cd=(rawCd&&typeof rawCd==='object')?rawCd:{};
         let extra='';
-        if(curCodeType==='payCode'&&(cd.pctD||cd.pctM||cd.pctA)){extra=' ('+[cd.pctD||0,cd.pctM||0,cd.pctA||0].map(v=>v+'%').join('/')+')';}
+        if(curCodeType==='payCode'){
+          const curTax=(cd.currency||'—')+'·'+(cd.taxType||'—');
+          const pct=' ('+[cd.pctD||0,cd.pctM||0,cd.pctA||0].map(v=>v+'%').join('/')+')';
+          const days=' 天數'+[cd.daysD||0,cd.daysM||0,cd.daysA||0].join('/');
+          extra=' '+curTax+pct+days;
+        }
         else if(curCodeType==='fwdCode'&&cd.shipMode){extra=' ['+cd.shipMode+']';}
         return sh+extra;
       })()}</span>

@@ -72,6 +72,16 @@
                         代號，一律依新代號重新帶入，不論欄位內是否已有存檔
                         資料；僅在使用者於「同一次編輯期間」直接手動輸入過
                         該欄位時才鎖定保護，避免被隨後的代號變更覆蓋掉。
+  v1.9  2026-09-21  付款代號維護頁籤的清單表格（非新增/編輯視窗）新增欄位顯
+                     示：原本只有「付款代號／訂金%／交機%／驗收%／簡要備
+                     註」，現在訂金%前新增「幣別」「稅別」兩欄，驗收%後新增
+                     「訂金天數」「交機天數」「驗收天數」三欄，讓使用者能在
+                     清單一眼看出哪些付款代號尚未設定幣別/稅別/天數（顯示
+                     「—」或「0」）。此為單純顯示層變更，不影響儲存/計算邏
+                     輯。（採購清單重選付款代號時「沒有自動帶入稅別/天數」
+                     的常見原因：該付款代號本身在維護資料裡就還沒有設定幣別
+                     /稅別/天數，此表格改版後可直接在清單上確認，需要的話
+                     再進入該代號的編輯畫面補上數值並儲存即可。）
 -->
 <html lang="zh-TW">
 <head>
@@ -943,7 +953,7 @@ function _updatePwDots(){
   </div>
   <div class="content" style="padding:0">
     <div class="twrap" style="height:100%;border-radius:0;border-left:0;border-right:0;border-bottom:0"><table>
-      <thead id="paycode-thead"><tr><th class="sortable" data-col="code" onclick="_thSort('tab-paycode','code',()=>renderCodeTab('payCode'))">付款代號</th><th style="text-align:center;width:60px">訂金%</th><th style="text-align:center;width:60px">交機%</th><th style="text-align:center;width:60px">驗收%</th><th>簡要備註</th><th>操作</th></tr></thead>
+      <thead id="paycode-thead"><tr><th class="sortable" data-col="code" onclick="_thSort('tab-paycode','code',()=>renderCodeTab('payCode'))">付款代號</th><th style="text-align:center;width:56px">幣別</th><th style="text-align:center;width:56px">稅別</th><th style="text-align:center;width:60px">訂金%</th><th style="text-align:center;width:60px">交機%</th><th style="text-align:center;width:60px">驗收%</th><th style="text-align:center;width:64px">訂金天數</th><th style="text-align:center;width:64px">交機天數</th><th style="text-align:center;width:64px">驗收天數</th><th>簡要備註</th><th>操作</th></tr></thead>
       <tbody id="paycodeBody"></tbody>
     </table></div>
   </div>
@@ -3101,8 +3111,9 @@ function renderCodeTab(key){
   }):allCodes;
   // 排序（code 欄位排序）
   const codes=_csc?[...filteredCodes].sort((a,b)=>_csd==='asc'?String(a).localeCompare(String(b),'zh-TW'):String(b).localeCompare(String(a),'zh-TW')):filteredCodes;
-  if(!codes.length){tb.innerHTML=`<tr><td colspan="6"><div class="empty">${q?'找不到符合的代號':'尚無資料，請新增'}</div></td></tr>`;return;}
-  // Issue1: column order = 代號 | 訂金% | 交機% | 驗收% | 簡要備註
+  const emptyColspan=key==='payCode'?11:4;
+  if(!codes.length){tb.innerHTML=`<tr><td colspan="${emptyColspan}"><div class="empty">${q?'找不到符合的代號':'尚無資料，請新增'}</div></td></tr>`;return;}
+  // payCode: 代號 | 幣別 | 稅別 | 訂金% | 交機% | 驗收% | 訂金天數 | 交機天數 | 驗收天數 | 簡要備註 | 操作
   tb.innerHTML=codes.map((c,i)=>{
     let rawCd=codeDesc[key]&&codeDesc[key][c];
     if(typeof rawCd==='string'){try{rawCd=JSON.parse(rawCd);}catch(e){rawCd={desc:rawCd};}}
@@ -3110,7 +3121,9 @@ function renderCodeTab(key){
     const shortTxt=safe(codeDesc[key+'Short']&&codeDesc[key+'Short'][c]||'');
     let pctCols;
     if(key==='payCode'){
-      pctCols=`<td style="text-align:center;color:var(--tx2)">${cd.pctD??0}%</td><td style="text-align:center;color:var(--tx2)">${cd.pctM??0}%</td><td style="text-align:center;color:var(--tx2)">${cd.pctA??0}%</td>`;
+      const curTxt=cd.currency?safe(cd.currency):'<span style="color:var(--tx3)">—</span>';
+      const taxTxt=cd.taxType?safe(cd.taxType):'<span style="color:var(--tx3)">—</span>';
+      pctCols=`<td style="text-align:center;color:var(--tx2)">${curTxt}</td><td style="text-align:center;color:var(--tx2)">${taxTxt}</td><td style="text-align:center;color:var(--tx2)">${cd.pctD??0}%</td><td style="text-align:center;color:var(--tx2)">${cd.pctM??0}%</td><td style="text-align:center;color:var(--tx2)">${cd.pctA??0}%</td><td style="text-align:center;color:var(--tx2)">${cd.daysD??0}</td><td style="text-align:center;color:var(--tx2)">${cd.daysM??0}</td><td style="text-align:center;color:var(--tx2)">${cd.daysA??0}</td>`;
     }else{
       // fwdCode: show shipMode only (no extra empty cols)
       const sm=cd&&typeof cd==='object'&&cd.shipMode?safe(cd.shipMode):'';
