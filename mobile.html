@@ -78,6 +78,15 @@
                      收%) 天數訂金/交機/驗收」，未設定幣別/稅別時顯示
                      「—」，讓使用者能直接在清單上看出哪些付款代號還沒有設
                      定幣別/稅別/天數。純顯示層變更，不影響儲存/計算邏輯。
+  v1.10 2026-09-21  修正手機版付款代號/貨代代號儲存時，會把「簡要備註」欄位
+                     整批清空的問題：saveO() 呼叫 saveCodes API 時，
+                     payCodeShort／fwdCodeShort 這兩個參數原本寫死傳空物件
+                     {}（跟桌機版不同，桌機版是正確傳 codeDesc.payCodeShort／
+                     codeDesc.fwdCodeShort），導致每次在手機版編輯、儲存任何
+                     一筆付款代號或貨代代號時，後端會把「所有」付款代號/貨代
+                     代號的簡要備註都清空覆蓋成空白（因為後端 saveCodes 是整
+                     批覆寫，不是只更新單筆）。現已修正為跟桌機版一致，正確
+                     帶入目前的簡要備註資料，不再清空。
 -->
 <html lang="zh-TW">
 <head>
@@ -1641,7 +1650,7 @@ async function deleteOneRecord(id){
     await save();
   }
 }
-async function saveO(){try{await Promise.all([apiPost('saveOptions',opts),apiPost('saveCodes',{opts,payCode:codeDesc.payCode,payCodeShort:{},fwdCode:codeDesc.fwdCode,fwdCodeShort:{}})]);lc('opts',{opts,modelNames});}catch(e){console.error(e);}}
+async function saveO(){try{await Promise.all([apiPost('saveOptions',opts),apiPost('saveCodes',{opts,payCode:codeDesc.payCode,payCodeShort:codeDesc.payCodeShort,fwdCode:codeDesc.fwdCode,fwdCodeShort:codeDesc.fwdCodeShort})]);lc('opts',{opts,modelNames});}catch(e){console.error(e);}}
 async function saveVendors(){await apiPost('saveVendors',vendors);lc('vendors',vendors);}
 async function saveModels(){await apiPost('saveModels',models);lc('models',models);}
 async function saveR(){try{await apiPost('saveRates',rates);lc('rates',rates);}catch(e){console.error(e);}}
