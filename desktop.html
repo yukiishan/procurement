@@ -46,6 +46,21 @@
                         直接編輯付款日期後即鎖定，不會再被自動計算覆蓋；
                         舊資料若已有付款日期但沒有這個旗標，載入時視為手
                         動填的，同樣不會被自動覆蓋。
+  v1.6  2026-09-21  修正 v1.5「重新選擇付款代號不重算付款日」規則過嚴的問題，
+                     改為與訂金/交機/驗收%等欄位一致的「保護既有資料、僅補齊
+                     全新資料」邏輯：
+                     1) 採購清單重新選擇付款代號時，會重新帶入訂金/交機/驗收
+                        %、稅別、付款天數等表頭欄位，以及各付款列的付款日
+                        期——但若欄位/列已有既有資料（含開啟舊採購清單時載入
+                        的資料）或使用者已手動修改過，則不覆蓋；只有全新、
+                        尚未填寫過的欄位/列才會自動帶入。
+                     2) 開啟採購清單（openDet）載入表頭欄位時，依該筆資料是
+                        否已有值決定是否標記為手動（有值＝視為既有資料，鎖
+                        定不被覆蓋；無值＝視為新資料，可自動帶入），不再無
+                        條件清除手動旗標。
+                     3) 修正 f-pctD/M/A（訂金/交機/驗收%）欄位原本缺少「使
+                        用者直接輸入時標記手動」的邏輯（税別/付款天數欄位
+                        先前已有此邏輯），統一保護規則。
 -->
 <html lang="zh-TW">
 <head>
@@ -1205,7 +1220,7 @@ function _updatePwDots(){
         <!-- Row 7: 付款 貨代 運送方式 吊掛 -->
         <div class="fg"><label>付款代號</label>
           <div style="display:flex;gap:4px">
-            <input id="f-payment" placeholder="如 J04" style="flex:1;text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s);autoFillPayCodeDesk(this.value,true)" onchange="['f-pctD','f-pctM','f-pctA','f-taxType','f-daysD','f-daysM','f-daysA'].forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});autoFillPayCodeDesk(this.value,true)">
+            <input id="f-payment" placeholder="如 J04" style="flex:1;text-transform:uppercase" oninput="const s=this.selectionStart;this.value=this.value.toUpperCase();this.setSelectionRange(s,s);autoFillPayCodeDesk(this.value)">
             <button class="btn xs" type="button" onclick="openPayCodePickerDesk()">選擇</button>
           </div>
         </div>
@@ -1220,9 +1235,9 @@ function _updatePwDots(){
       </div>
       <!-- Row 9: 訂金款 交機款 驗收款 % -->
       <div class="fgg c3" style="margin-top:6px">
-        <div class="fg"><label>訂金款 %</label><input id="f-pctD" type="number" min="0" max="100" oninput="recalcAll()"></div>
-        <div class="fg"><label>交機款 %</label><input id="f-pctM" type="number" min="0" max="100" oninput="recalcAll()"></div>
-        <div class="fg"><label>驗收款 %</label><input id="f-pctA" type="number" min="0" max="100" oninput="recalcAll()"></div>
+        <div class="fg"><label>訂金款 %</label><input id="f-pctD" type="number" min="0" max="100" oninput="this.dataset.manual='1';recalcAll()"></div>
+        <div class="fg"><label>交機款 %</label><input id="f-pctM" type="number" min="0" max="100" oninput="this.dataset.manual='1';recalcAll()"></div>
+        <div class="fg"><label>驗收款 %</label><input id="f-pctA" type="number" min="0" max="100" oninput="this.dataset.manual='1';recalcAll()"></div>
       </div>
       <!-- Row 10: 訂金款/交機款/驗收款 付款天數 -->
       <div class="fgg c3" style="margin-top:6px">
@@ -2556,9 +2571,11 @@ function openDet(idOrNew){
     const el=document.getElementById('f-'+f);if(el)el.value=r[f]||'';
   });
   // 清除所有欄位的手動旗標（開啟記錄時不算手動修改）
+  // 注意：訂金/交機/驗收%、稅別、付款天數這幾個欄位不在這裡清除——它們改成
+  // 依「原本是否已有資料」個別設定手動旗標（見下方），這樣重新選擇付款代號
+  // 時才不會覆蓋既有採購清單已經存在的資料，只有新建資料才會自動帶入。
   ['f-vendor','f-agent','f-forwarder','f-name','f-country','f-city','f-currency',
-   'f-pctD','f-pctM','f-pctA','f-shipMode','f-rigging','f-noCert','f-payment',
-   'f-taxType','f-daysD','f-daysM','f-daysA']
+   'f-shipMode','f-rigging','f-noCert','f-payment']
     .forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});
   const _pw=document.getElementById('prDupWarnDesk');if(_pw)_pw.textContent='';
   // Restore custom textarea heights
@@ -2575,6 +2592,13 @@ function openDet(idOrNew){
   document.getElementById('f-daysD').value=r.daysD||'';
   document.getElementById('f-daysM').value=r.daysM||'';
   document.getElementById('f-daysA').value=r.daysA||'';
+  // 既有採購清單（編輯舊記錄）若這些欄位本來就有資料，視為「已手動確定」，
+  // 重新選擇付款代號時不會被覆蓋；新建記錄（沒有資料）則保持可自動帶入。
+  [['f-pctD',r.pctD],['f-pctM',r.pctM],['f-pctA',r.pctA],['f-taxType',r.taxType],
+   ['f-daysD',r.daysD],['f-daysM',r.daysM],['f-daysA',r.daysA]].forEach(([id,v])=>{
+    const e=document.getElementById(id);if(!e)return;
+    if(v)e.dataset.manual='1';else delete e.dataset.manual;
+  });
   // Sync pct/taxType/days from payment code if available
   if(r.payment)setTimeout(()=>autoFillPayCodeDesk(r.payment),50);
 
@@ -4279,9 +4303,10 @@ function autoFillPayCodeDesk(code, force=false){
     });
   }
   recalcAll();
-  // 注意：付款代號重新選擇/帶入時，不自動重算既有付款列的「付款日期」
-  // （只在使用者直接輸入/變更請款時間，或期別變更時才會重算，避免改代號
-  // 就連帶把已算好或手動填過的付款日期洗掉）
+  // 重新選擇付款代號時，重新帶入各付款列的付款日期——但 recalcPayDates()
+  // 內部會跳過 payDateManual 為 true 的列（既有採購清單已存在的資料、或
+  // 使用者手動改過的），只補齊尚未手動確定過的（新建資料）
+  recalcPayDates();
 }
 
 // ── 付款日期自動計算 ──────────────────────────────────
