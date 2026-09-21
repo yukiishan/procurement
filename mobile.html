@@ -59,6 +59,18 @@
                      3) 修正 f-pctD/M/A（訂金/交機/驗收%）欄位原本缺少「使
                         用者直接輸入時標記手動」的邏輯（税別/付款天數欄位
                         先前已有此邏輯），統一保護規則。
+  v1.8  2026-09-21  修正 v1.7 誤將「保護既有資料」規則也套用到稅別／訂金交機
+                     驗收付款天數的問題（與桌機版同步，v1.7 誤把稅別/付款天
+                     數也當成跟%數一樣要保護既有存檔資料，結果重新選擇付款
+                     代號時，已存檔的舊採購清單其稅別/天數不會更新，只有全
+                     新記錄才會帶入，與原始規格「稅別/付款天數連動付款代號
+                     自動帶入」不符）：
+                     1) 訂金/交機/驗收%這三個欄位維持保護規則（既有存檔資
+                        料不覆蓋，新建資料才自動帶入）。
+                     2) 稅別、訂金/交機/驗收付款天數改回：只要重新選擇付款
+                        代號，一律依新代號重新帶入，不論欄位內是否已有存檔
+                        資料；僅在使用者於「同一次編輯期間」直接手動輸入過
+                        該欄位時才鎖定保護，避免被隨後的代號變更覆蓋掉。
 -->
 <html lang="zh-TW">
 <head>
@@ -2813,11 +2825,14 @@ function openDet(idOrNew){
     const el=document.getElementById('f-'+f);if(el)el.value=r[f]||'';
   });
   // 清除所有欄位的手動旗標
-  // 注意：訂金/交機/驗收%、稅別、付款天數這幾個欄位不在這裡清除——它們改成
-  // 依「原本是否已有資料」個別設定手動旗標（見下方），這樣重新選擇付款代號
-  // 時才不會覆蓋既有採購清單已經存在的資料，只有新建資料才會自動帶入。
+  // 注意：訂金/交機/驗收%這三個欄位不在這裡清除——它們改成依「原本是否已有
+  // 資料」個別設定手動旗標（見下方），這樣重新選擇付款代號時才不會覆蓋既有
+  // 採購清單已經存在的%數，只有新建資料才會自動帶入。稅別／付款天數則一律
+  // 清除手動旗標，因為這兩者本質是跟隨付款代號設定值，重新選擇付款代號時
+  // 一律要重新帶入（使用者若直接手動編輯這兩者，當下仍會由其 oninput 另外
+  // 標記手動、鎖定不被覆蓋，僅限於同一次編輯期間）。
   ['f-vendor','f-agent','f-forwarder','f-name','f-country','f-city','f-currency',
-   'f-shipMode','f-rigging','f-noCert','f-payment']
+   'f-shipMode','f-rigging','f-noCert','f-payment','f-taxType','f-daysD','f-daysM','f-daysA']
     .forEach(id=>{const e=document.getElementById(id);if(e)delete e.dataset.manual;});
   const _pw=document.getElementById('prDupWarnMob');if(_pw)_pw.textContent='';
   // Restore custom textarea heights
@@ -2836,10 +2851,10 @@ function openDet(idOrNew){
   document.getElementById('f-daysD').value=r.daysD||'';
   document.getElementById('f-daysM').value=r.daysM||'';
   document.getElementById('f-daysA').value=r.daysA||'';
-  // 既有採購清單（編輯舊記錄）若這些欄位本來就有資料，視為「已手動確定」，
-  // 重新選擇付款代號時不會被覆蓋；新建記錄（沒有資料）則保持可自動帶入。
-  [['f-pctD',r.pctD],['f-pctM',r.pctM],['f-pctA',r.pctA],['f-taxType',r.taxType],
-   ['f-daysD',r.daysD],['f-daysM',r.daysM],['f-daysA',r.daysA]].forEach(([id,v])=>{
+  // 既有採購清單（編輯舊記錄）若訂金/交機/驗收%本來就有資料，視為「已手動
+  // 確定」，重新選擇付款代號時不會被覆蓋；新建記錄（沒有資料）則保持可自動
+  // 帶入。（稅別／付款天數不適用此保護規則，見上方說明）
+  [['f-pctD',r.pctD],['f-pctM',r.pctM],['f-pctA',r.pctA]].forEach(([id,v])=>{
     const e=document.getElementById(id);if(!e)return;
     if(v)e.dataset.manual='1';else delete e.dataset.manual;
   });
