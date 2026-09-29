@@ -104,6 +104,18 @@
                         是中途 Token 失效的情況，重新登入成功後改走輕量恢復
                         （只恢復 Token 與計時器、收起登入畫面），畫面原封
                         不動保留，使用者只需再按一次「儲存」即可。
+  v1.12 2026-09-29  修正「付款管理」頁籤的狀態篩選（排定中／付款中／已付清）：
+                     原本是看整筆採購單的「整體」狀態（只要有任一批次已付款
+                     但不是全部付清，整筆就算「付款中」），顯示時又會把這筆
+                     單裡所有還沒付清的批次（含尚未排定付款日期的「排定
+                     中」）都列出來，導致篩選「付款中」時，會出現「整筆其實
+                     只剩下排定中的批次」也被列出來的情況。現在改為依照「各
+                     批次付款列的個別狀態」篩選：篩選「付款中」，只顯示個別
+                     狀態確實是「付款中」的批次（已排定付款日但尚未到期），
+                     「排定中」（尚未排定付款日）與「已付清」的批次都不會出
+                     現；同理「排定中」「已付清」篩選也只看該批次自己的狀
+                     態。若整筆單裡沒有任何批次符合篩選狀態，這筆單就不會出
+                     現在篩選結果裡。
 -->
 <html lang="zh-TW">
 <head>
@@ -2417,10 +2429,15 @@ function renderPayCards(){
   }
 
   // 先套文字+狀態篩選
+  // 狀態篩選改為看「各批次付款列的個別狀態」，不是整筆採購單的整體狀態：
+  // 只要這筆單裡有任一付款列的個別狀態符合篩選條件就保留（顯示時，
+  // 下面 payRows 那段還會再把每筆單裡「不符合」篩選狀態的付款列隱藏掉，
+  // 只留下真正符合的批次，而不是把整筆單其餘批次也一起列出來）。
   let filtered=data.filter(r=>{
     if(!matchRec(r))return false;
-    if(curPayFilter!=='all'&&getPayStatus(r).label!==curPayFilter)return false;
-    return true;
+    if(curPayFilter==='all')return true;
+    const pays=(r.deliveries||[]).flatMap(d=>d.payments||[]);
+    return pays.some(p=>pRowStatus(p).label===curPayFilter);
   });
 
   // 若有日期篩選，再過濾：只保留含有符合日期明細的記錄
@@ -2454,8 +2471,9 @@ function renderPayCards(){
         if(!pays.length)return'';
       }
       const payRows=pays.filter(p=>{
-        // 篩選「付款中」時，跳過此訂單已付清的列，只顯示排定中/付款中
-        if(curPayFilter==='付款中' && pRowStatus(p).label==='已付清') return false;
+        // 依「這一列付款的個別狀態」篩選：篩選條件不是 all 時，只顯示狀態
+        // 剛好符合的付款列（例如篩選「付款中」，排定中／已付清的列都不顯示）
+        if(curPayFilter!=='all' && pRowStatus(p).label!==curPayFilter) return false;
         return true;
       }).map((p,pi)=>{
         const pst=pRowStatus(p);
