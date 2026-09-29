@@ -116,6 +116,23 @@
                      現；同理「排定中」「已付清」篩選也只看該批次自己的狀
                      態。若整筆單裡沒有任何批次符合篩選狀態，這筆單就不會出
                      現在篩選結果裡。
+  v1.13 2026-09-29  修正「儲存資料同步中跑很久，最後又跳出登入過期畫面」的問題
+                     （與桌機版同步；根因：v1.11 把「API 回應不是合法 JSON」
+                     一律視同登入過期處理，但實際上除了真的登入過期，還有其
+                     他狀況也會收到非 JSON 回應，例如 Google Apps Script 執
+                     行時間過長被 Google 中斷、部署網址暫時性異常、或網路不
+                     穩／逾時——這些都跟自己的 4 小時登入時限無關，卻同樣被
+                     誤判成「登入過期」，逼使用者重新登入、重新點擊儲存）：
+                     1) apiGet／apiPost 的 fetch 加上 50 秒逾時保護
+                        （AbortController），避免請求卡住時「同步中」畫面無
+                        限期轉圈。
+                     2) 新增 _syncFailure() 判斷邏輯：只有在距離登入時間已
+                        經真的達到 4 小時時，才視同登入過期、清除 Token並跳
+                        出重新登入畫面；其餘情況（回應非 JSON、逾時、網路
+                        中斷等）一律視為暫時性同步失敗，不清除 Token、不跳
+                        出登入畫面，直接提示「同步逾時或伺服器忙碌，請稍後
+                        再試一次（不需要重新登入）」，可直接再按一次「儲
+                        存」重試。
 -->
 <html lang="zh-TW">
 <head>
@@ -1484,18 +1501,41 @@ let curFilter='all',curPayFilter='all',searchVisible=false;
 let detDeliveries=[];
 
 // API
+const API_TIMEOUT_MS = 50000; // fetch 逾時保護，避免「同步中」畫面無限期卡住
+// 判斷一次 API 失敗（回應非合法 JSON、逾時中斷、網路錯誤）該怎麼處理：
+// 這些情況「不一定」代表自己 4 小時的登入時限真的到了，也可能是 Google
+// Apps Script 執行過久被中斷、部署網址暫時性異常、或網路不穩。只有在距離
+// 登入時間真的已經達到 4 小時時，才視同登入過期、清除 Token 並跳出重新登入
+// 畫面；其餘一律當作暫時性的同步失敗，保留目前登入狀態與畫面上的資料，讓
+// 使用者可以直接再按一次「儲存」重試，不需要重新登入、也不會遺失資料。
+function _syncFailure(_tokAtCall){
+  const loginTime = Number(sessionStorage.getItem('pv6_login_time') || 0);
+  const reallyExpired = loginTime && (Date.now() - loginTime) >= SESSION_TTL_MS;
+  if(reallyExpired){
+    if(_tokAtCall===_TOKEN)_handleTokenExpiry();
+    return new Error('請重新登入');
+  }
+  return new Error('同步逾時或伺服器忙碌，請稍後再試一次（不需要重新登入）');
+}
 async function apiGet(a){
   const _tokAtCall=_TOKEN;
-  const r=await fetch(`${API_URL}?action=${a}&token=${encodeURIComponent(_tokAtCall)}`);
+  const _ctrl=new AbortController();
+  const _to=setTimeout(()=>_ctrl.abort(),API_TIMEOUT_MS);
+  let r;
+  try{
+    r=await fetch(`${API_URL}?action=${a}&token=${encodeURIComponent(_tokAtCall)}`,{signal:_ctrl.signal});
+  }catch(e){
+    throw _syncFailure(_tokAtCall);
+  }finally{
+    clearTimeout(_to);
+  }
   let j;
   try{
     j=await r.json();
   }catch(e){
-    // 回應不是合法 JSON（常見於 Google 工作階段失效、被導回登入頁、或部署網址
-    // 已失效）。視同登入過期處理，一致觸發重新登入畫面，而不是讓 SyntaxError
-    // 一路往外拋、跳過登出流程。
-    if(_tokAtCall===_TOKEN)_handleTokenExpiry();
-    throw new Error('請重新登入');
+    // 回應不是合法 JSON（常見於 Google 工作階段/部署網址暫時性異常、伺服器
+    // 執行過久被 Google 中斷、或網路不穩）。是否視同登入過期，見 _syncFailure。
+    throw _syncFailure(_tokAtCall);
   }
   if(j.code==='INVALID_TOKEN'){
     // Token 不同代表中途已經有更新的登入，這只是過期回應，忽略即可，避免洗掉新的登入狀態
@@ -1507,14 +1547,22 @@ async function apiGet(a){
 }
 async function apiPost(a,p){
   const _tokAtCall=_TOKEN;
-  const r=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:a,payload:p,token:_tokAtCall})});
+  const _ctrl=new AbortController();
+  const _to=setTimeout(()=>_ctrl.abort(),API_TIMEOUT_MS);
+  let r;
+  try{
+    r=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:a,payload:p,token:_tokAtCall}),signal:_ctrl.signal});
+  }catch(e){
+    throw _syncFailure(_tokAtCall);
+  }finally{
+    clearTimeout(_to);
+  }
   let j;
   try{
     j=await r.json();
   }catch(e){
-    // 見 apiGet 內的說明：回應非合法 JSON 一律視同登入過期。
-    if(_tokAtCall===_TOKEN)_handleTokenExpiry();
-    throw new Error('請重新登入');
+    // 見 apiGet 內的說明：是否視同登入過期，見 _syncFailure。
+    throw _syncFailure(_tokAtCall);
   }
   if(j.code==='INVALID_TOKEN'){
     if(_tokAtCall===_TOKEN)_handleTokenExpiry();
