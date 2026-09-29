@@ -129,6 +129,25 @@
                         Token、不跳出登入畫面，直接提示「同步逾時或伺服器忙
                         碌，請稍後再試一次（不需要重新登入）」，讓使用者可
                         以直接再按一次「儲存」重試即可。
+  v1.13 2026-09-29  優化採購清單「儲存」的同步速度、避免不必要的整包重寫拖慢
+                     存檔（根因：單筆新增/更新/刪除本來就已經改用 upsertRecord
+                     /deleteRecordById，後端只覆寫/刪除那一列，速度很快；但
+                     saveOneRecord()／deleteOneRecord() 原本只要發生任何錯誤
+                     （不論是鎖定衝突、網路不穩、還是 v1.12 剛新增的「同步逾
+                     時」暫時性錯誤），都會自動退回呼叫整包 save()——把所有
+                     採購紀錄一次全部清空重寫，資料筆數一多，這個「補救動
+                     作」本身就會拖很久，反而更容易再次逾時失敗，變成「同步
+                     中跑很久」的另一個成因）：
+                     1) 新增 _isUnsupportedAction()：只有在後端明顯「尚未部
+                        署 upsertRecord/deleteRecordById」（doPost 回應
+                        Unknown action）時，才需要退回整包儲存相容；其餘所
+                        有暫時性錯誤都直接把錯誤往外拋，讓使用者用原本就很
+                        快的單筆儲存直接重試（依 id 覆寫，重試安全，不會造
+                        成重複資料），不再自動觸發很慢的整包重寫。
+                     2) 儲存/刪除失敗時的提示訊息，改為優先顯示實際錯誤原因
+                        （例如「同步逾時或伺服器忙碌，請稍後再試一次」），
+                        不再一律顯示籠統的「請檢查網路」，方便判斷是否需要
+                        重新登入。
 -->
 <html lang="zh-TW">
 <head>
@@ -1817,10 +1836,17 @@ async function save(){
   try{
     await apiPost('saveData',{records:data,nextId:nid});
     localCache('data',{records:data,nextId:nid});  // 同步更新快取
-  }catch(err){console.error('儲存採購資料失敗:',err);ntf('❌ 儲存失敗，請檢查網路');}
+  }catch(err){console.error('儲存採購資料失敗:',err);if(!(err&&err.message==='請重新登入'))ntf('❌ '+_failMsg(err,'儲存失敗，請檢查網路'));}
 }
+// 只有在後端明顯「尚未部署 upsertRecord／deleteRecordById」時（doPost 找不到
+// 這個 action，會回傳 result.error = 'Unknown action: xxx'），才需要退回舊版
+// 整包儲存相容。其餘任何原因（鎖定逾時、網路不穩、同步逾時等暫時性錯誤）都
+// 不應該自動升級成整包重寫——資料筆數一多，整包儲存（clearContents 全部清空
+// 再整包寫回）本身就慢很多，容易讓「同步中」時間被拉得更長、甚至讓原本只是
+// 暫時性的小問題，變成更容易再次逾時失敗的大問題。
+function _isUnsupportedAction(err){return !!(err && /Unknown action/i.test(err.message||''));}
 // 單筆新增/更新：只送這一筆資料，後端只覆寫對應那一列（比整包 save() 快）
-// 若後端尚未部署新版（沒有 upsertRecord），自動退回整包儲存，確保仍然存得進去
+// 若後端尚未部署新版（沒有 upsertRecord），才自動退回整包儲存，確保仍然存得進去
 async function saveOneRecord(rec){
   try{
     const res=await apiPost('upsertRecord',rec);
@@ -1830,7 +1856,14 @@ async function saveOneRecord(rec){
     // Token 已過期時，_handleTokenExpiry() 已經顯示登入畫面且清空 Token，
     // 用同一個過期 Token 重試整包儲存注定失敗，只會白等一趟，直接停下來即可
     if(err&&err.message==='請重新登入'){throw err;}
-    console.warn('單筆儲存失敗，改用整包儲存：',err);
+    if(!_isUnsupportedAction(err)){
+      // 一般性的暫時失敗（逾時、鎖定衝突、網路不穩…）：upsertRecord 是依 id
+      // 覆寫，重試安全、不會造成重複資料，直接把錯誤往外拋，讓使用者可以
+      // 直接再按一次「儲存」重試同一筆快速單列儲存即可，不需要跑一次很慢
+      // 的整包儲存。
+      throw err;
+    }
+    console.warn('後端尚未支援 upsertRecord，改用整包儲存相容：',err);
     await save();
   }
 }
@@ -1842,7 +1875,8 @@ async function deleteOneRecord(id){
     localCache('data',{records:data,nextId:nid});
   }catch(err){
     if(err&&err.message==='請重新登入'){throw err;}
-    console.warn('單筆刪除失敗，改用整包儲存：',err);
+    if(!_isUnsupportedAction(err)){throw err;}
+    console.warn('後端尚未支援 deleteRecordById，改用整包儲存相容：',err);
     await save();
   }
 }
@@ -1896,6 +1930,9 @@ function dBdg(d){const m={'SMT':'b-smt','LGA FC':'b-lga','QFN FC':'b-qfn'};retur
 function cBdg(c){return bdg(c,'b-'+(c||'').toLowerCase())}
 function sBdg(s){const m={'處理中':'b-p1','待交貨':'b-p3','部分交貨':'b-p6','已交貨':'b-p4','作廢':'b-p5'};return bdg(s,m[s]||'b-p1')}
 function ntf(m){const el=document.getElementById('ntf');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200);}
+// 錯誤發生時，優先顯示後端/網路回傳的實際原因（例如「同步逾時或伺服器忙碌，
+// 請稍後再試一次」），讓使用者知道是否需要重新登入；沒有明確訊息時才用預設文字
+function _failMsg(err,fallback){return(err&&err.message)?err.message:fallback;}
 function showLoading(on){const el=document.getElementById('loadingOverlay');if(el)el.style.display=on?'flex':'none';}
 function getRate(c){return rates[c]||1;}
 function calcNTDv(a,c){const n=typeof a==='string'?Number(a.replace(/,/g,'')):Number(a);return Math.round((n||0)*getRate(c));}
@@ -2391,7 +2428,7 @@ async function reviewAutoClose(recId, batchIdx){
     renderDash();
     if(curTab==='list') renderList();
   } catch(err){
-    if(!(err&&err.message==='請重新登入'))ntf('❌ 儲存失敗，請檢查網路');
+    if(!(err&&err.message==='請重新登入'))ntf('❌ '+_failMsg(err,'儲存失敗，請檢查網路'));
   } finally {
     showLoading(false);
   }
@@ -2966,7 +3003,7 @@ async function saveRec(){
     else renderDash();
   }catch(err){
     // Token 過期時登入畫面已經蓋上去了，這裡不用再另外提示；其他錯誤才提示失敗
-    if(!(err&&err.message==='請重新登入'))ntf('❌ 儲存失敗，請檢查網路');
+    if(!(err&&err.message==='請重新登入'))ntf('❌ '+_failMsg(err,'儲存失敗，請檢查網路'));
   }finally{
     showLoading(false);
   }
@@ -2980,7 +3017,7 @@ async function delCur(){
     await deleteOneRecord(delId);
     closeDet();ntf('✓ 已刪除');renderList();
   }catch(err){
-    if(!(err&&err.message==='請重新登入'))ntf('❌ 刪除失敗，請檢查網路');
+    if(!(err&&err.message==='請重新登入'))ntf('❌ '+_failMsg(err,'刪除失敗，請檢查網路'));
   }finally{
     showLoading(false);
   }
@@ -2993,7 +3030,7 @@ async function delRec(id){
     await deleteOneRecord(id);
     ntf('✓ 已刪除');renderList();
   }catch(err){
-    if(!(err&&err.message==='請重新登入'))ntf('❌ 刪除失敗，請檢查網路');
+    if(!(err&&err.message==='請重新登入'))ntf('❌ '+_failMsg(err,'刪除失敗，請檢查網路'));
   }finally{
     showLoading(false);
   }

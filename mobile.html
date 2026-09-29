@@ -133,6 +133,22 @@
                         出登入畫面，直接提示「同步逾時或伺服器忙碌，請稍後
                         再試一次（不需要重新登入）」，可直接再按一次「儲
                         存」重試。
+  v1.14 2026-09-29  優化採購清單「儲存」的同步速度、避免不必要的整包重寫拖慢
+                     存檔（與桌機版同步；根因：單筆新增/更新/刪除本來就已經
+                     改用 upsertRecord/deleteRecordById，後端只覆寫/刪除那一
+                     列，速度很快；但 saveOneRecord()／deleteOneRecord() 原
+                     本只要發生任何錯誤（鎖定衝突、網路不穩、或 v1.13 新增的
+                     「同步逾時」暫時性錯誤），都會自動退回呼叫整包
+                     save()——把所有採購紀錄一次全部清空重寫，資料筆數一多，
+                     這個「補救動作」本身就會拖很久，反而更容易再次逾時失
+                     敗，變成「同步中跑很久」的另一個成因）：
+                     1) 新增 _isUnsupportedAction()：只有在後端明顯「尚未部
+                        署 upsertRecord/deleteRecordById」時，才需要退回整
+                        包儲存相容；其餘所有暫時性錯誤都直接把錯誤往外拋，
+                        讓使用者用原本就很快的單筆儲存直接重試（依 id 覆
+                        寫，重試安全，不會造成重複資料）。
+                     2) 儲存/刪除失敗時的提示訊息，改為優先顯示實際錯誤原
+                        因，不再一律顯示籠統的「請檢查網路」。
 -->
 <html lang="zh-TW">
 <head>
@@ -1723,8 +1739,15 @@ async function load(){
   }
   showLoading(false);
 }
-async function save(){try{await apiPost('saveData',{records:data,nextId:nid});lc('data',{records:data,nextId:nid});}catch(e){console.error(e);toast('❌ 儲存失敗');}}
-// 單筆新增/更新：只送這一筆，後端只覆寫對應那一列（比整包 save() 快）；若後端尚未支援自動退回整包儲存
+async function save(){try{await apiPost('saveData',{records:data,nextId:nid});lc('data',{records:data,nextId:nid});}catch(e){console.error(e);if(!(e&&e.message==='請重新登入'))toast('❌ '+_failMsg(e,'儲存失敗'));}}
+// 只有在後端明顯「尚未部署 upsertRecord／deleteRecordById」時（doPost 找不到
+// 這個 action，回傳 result.error = 'Unknown action: xxx'），才需要退回舊版整包
+// 儲存相容。其餘任何原因（鎖定逾時、網路不穩、同步逾時等暫時性錯誤）都不應該
+// 自動升級成整包重寫——資料筆數一多，整包儲存本身就慢很多，容易讓「同步中」
+// 時間被拉得更長、甚至讓原本只是暫時性的小問題，變成更容易再次逾時失敗的
+// 大問題（與桌機版同步）。
+function _isUnsupportedAction(err){return !!(err && /Unknown action/i.test(err.message||''));}
+// 單筆新增/更新：只送這一筆，後端只覆寫對應那一列（比整包 save() 快）；若後端尚未支援才自動退回整包儲存
 async function saveOneRecord(rec){
   try{
     const res=await apiPost('upsertRecord',rec);
@@ -1732,7 +1755,13 @@ async function saveOneRecord(rec){
     lc('data',{records:data,nextId:nid});
   }catch(err){
     if(err&&err.message==='請重新登入'){throw err;}
-    console.warn('單筆儲存失敗，改用整包儲存：',err);
+    if(!_isUnsupportedAction(err)){
+      // 一般性暫時失敗（逾時、鎖定衝突、網路不穩…）：upsertRecord 依 id
+      // 覆寫，重試安全，直接把錯誤往外拋，讓使用者可以直接再按一次
+      // 「儲存」重試同一筆快速單列儲存即可，不需要跑很慢的整包儲存。
+      throw err;
+    }
+    console.warn('後端尚未支援 upsertRecord，改用整包儲存相容：',err);
     await save();
   }
 }
@@ -1744,7 +1773,8 @@ async function deleteOneRecord(id){
     lc('data',{records:data,nextId:nid});
   }catch(err){
     if(err&&err.message==='請重新登入'){throw err;}
-    console.warn('單筆刪除失敗，改用整包儲存：',err);
+    if(!_isUnsupportedAction(err)){throw err;}
+    console.warn('後端尚未支援 deleteRecordById，改用整包儲存相容：',err);
     await save();
   }
 }
@@ -1781,6 +1811,9 @@ function calcNTDv(a,c){const n=typeof a==='string'?Number(a.replace(/,/g,'')):Nu
 
 function showLoading(on){const el=document.getElementById('loadingOverlay');el.className=on?'show':'';}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2400);}
+// 錯誤發生時，優先顯示後端/網路回傳的實際原因，讓使用者知道是否需要重新登入；
+// 沒有明確訊息時才用預設文字（與桌機版同步）
+function _failMsg(err,fallback){return(err&&err.message)?err.message:fallback;}
 
 // ══════════════════════════════════════════════════
 //  AUTH
@@ -2703,7 +2736,7 @@ async function reviewAutoCloseMob(recId, batchIdx){
     renderDashboard();
     renderCards();
   } catch(err){
-    if(!(err&&err.message==='請重新登入'))toast('❌ 儲存失敗，請檢查網路');
+    if(!(err&&err.message==='請重新登入'))toast('❌ '+_failMsg(err,'儲存失敗，請檢查網路'));
   } finally {
     showLoading(false);
   }
@@ -3234,7 +3267,7 @@ async function saveRec(){
     toast(eid?'✓ 已更新':'✓ 已新增');
     renderCards();renderPayCards();
   }catch(err){
-    if(!(err&&err.message==='請重新登入'))toast('❌ 儲存失敗，請檢查網路');
+    if(!(err&&err.message==='請重新登入'))toast('❌ '+_failMsg(err,'儲存失敗，請檢查網路'));
   }finally{
     showLoading(false);
   }
@@ -3249,7 +3282,7 @@ async function deleteCurRec(){
     await deleteOneRecord(delId);
     closeDet();toast('✓ 已刪除');renderCards();renderPayCards();
   }catch(err){
-    if(!(err&&err.message==='請重新登入'))toast('❌ 刪除失敗，請檢查網路');
+    if(!(err&&err.message==='請重新登入'))toast('❌ '+_failMsg(err,'刪除失敗，請檢查網路'));
   }finally{
     showLoading(false);
   }
