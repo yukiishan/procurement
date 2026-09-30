@@ -148,6 +148,22 @@
                         （例如「同步逾時或伺服器忙碌，請稍後再試一次」），
                         不再一律顯示籠統的「請檢查網路」，方便判斷是否需要
                         重新登入。
+  v1.14 2026-09-30  行事曆頁籤、點選日期跳出的當日明細彈窗，改為依「廠商」整
+                     合顯示（原本每一筆 ETA/ETD 或付款資料各自獨立一張卡
+                     片，同一天同廠商有多筆時會列出一長串卡片）：
+                     1) ETA／ETD：同一天、同一廠商、同類型（ETD 或 ETA）的
+                        多筆資料合併成一張卡片，卡片內容改為「廠商：xxx」，
+                        下一行接續列出「PO(型號*數量)」，多筆之間以「；」分
+                        隔，例如：LF55-114096-1(CE23-008(f55-114096)*1)；
+                        LF55-114081-1(CE23-019*1)。
+                     2) 付款：同一天、同一廠商的多筆付款資料合併成一張卡
+                        片，卡片內容改為「廠商：xxx」，下一行開始依序列出每
+                        筆「PO：xxx　期別：xxx」（同一行）、「型號：xxx」、
+                        「發票：xxx」、「金額：xxx」，多筆之間以空一行分
+                        隔。不同廠商的資料仍各自獨立成一張卡片，彼此不合
+                        併。
+                     3) 此變更僅影響「點選日期後跳出的明細彈窗」，月曆格子
+                        本身的小色塊顯示方式不變。
 -->
 <html lang="zh-TW">
 <head>
@@ -4227,6 +4243,12 @@ function showDayPopup(ds, evList, holName){
   if(!evList||!evList.length){
     if(!holName) body+='<div class="cal-no-ev">當天無排程</div>';
   } else {
+    // ── 同一天、同一廠商的資料合併顯示在同一個卡片內 ──
+    // ETD/ETA：依「類型（ETD／ETA）＋廠商」分組（彈窗卡片本來就不分 L/F/O
+    // 子色，僅月曆小格才用顏色區分，故這裡可以放心整合同廠商全部資料）。
+    // 付款：依「廠商」分組。
+    const shipGroups=new Map(); // key: 'ETD|廠商' 或 'ETA|廠商'
+    const payGroups=new Map();  // key: 廠商
     evList.forEach(ev=>{
       if(ev.cls==='evpay'){
         // Payment event: (PAY)batchLabel/stageLabel/vendor/model/invoice/amount
@@ -4236,22 +4258,32 @@ function showDayPopup(ds, evList, holName){
         const amtNum=Number(String(amtRaw).replace(/,/g,''));
         const amtStr=amtNum?`${cur} ${amtNum.toLocaleString()}`:'';
         const stgStr=stg+(pct?` ${pct}%`:'');
-        body+=`<div class="cal-ev-item cal-ev-pay">
-          <div class="cal-ev-title">💰 付款</div>
-          <div class="cal-ev-detail">PO：${safe(pr)}　期別：${safe(stgStr)}<br>廠商：${safe(vendor)}<br>型號：${safe(model)}${inv?`<br>發票：${safe(inv)}`:''}${amtStr?`<br>金額：${safe(amtStr)}`:''}
-          </div>
-        </div>`;
+        if(!payGroups.has(vendor))payGroups.set(vendor,[]);
+        payGroups.get(vendor).push({pr,stgStr,model,inv,amtStr});
         return;
       }
       const isEtd=ev.cls==='evetd';
-      const cls=isEtd?'cal-ev-etd':'cal-ev-eta';
-      const type=isEtd?'ETD 確認交期':'ETA 預計到廠';
       const raw=ev.lbl.replace(/^\(ET[DA]\)/,'');
       const parts=raw.split('/');
       const pr=parts[0]||'';const vendorRaw2=parts[1]||'';const vendor=vendorRaw2.includes('·')?(vendorRaw2.split('·')[0]+'('+vendorRaw2.split('·')[1]+')'):vendorRaw2;const model=parts[2]||'';const qty=Number(parts[3])||'';
+      const key=(isEtd?'ETD':'ETA')+'|'+vendor;
+      if(!shipGroups.has(key))shipGroups.set(key,{isEtd,vendor,items:[]});
+      shipGroups.get(key).items.push({pr,model,qty});
+    });
+    shipGroups.forEach(g=>{
+      const cls=g.isEtd?'cal-ev-etd':'cal-ev-eta';
+      const type=g.isEtd?'ETD 確認交期':'ETA 預計到廠';
+      const list=g.items.map(it=>`${safe(it.pr)}(${safe(it.model)}*${it.qty?safe(String(it.qty)):'—'})`).join('；');
       body+=`<div class="cal-ev-item ${cls}">
-        <div class="cal-ev-title">${isEtd?'📦':'✈️'} ${safe(type)}</div>
-        <div class="cal-ev-detail">PO：${safe(pr)}<br>廠商：${safe(vendor)}<br>型號：${safe(model)}<br>數量：${qty?safe(String(qty))+' 台':'—'}</div>
+        <div class="cal-ev-title">${g.isEtd?'📦':'✈️'} ${safe(type)}</div>
+        <div class="cal-ev-detail">廠商：${safe(g.vendor)}<br>${list}</div>
+      </div>`;
+    });
+    payGroups.forEach((items,vendor)=>{
+      const blocks=items.map(it=>`PO：${safe(it.pr)}　期別：${safe(it.stgStr)}<br>型號：${safe(it.model)}${it.inv?`<br>發票：${safe(it.inv)}`:''}${it.amtStr?`<br>金額：${safe(it.amtStr)}`:''}`).join('<br><br>');
+      body+=`<div class="cal-ev-item cal-ev-pay">
+        <div class="cal-ev-title">💰 付款</div>
+        <div class="cal-ev-detail">廠商：${safe(vendor)}<br>${blocks}</div>
       </div>`;
     });
   }
