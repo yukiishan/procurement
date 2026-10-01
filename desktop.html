@@ -209,6 +209,38 @@
                         該筆資料的固定欄位，以及該批次自己的 ETD/ETA 與
                         「批次N」標籤，讓匯出的每一列、每一欄都有資料，不需
                         要再往上對照。
+  v1.18 2026-10-01  修正「批次輸入請款時間，自動驗算付款日的日期沒有照邏輯」
+                     的問題（根因：v1.5 當時為了保護舊資料，規定「舊的付款
+                     明細列沒有 payDateManual 旗標、但已經有付款日期」時，
+                     載入時一律視為「使用者手動填的」，之後不管怎麼改請款時
+                     間都不會再重新計算——結果變成只要這筆付款列本來就有付
+                     款日期（不論是舊資料、還是先前版本算錯留下來的值），
+                     之後編輯請款時間就完全不會重新驗算，畫面上看到的付款
+                     日期其實是沒有更新過的舊值，跟目前的請款時間/付款天數
+                     設定對不起來，才會覺得「沒有照邏輯」）：
+                     1) 開啟採購清單載入付款明細時，不再把「舊資料沒有旗標
+                        但已有付款日期」視為手動填的，改為統一預設非手動
+                        （與稅別/付款天數欄位的保護規則一致）。
+                     2) 這樣一來，使用者變更請款時間或期別時，付款日期會照
+                        公式（台幣：依請款日捲到次月或次次月10號為基準，加
+                        上付款天數後再捲到最近的10或25號；外幣：請款日加上
+                        付款天數後捲到最近的14或28號；兩者最後都查假日順延
+                        至次一營業日）重新計算。只有在「本次編輯期間」使用
+                        者直接手動改過付款日期欄位時，才會鎖定不被覆蓋。
+  v1.19 2026-10-01  採購清單批次付款列的「請款方式」欄位下方（多空一行），新
+                     增顯示付款日期的「計算過程」參考文字，格式比照發票系統
+                     INDEX.HTML 既有的顯示方式：
+                     1) 台幣：「台幣：基準 YYYY-MM-DD（≤25日／>25日）+N天 =
+                        YYYY-MM-DD → 最近付款日 YYYY-MM-DD」，若最後還有查到
+                        假日需順延，再接續「→ 假日順延至 YYYY-MM-DD」；沒有
+                        順延則不顯示這一段。
+                     2) 外幣：「外幣：請款日 YYYY-MM-DD +N天 = YYYY-MM-DD →
+                        最近付款日 YYYY-MM-DD」，假日順延段同台幣規則。
+                     3) 純顯示用途，不影響實際計算結果與既有的 payDateManual
+                        手動鎖定邏輯；請款時間為空時不顯示文字。顯示內容會在
+                        「請款時間變更」「期別變更」「批次列重新渲染」時即時
+                        更新，計算公式本身沿用既有 calcPayDateFromClaim 的
+                        邏輯，未改動。
 -->
 <html lang="zh-TW">
 <head>
@@ -2850,8 +2882,14 @@ function openDet(idOrNew){
         arrivalDate:p.arrivalDate||(pi===0?(d.eta||''):((d.payments&&d.payments[0]&&d.payments[0].arrivalDate)||d.eta||'')),
         // Default arrivalQty to batch qty if empty
         arrivalQty:p.arrivalQty!==undefined&&p.arrivalQty!==''?p.arrivalQty:(d.qty||''),
-        // 舊資料沒有 payDateManual 旗標：若已有付款日期，視為手動填的，避免載入時被自動計算覆蓋
-        payDateManual:p.payDateManual!==undefined?p.payDateManual:!!p.payDate
+        // 舊資料沒有 payDateManual 旗標：不再視為手動填的（v1.5 當時的保護規
+        // 則，結果變成只要這筆付款列本來就有付款日期，之後不管怎麼改「請款
+        // 時間」都不會重新計算，使用者會覺得「自動驗算的付款日沒有照邏
+        // 輯」——其實是根本沒有重新算。改為統一預設視為非手動（與稅別/付款
+        // 天數欄位的保護規則一致），之後使用者變更請款時間/期別時都會照公
+        // 式重新計算；只有在「本次編輯期間」直接手動改過付款日期欄位時，才
+        // 鎖定不被覆蓋。
+        payDateManual:!!p.payDateManual
       }))
     }));
   } else {
@@ -2945,10 +2983,12 @@ function renderPayRow(ci,pi){
     <div class="pf"><label>請款時間</label><input type="date" value="${p.claimDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].claimDate=this.value;calcPayDate(${ci},${pi})"></div>
     <div class="pf"><label>付款日期</label><input type="date" class="pd-inp" value="${p.payDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].payDate=this.value;detDeliveries[${ci}].payments[${pi}].payDateManual=true"></div>
     <div class="pf" style="grid-column:5/9"><label>備註</label><input value="${safe(p.payRemark||'')}" placeholder="備註..." oninput="detDeliveries[${ci}].payments[${pi}].payRemark=this.value"></div>
+    <div class="pf" style="grid-column:1/9;margin-top:10px"><div class="pay-formula-text" style="font-size:11px;color:var(--tx3);line-height:1.5"></div></div>
   `;
   container.appendChild(row);
   setTimeout(()=>recalcPayRow(ci,pi),10);
   if(!p.payDateManual&&!p.payDate)setTimeout(()=>calcPayDate(ci,pi),10);
+  updatePayFormula(ci,pi);
 }
 
 function addDP(){
@@ -4664,20 +4704,79 @@ function calcPayDateFromClaim(claimDate,days,currency){
   }
   return _pdcFmtYMD(_pdcNextBizDay(cand));
 }
+// 取得某一筆付款列目前適用的「付款天數」（依期別名稱對應表頭的訂金/交機/
+// 驗收天數欄位）與「幣別（台幣/外幣）」（依目前選擇的付款代號設定，未設定
+// 時預設台幣）——calcPayDate() 實際計算、updatePayFormula() 顯示計算過程，
+// 兩邊共用同一份取值邏輯，避免兩處各寫一次、結果對不起來。
+function _getPayDateInputs(stageLabel){
+  let days=0;
+  if(stageLabel==='訂金款')days=Number(document.getElementById('f-daysD')?.value)||0;
+  else if(stageLabel==='交機款')days=Number(document.getElementById('f-daysM')?.value)||0;
+  else if(stageLabel==='驗收款')days=Number(document.getElementById('f-daysA')?.value)||0;
+  const payCode=document.getElementById('f-payment')?.value||'';
+  const cdData=getPayCodeData(payCode);
+  const currency=(cdData&&cdData.currency)||'台幣'; // 未設定幣別時預設台幣
+  return{days,currency};
+}
+// 產生「計算過程」文字，顯示給使用者核對（純顯示用，不影響實際計算結
+// 果）。格式比照 INDEX 發票系統：
+//   台幣：基準 2026-08-10（≤25日）+75天 = 2026-10-24 → 最近付款日 2026-10-25 → 假日順延至 2026-10-27
+//   外幣：請款日 2026-07-22 +75天 = 2026-10-05 → 最近付款日 2026-10-14 → 假日順延至 2026-10-15
+// 若最後沒有實際遇到假日順延，就不顯示「→ 假日順延至」那一段。
+function calcPayDateFormula(claimDate,days,currency){
+  const cd=_pdcParseYMD(claimDate);
+  if(!cd)return '';
+  const n=Number(days)||0;
+  const isFX=currency==='外幣';
+  let base,baseNote;
+  if(isFX){
+    base=cd;
+  }else{
+    const le25=cd.getDate()<=25;
+    base=le25
+      ? new Date(cd.getFullYear(),cd.getMonth()+1,10)
+      : new Date(cd.getFullYear(),cd.getMonth()+2,10);
+    baseNote=le25?'≤25日':'>25日';
+  }
+  const calcDate=new Date(base);
+  calcDate.setDate(calcDate.getDate()+n);
+  const targetDays=isFX?[14,28]:[10,25];
+  const rolled=new Date(calcDate);
+  for(let i=0;i<60;i++){
+    if(targetDays.indexOf(rolled.getDate())>=0)break;
+    rolled.setDate(rolled.getDate()+1);
+  }
+  const final=_pdcNextBizDay(rolled);
+  let txt=isFX
+    ?`外幣：請款日 ${_pdcFmtYMD(cd)} +${n}天 = ${_pdcFmtYMD(calcDate)} → 最近付款日 ${_pdcFmtYMD(rolled)}`
+    :`台幣：基準 ${_pdcFmtYMD(base)}（${baseNote}）+${n}天 = ${_pdcFmtYMD(calcDate)} → 最近付款日 ${_pdcFmtYMD(rolled)}`;
+  if(_pdcFmtYMD(final)!==_pdcFmtYMD(rolled))txt+=` → 假日順延至 ${_pdcFmtYMD(final)}`;
+  return txt;
+}
+// 更新畫面上該筆付款列的「計算過程」參考文字；不論付款日期是否已被使用者
+// 手動鎖定都會更新，方便核對目前的請款時間/付款天數設定照公式應該算出哪一
+// 天（純顯示，不會動到實際存檔的 payDate）。
+function updatePayFormula(ci,pi){
+  const d=detDeliveries[ci];if(!d)return;
+  const p=d.payments[pi];if(!p)return;
+  const row=document.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);
+  if(!row)return;
+  const el=row.querySelector('.pay-formula-text');
+  if(!el)return;
+  if(!p.claimDate){el.textContent='';return;}
+  const{days,currency}=_getPayDateInputs(p.stageLabel);
+  el.textContent=calcPayDateFormula(p.claimDate,days,currency);
+}
 function calcPayDate(ci,pi){
   const d=detDeliveries[ci];if(!d)return;
   const p=d.payments[pi];if(!p)return;
+  // 無論付款日期是否已被鎖定，都先更新「計算過程」參考文字
+  updatePayFormula(ci,pi);
   if(p.payDateManual)return; // 使用者手動改過，不自動覆蓋
   if(!p.claimDate){
     p.payDate='';
   }else{
-    let days=0;
-    if(p.stageLabel==='訂金款')days=Number(document.getElementById('f-daysD')?.value)||0;
-    else if(p.stageLabel==='交機款')days=Number(document.getElementById('f-daysM')?.value)||0;
-    else if(p.stageLabel==='驗收款')days=Number(document.getElementById('f-daysA')?.value)||0;
-    const payCode=document.getElementById('f-payment')?.value||'';
-    const cdData=getPayCodeData(payCode);
-    const currency=(cdData&&cdData.currency)||'台幣'; // 未設定幣別時預設台幣
+    const{days,currency}=_getPayDateInputs(p.stageLabel);
     p.payDate=calcPayDateFromClaim(p.claimDate,days,currency);
   }
   const row=document.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);
