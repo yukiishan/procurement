@@ -196,6 +196,21 @@
                         「請款時間變更」「期別變更」「批次列重新渲染」時即時
                         更新，計算公式本身沿用既有 calcPayDateFromClaim 的
                         邏輯，未改動。
+  v1.18 2026-10-01  新增「套用計算值」按鈕（與桌機版同步），解決「下方計算
+                     公式正確，但上方付款日期欄位沒有跟著更新」的問題（根
+                     因：這類資料是在 v1.16 修正「舊資料誤判為手動鎖定」之
+                     前就已經存檔，payDateManual 旗標本身已經被存成 true，
+                     屬於存檔資料既有狀態，v1.16 只修正「載入時的預設值」，
+                     不會回頭改動已經明確存成 true 的舊資料）：
+                     1) 當目前「付款日期」欄位的值跟公式即時算出來的結果不
+                        一致時（不論是否手動鎖定），在欄位下方顯示「套用計
+                        算值」按鈕；一致時不顯示。
+                     2) 按下按鈕後，把付款日期同步成目前公式算出來的值，並
+                        解除手動鎖定旗標，之後請款時間或期別再變動時會恢復
+                        自動重新計算。
+                     3) 修正連帶發現的時序問題：calcPayDate() 改為「先更新
+                        付款日期，再更新計算過程文字與按鈕狀態」，確保一致
+                        性比對永遠用的是最新值（與桌機版同步）。
 -->
 <html lang="zh-TW">
 <head>
@@ -2293,7 +2308,10 @@ function calcPayDateFormula(claimDate,days,currency){
   return txt;
 }
 // 更新畫面上該筆付款列的「計算過程」參考文字；不論付款日期是否已被使用者
-// 手動鎖定都會更新（與桌機版同步）。
+// 手動鎖定都會更新（與桌機版同步）。同時檢查目前「付款日期」欄位的值是否
+// 跟公式算出來的最新結果不一致（常見於舊資料曾被標記為手動鎖定、或鎖定後
+// 請款時間/天數又變動過，導致畫面上的付款日期其實是沒更新的舊值），不一
+// 致時顯示「套用計算值」按鈕，讓使用者可以一鍵同步（與桌機版同步）。
 function updatePayFormula(ci,pi){
   const d=detDeliveries[ci];if(!d)return;
   const p=d.payments[pi];if(!p)return;
@@ -2302,25 +2320,49 @@ function updatePayFormula(ci,pi){
   const row=con.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);
   if(!row)return;
   const el=row.querySelector('.pay-formula-text');
-  if(!el)return;
-  if(!p.claimDate){el.textContent='';return;}
+  const btn=row.querySelector('.pd-apply-btn');
+  if(!p.claimDate){
+    if(el)el.textContent='';
+    if(btn)btn.style.display='none';
+    return;
+  }
   const{days,currency}=_getPayDateInputs(p.stageLabel);
-  el.textContent=calcPayDateFormula(p.claimDate,days,currency);
+  if(el)el.textContent=calcPayDateFormula(p.claimDate,days,currency);
+  if(btn){
+    const calc=calcPayDateFromClaim(p.claimDate,days,currency);
+    btn.style.display=(calc&&calc!==p.payDate)?'':'none';
+  }
+}
+// 使用者按下「套用計算值」：把付款日期同步成目前公式算出來的最新結果，並
+// 解除手動鎖定旗標（之後請款時間/期別再變動時會恢復自動重算，與桌機版同
+// 步）。
+function applyCalcPayDate(ci,pi){
+  const d=detDeliveries[ci];if(!d)return;
+  const p=d.payments[pi];if(!p)return;
+  if(!p.claimDate)return;
+  const{days,currency}=_getPayDateInputs(p.stageLabel);
+  p.payDate=calcPayDateFromClaim(p.claimDate,days,currency);
+  p.payDateManual=false;
+  const con=document.getElementById(`pays-m-${ci}`);
+  if(con){const row=con.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);if(row){const el=row.querySelector('.pd-inp');if(el)el.value=p.payDate||'';}}
+  updatePayFormula(ci,pi);
 }
 function calcPayDate(ci,pi){
   const d=detDeliveries[ci];if(!d)return;
   const p=d.payments[pi];if(!p)return;
-  // 無論付款日期是否已被鎖定，都先更新「計算過程」參考文字
-  updatePayFormula(ci,pi);
-  if(p.payDateManual)return; // 使用者手動改過，不自動覆蓋
-  if(!p.claimDate){
-    p.payDate='';
-  }else{
-    const{days,currency}=_getPayDateInputs(p.stageLabel);
-    p.payDate=calcPayDateFromClaim(p.claimDate,days,currency);
+  if(!p.payDateManual){ // 使用者手動改過時不自動覆蓋
+    if(!p.claimDate){
+      p.payDate='';
+    }else{
+      const{days,currency}=_getPayDateInputs(p.stageLabel);
+      p.payDate=calcPayDateFromClaim(p.claimDate,days,currency);
+    }
+    const con=document.getElementById(`pays-m-${ci}`);
+    if(con){const row=con.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);if(row){const el=row.querySelector('.pd-inp');if(el)el.value=p.payDate||'';}}
   }
-  const con=document.getElementById(`pays-m-${ci}`);
-  if(con){const row=con.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);if(row){const el=row.querySelector('.pd-inp');if(el)el.value=p.payDate||'';}}
+  // 更新「計算過程」參考文字與「套用計算值」按鈕狀態；放在 payDate 實際更新
+  // 之後執行，確保按鈕的一致性判斷用的是最新的 payDate（與桌機版同步）。
+  updatePayFormula(ci,pi);
 }
 function recalcPayDates(){
   detDeliveries.forEach((d,ci)=>{
@@ -3240,7 +3282,7 @@ function renderPayRowM(ci,pi){
       <div class="pay-field-m"><label>請款方式</label><select data-ct onchange="detDeliveries[${ci}].payments[${pi}].claimType=this.value"><option value="">—</option>${ctOpts}</select></div>
       <div class="pay-field-m"><label>憑證時間</label><input type="date" value="${p.voucherDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].voucherDate=this.value"></div>
       <div class="pay-field-m"><label>請款時間</label><input type="date" value="${p.claimDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].claimDate=this.value;calcPayDate(${ci},${pi})"></div>
-      <div class="pay-field-m"><label>付款日期</label><input type="date" class="pd-inp" value="${p.payDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].payDate=this.value;detDeliveries[${ci}].payments[${pi}].payDateManual=true"></div>
+      <div class="pay-field-m"><label>付款日期</label><input type="date" class="pd-inp" value="${p.payDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].payDate=this.value;detDeliveries[${ci}].payments[${pi}].payDateManual=true;updatePayFormula(${ci},${pi})"><button type="button" class="pd-apply-btn" style="display:none;margin-top:3px;font-size:10px;padding:2px 6px;border:1px solid var(--amber);background:var(--amber-bg);color:var(--amber-tx);border-radius:4px;cursor:pointer;white-space:nowrap" onclick="applyCalcPayDate(${ci},${pi})">套用計算值</button></div>
       <div class="pay-field-m" style="grid-column:1/-1"><label>備註</label><input value="${safe(p.payRemark||'')}" placeholder="備註..." oninput="detDeliveries[${ci}].payments[${pi}].payRemark=this.value"></div>
       <div style="grid-column:1/-1;margin-top:10px"><div class="pay-formula-text" style="font-size:11px;color:var(--tx3);line-height:1.5"></div></div>
     </div>`;

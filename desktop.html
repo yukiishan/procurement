@@ -241,6 +241,28 @@
                         「請款時間變更」「期別變更」「批次列重新渲染」時即時
                         更新，計算公式本身沿用既有 calcPayDateFromClaim 的
                         邏輯，未改動。
+  v1.20 2026-10-01  新增「套用計算值」按鈕，解決「下方計算公式正確，但上方
+                     付款日期欄位沒有跟著更新」的問題（根因：這類資料是在
+                     v1.18 修正「舊資料誤判為手動鎖定」之前就已經存檔，
+                     payDateManual 旗標本身已經被存成 true，屬於存檔資料既
+                     有狀態，v1.18 只修正「載入時的預設值」，不會回頭改動已
+                     經明確存成 true 的舊資料；畫面上方的「付款日期」因為
+                     旗標是 true 而被視為使用者手動鎖定，自動計算邏輯會跳
+                     過不覆蓋它，但下方新增的「計算過程」文字是不論鎖定與
+                     否都即時依目前請款時間/天數重新算給使用者核對用的，兩
+                     者因此對不起來）：
+                     1) 當目前「付款日期」欄位的值跟公式即時算出來的結果不
+                        一致時（不論是否手動鎖定），在欄位下方顯示「套用計
+                        算值」按鈕；一致時不顯示。
+                     2) 按下按鈕後，把付款日期同步成目前公式算出來的值，並
+                        解除手動鎖定旗標，之後請款時間或期別再變動時會恢復
+                        自動重新計算；未按下按鈕前不會自動覆蓋既有資料，使
+                        用者可自行判斷是否要套用。
+                     3) 修正連帶發現的時序問題：calcPayDate() 原本是「先更
+                        新計算過程文字，再更新付款日期」，導致自動計算完成
+                        的當下，計算過程文字短暫比對到更新前的舊付款日期、
+                        誤判為不一致；改為「先更新付款日期，再更新計算過程
+                        文字與按鈕狀態」，確保一致性比對永遠用的是最新值。
 -->
 <html lang="zh-TW">
 <head>
@@ -2981,7 +3003,7 @@ function renderPayRow(ci,pi){
     <div class="pf"><label>請款方式</label><select class="ct-sel" onchange="detDeliveries[${ci}].payments[${pi}].claimType=this.value"><option value="">—</option>${ctOpts}</select></div>
     <div class="pf"><label>憑證時間</label><input type="date" value="${p.voucherDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].voucherDate=this.value"></div>
     <div class="pf"><label>請款時間</label><input type="date" value="${p.claimDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].claimDate=this.value;calcPayDate(${ci},${pi})"></div>
-    <div class="pf"><label>付款日期</label><input type="date" class="pd-inp" value="${p.payDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].payDate=this.value;detDeliveries[${ci}].payments[${pi}].payDateManual=true"></div>
+    <div class="pf"><label>付款日期</label><input type="date" class="pd-inp" value="${p.payDate||''}" oninput="detDeliveries[${ci}].payments[${pi}].payDate=this.value;detDeliveries[${ci}].payments[${pi}].payDateManual=true;updatePayFormula(${ci},${pi})"><button type="button" class="pd-apply-btn" style="display:none;margin-top:3px;font-size:10px;padding:2px 6px;border:1px solid var(--amber);background:var(--abg);color:var(--atx);border-radius:4px;cursor:pointer;white-space:nowrap" onclick="applyCalcPayDate(${ci},${pi})" title="付款日期與下方計算結果不一致，點擊套用最新計算值">套用計算值</button></div>
     <div class="pf" style="grid-column:5/9"><label>備註</label><input value="${safe(p.payRemark||'')}" placeholder="備註..." oninput="detDeliveries[${ci}].payments[${pi}].payRemark=this.value"></div>
     <div class="pf" style="grid-column:1/9;margin-top:10px"><div class="pay-formula-text" style="font-size:11px;color:var(--tx3);line-height:1.5"></div></div>
   `;
@@ -4755,32 +4777,59 @@ function calcPayDateFormula(claimDate,days,currency){
 }
 // 更新畫面上該筆付款列的「計算過程」參考文字；不論付款日期是否已被使用者
 // 手動鎖定都會更新，方便核對目前的請款時間/付款天數設定照公式應該算出哪一
-// 天（純顯示，不會動到實際存檔的 payDate）。
+// 天（純顯示，不會動到實際存檔的 payDate）。同時檢查目前「付款日期」欄位
+// 的值是否跟公式算出來的最新結果不一致（常見於舊資料曾被標記為手動鎖定、
+// 或鎖定後請款時間/天數又變動過，導致畫面上的付款日期其實是沒更新的舊
+// 值），不一致時顯示「套用計算值」按鈕，讓使用者可以一鍵同步。
 function updatePayFormula(ci,pi){
   const d=detDeliveries[ci];if(!d)return;
   const p=d.payments[pi];if(!p)return;
   const row=document.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);
   if(!row)return;
   const el=row.querySelector('.pay-formula-text');
-  if(!el)return;
-  if(!p.claimDate){el.textContent='';return;}
+  const btn=row.querySelector('.pd-apply-btn');
+  if(!p.claimDate){
+    if(el)el.textContent='';
+    if(btn)btn.style.display='none';
+    return;
+  }
   const{days,currency}=_getPayDateInputs(p.stageLabel);
-  el.textContent=calcPayDateFormula(p.claimDate,days,currency);
+  if(el)el.textContent=calcPayDateFormula(p.claimDate,days,currency);
+  if(btn){
+    const calc=calcPayDateFromClaim(p.claimDate,days,currency);
+    btn.style.display=(calc&&calc!==p.payDate)?'':'none';
+  }
+}
+// 使用者按下「套用計算值」：把付款日期同步成目前公式算出來的最新結果，並
+// 解除手動鎖定旗標（之後請款時間/期別再變動時會恢復自動重算）。
+function applyCalcPayDate(ci,pi){
+  const d=detDeliveries[ci];if(!d)return;
+  const p=d.payments[pi];if(!p)return;
+  if(!p.claimDate)return;
+  const{days,currency}=_getPayDateInputs(p.stageLabel);
+  p.payDate=calcPayDateFromClaim(p.claimDate,days,currency);
+  p.payDateManual=false;
+  const row=document.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);
+  if(row){const el=row.querySelector('.pd-inp');if(el)el.value=p.payDate||'';}
+  updatePayFormula(ci,pi);
 }
 function calcPayDate(ci,pi){
   const d=detDeliveries[ci];if(!d)return;
   const p=d.payments[pi];if(!p)return;
-  // 無論付款日期是否已被鎖定，都先更新「計算過程」參考文字
-  updatePayFormula(ci,pi);
-  if(p.payDateManual)return; // 使用者手動改過，不自動覆蓋
-  if(!p.claimDate){
-    p.payDate='';
-  }else{
-    const{days,currency}=_getPayDateInputs(p.stageLabel);
-    p.payDate=calcPayDateFromClaim(p.claimDate,days,currency);
+  if(!p.payDateManual){ // 使用者手動改過時不自動覆蓋
+    if(!p.claimDate){
+      p.payDate='';
+    }else{
+      const{days,currency}=_getPayDateInputs(p.stageLabel);
+      p.payDate=calcPayDateFromClaim(p.claimDate,days,currency);
+    }
+    const row=document.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);
+    if(row){const el=row.querySelector('.pd-inp');if(el)el.value=p.payDate||'';}
   }
-  const row=document.querySelector(`[data-ci="${ci}"][data-pi="${pi}"]`);
-  if(row){const el=row.querySelector('.pd-inp');if(el)el.value=p.payDate||'';}
+  // 更新「計算過程」參考文字與「套用計算值」按鈕狀態；放在 payDate 實際更新
+  // 之後執行，確保按鈕的一致性判斷用的是最新的 payDate（而不是更新前的舊
+  // 值），避免剛自動算完也誤判成「不一致」而短暫閃現按鈕。
+  updatePayFormula(ci,pi);
 }
 function recalcPayDates(){
   detDeliveries.forEach((d,ci)=>{
