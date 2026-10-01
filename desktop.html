@@ -191,6 +191,24 @@
                         個批次尚未付清（排定中或付款中），這筆就不會出現在
                         「已付清」篩選裡（但仍會出現在「排定中」或「付款
                         中」篩選裡，因為它確實還有未付清的批次）。
+  v1.17 2026-10-01  匯出 Excel 的內容調整：
+                     1) 整份 Excel 預設字型改為「微軟正黑體」（原本固定輸出
+                        Calibri）。因為目前使用的 SheetJS 社群版（免費版）本
+                        身不支援把自訂儲存格樣式寫回 xlsx 檔案，改用新增的
+                        JSZip 套件，在產生檔案「之後」直接把 xlsx 內部
+                        styles.xml／theme1.xml 裡的預設字型名稱置換成「微軟
+                        正黑體」達成（因為原本所有儲存格都沒有自訂樣式、全
+                        部共用同一個預設字型，換掉這一個字型名稱就能讓整份
+                        檔案的文字一起套用新字型）。若 JSZip 未能載入或置換
+                        過程發生問題，會自動改用原本的方式輸出，不會因此匯
+                        不出檔案。
+                     2) 「設備價格」頁籤的內容，原本同一筆採購清單有多個批
+                        次／多筆付款時，只有第一列會顯示廠區/部門/PO號/廠商
+                        /設備型號/幣別/金額/付款/貨代等欄位，其餘列留空（要
+                        往上對照才知道是哪一筆）。現在改為每一列都重複帶入
+                        該筆資料的固定欄位，以及該批次自己的 ETD/ETA 與
+                        「批次N」標籤，讓匯出的每一列、每一欄都有資料，不需
+                        要再往上對照。
 -->
 <html lang="zh-TW">
 <head>
@@ -212,6 +230,10 @@
 <link rel="icon" href="icon-192.png" type="image/png">
 <title>設備採購管理系統</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- JSZip：用來在匯出 Excel 後，把產生出來的 xlsx 內部 styles.xml／theme1.xml
+     裡預設的 Calibri 字型置換成微軟正黑體（SheetJS 社群版不支援直接寫入儲存
+     格樣式，改用「產生後置換字型名稱」的方式達成整份 Excel 預設字型效果）-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -3254,7 +3276,7 @@ async function runRestoreBackup(){
   }
 }
 
-function exportExcel(){
+async function exportExcel(){
   if(typeof XLSX==='undefined'){alert('套件載入中');return;}
   const wb=XLSX.utils.book_new();
   const h1=['廠區','部門','PO號','廠商','代理商','設備型號','設備名稱','報價單號','數量','幣別','報價(原幣)','成交金額(原幣)','成交金額(台幣)','料號','LT','Line','備註','CEA','S/N','無產證','PO日期','付款','貨代','狀態','ETD','ETA','訂金%','交機%','驗收%'];
@@ -3265,16 +3287,51 @@ function exportExcel(){
   const r2=[];
   data.forEach(r=>{
     const ntd=r.amountNTD||calcNTDv(r.amount,r.currency);
+    // 每一列（每個批次、每筆付款）都重複填入該筆採購清單的固定欄位與該批次
+    // 的 ETD/ETA，不再只有第一列才有資料、其餘留空——匯出後每一列每一欄都
+    // 看得到資料，不用對照上面的列才知道是哪筆/哪個廠商。
     (r.deliveries&&r.deliveries.length?r.deliveries:[{}]).forEach((d,di)=>{
       (d.payments&&d.payments.length?d.payments:[{}]).forEach((p,pi)=>{
-        r2.push([di===0&&pi===0?r.plant:'',di===0&&pi===0?r.dept:'',di===0&&pi===0?r.pr:'',di===0&&pi===0?r.vendor:'',di===0&&pi===0?r.model:'',di===0&&pi===0?r.currency:'',di===0&&pi===0?r.amount:'',di===0&&pi===0?ntd:'',di===0&&pi===0?r.payment:'',di===0&&pi===0?r.forwarder:'',
-          pi===0?`批次${di+1}`:'',pi===0?d.etd||'':'',pi===0?d.eta||'':'',
+        r2.push([r.plant,r.dept,r.pr,r.vendor,r.model,r.currency,r.amount,ntd,r.payment,r.forwarder,
+          `批次${di+1}`,d.etd||'',d.eta||'',
           p.invoiceDate||'',p.invoice||'',p.arrivalDate||'',p.arrivalQty||'',p.stageLabel||'',p.pct||'',p.payAmt||'',p.claimType||'',p.claimDate||'',p.payDate||'']);
       });
     });
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([h2,...r2]),'設備價格');
-  XLSX.writeFile(wb,'設備採購管理_'+new Date().toLocaleDateString('zh-TW').replace(/\//g,'')+'.xlsx');ntf('✓ Excel已匯出');
+  const fname='設備採購管理_'+new Date().toLocaleDateString('zh-TW').replace(/\//g,'')+'.xlsx';
+  // SheetJS 社群版（xlsx.full.min.js）不支援把自訂的儲存格樣式（例如字型）
+  // 寫回 xlsx 檔案裡，整份檔案一律固定輸出 Calibri。改用 JSZip 在產生檔案
+  // 後，直接把 xlsx 內部 styles.xml／theme1.xml 裡的預設字型名稱
+  // 「Calibri」置換成「微軟正黑體」，讓整份 Excel 開啟後的預設字型就是微軟
+  // 正黑體（因為原本所有儲存格都沒有自訂樣式、全部共用同一個預設字型，所以
+  // 换掉這一個字型名稱就能讓全部內容一起套用）。若 JSZip 未載入或置換失
+  // 敗，改用原本的 XLSX.writeFile 輸出，確保仍然匯得出檔案。
+  if(typeof JSZip==='undefined'){
+    console.warn('JSZip 未載入，改用預設字型輸出 Excel');
+    XLSX.writeFile(wb,fname);ntf('✓ Excel已匯出');
+    return;
+  }
+  try{
+    const arr=XLSX.write(wb,{type:'array',bookType:'xlsx'});
+    const zip=await JSZip.loadAsync(arr);
+    for(const path of ['xl/styles.xml','xl/theme/theme1.xml']){
+      const f=zip.file(path);
+      if(!f)continue;
+      const text=await f.async('string');
+      zip.file(path,text.split('Calibri').join('微軟正黑體'));
+    }
+    const blob=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=fname;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+  }catch(err){
+    console.warn('套用微軟正黑體字型失敗，改用預設字型輸出 Excel：',err);
+    XLSX.writeFile(wb,fname);
+  }
+  ntf('✓ Excel已匯出');
 }
 function exportJSON(){const b=new Blob([JSON.stringify({data,nid,opts,modelNames,rates,hols,ts:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='採購備份_'+new Date().toLocaleDateString('zh-TW').replace(/\//g,'')+'.json';a.click();ntf('✓ 備份已下載');}
 async function importJSON(e){const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(!d.data||!Array.isArray(d.data))throw 1;if(!confirm(`確定還原？載入${d.data.length}筆`))return;data=d.data;nid=d.nid||data.length+1;if(d.opts)opts={...DO,...d.opts};if(d.modelNames)modelNames={...DN_DEF,...d.modelNames};if(d.rates)rates={...DR,...d.rates};if(d.hols)hols=d.hols;save();saveO();saveR();saveH();refreshSels();renderList();ntf('✓ 備份已還原');}catch{alert('備份檔格式錯誤');}};reader.readAsText(f);e.target.value='';}
