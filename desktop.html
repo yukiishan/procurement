@@ -164,6 +164,21 @@
                         併。
                      3) 此變更僅影響「點選日期後跳出的明細彈窗」，月曆格子
                         本身的小色塊顯示方式不變。
+  v1.15 2026-10-01  桌機版「付款管理」頁面的狀態篩選改版（與手機版付款篩選的
+                     精神一致，但顯示方式不同——手機版篩選後只顯示符合的批
+                     次，桌機版改為整筆資料都顯示，方便對照同一張單的其他批
+                     次）：
+                     1) 篩選標籤由「全部／未付／部分付款／已付清」（看整筆訂
+                        單的整體聚合狀態）改為「全部／排定中／付款中／已付
+                        清」（看每個批次付款列各自的狀態，與批次列本身顯示
+                        的狀態標籤一致）。
+                     2) 篩選邏輯改為：篩選「排定中」或「付款中」或「已付
+                        清」時，只要這筆採購清單裡「任一」批次付款列的個別
+                        狀態符合，就把這筆資料的「所有」批次付款列都顯示出
+                        來（而不是只顯示符合篩選的那幾列），方便一次看清楚
+                        同一張單其他批次目前的狀況。
+                     3) 狀態為「作廢」的採購清單，不論篩選條件為何，一律不
+                        會出現在付款管理列表中。
 -->
 <html lang="zh-TW">
 <head>
@@ -1003,8 +1018,8 @@ function _updatePwDots(){
     <button class="btn xs" onclick="document.getElementById('pDateFilter').value='';renderPay()" title="清除日期篩選" style="padding:2px 7px">✕日期</button>
     <div style="display:flex;gap:4px;align-items:center">
       <button class="btn sm pfst-btn active" data-st="" onclick="setPFSt('',this)">全部</button>
-      <button class="btn sm pfst-btn" data-st="未付" onclick="setPFSt('未付',this)">未付</button>
-      <button class="btn sm pfst-btn" data-st="部分付款" onclick="setPFSt('部分付款',this)">部分付款</button>
+      <button class="btn sm pfst-btn" data-st="排定中" onclick="setPFSt('排定中',this)">排定中</button>
+      <button class="btn sm pfst-btn" data-st="付款中" onclick="setPFSt('付款中',this)">付款中</button>
       <button class="btn sm pfst-btn" data-st="已付清" onclick="setPFSt('已付清',this)">已付清</button>
       <input type="hidden" id="pfSt" value="">
     </div>
@@ -2298,12 +2313,14 @@ function renderPay(){
 
   const {col:_psc,dir:_psd}=_sortState['tab-payment']||{col:null,dir:'asc'};
   _sortData(data.filter(matchRec),_psc,_psd).forEach(r=>{
+    // 作廢的採購清單不應該出現在付款管理裡（不論篩選狀態為何）
+    if(r.status==='作廢')return;
     const delivs=r.deliveries&&r.deliveries.length?r.deliveries:[{payments:[{}]}];
     const allPays=delivs.flatMap(d=>d.payments||[{}]);
-    const allPaid=allPays.every(p=>p.payDate&&p.payDate<=today);
-    const anyPaid=allPays.some(p=>p.payDate&&p.payDate<=today);
-    const recSt=allPaid?'已付清':anyPaid?'部分付款':'未付';
-    if(ps&&ps!==recSt)return;
+    // 篩選依「當筆資料裡，只要有任一批次的個別付款狀態符合」，整筆（含其他批次）
+    // 都顯示出來，比單純看整體聚合狀態更清楚（與手機版「依個別批次狀態篩選」的
+    // 精神一致，但手機版篩選後只顯示符合的批次，桌機版這裡改為整筆都顯示）。
+    if(ps && !allPays.some(p=>payStatus(p).label===ps)) return;
 
     // 逐筆付款明細比對日期篩選
     let firstShown=true;
@@ -2316,8 +2333,6 @@ function renderPay(){
           if(!payDates.some(d=>d&&d===dFilter)) return;
         }
         const pSt=payStatus(p);
-        // 篩選「部分付款」時，此訂單已混合付清/未付清，只顯示尚未付清的列（排定中/付款中）
-        if(ps==='部分付款' && pSt.label==='已付清') return;
         const batchTag=`<span style="display:inline-block;padding:1px 5px;border-radius:3px;background:var(--sf3);color:var(--tx2);font-size:10px;margin-right:3px">B${di+1}</span>`;
         const showRec=firstShown; // 只有第一筆顯示 PO/廠商/型號
         firstShown=false;
